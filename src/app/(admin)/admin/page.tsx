@@ -103,7 +103,7 @@ export default async function DashboardPage() {
               Nenhum evento cadastrado ainda.
             </p>
           ) : (
-            recentEvents.map((event) => (
+            recentEvents.map((event: (typeof recentEvents)[0]) => (
               <div
                 key={event.id}
                 className="px-6 py-4 flex items-center justify-between gap-4"
