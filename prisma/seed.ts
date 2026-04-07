@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from "dotenv"
 config()
 import pkg from "@prisma/client"
