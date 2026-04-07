@@ -1,6 +1,7 @@
 import { config } from "dotenv"
 config()
-import { PrismaClient, UserRole, Sex, Belt, AgeGroup } from "@prisma/client"
+import pkg from "@prisma/client"
+const { PrismaClient, UserRole, Sex, Belt, AgeGroup } = pkg
 import { PrismaPg } from "@prisma/adapter-pg"
 import bcrypt from "bcryptjs"
 
