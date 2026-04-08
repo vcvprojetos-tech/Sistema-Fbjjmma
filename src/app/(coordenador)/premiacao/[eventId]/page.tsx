@@ -84,6 +84,22 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   const { positions, matches } = bracket
   if (positions.length === 0) return []
 
+  // Sub-chave de grupo (não é a Grande Final): retorna apenas o campeão
+  if (bracket.bracketGroupId && !bracket.isGrandFinal) {
+    if (positions.length === 1 && positions[0].registration)
+      return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
+    if (!matches || matches.length === 0) return []
+    const realMatches = getRealMatches(matches)
+    if (realMatches.length === 0) return []
+    const maxRound = Math.max(...realMatches.map((m) => m.round))
+    const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+    if (!finalMatch?.winnerId) return []
+    const firstPos = positions.find((p) => p.id === finalMatch.winnerId)
+    if (firstPos?.registration)
+      return [{ place: 1, positionId: firstPos.id, registration: firstPos.registration }]
+    return []
+  }
+
   if (positions.length === 1 && positions[0].registration) {
     return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
   }
@@ -448,9 +464,13 @@ export default function PremiacaoPage() {
 
                   {/* Colocações */}
                   {(() => {
-                    const bracketsForPlacements = selectedBracket.bracketGroupId
-                      ? brackets.filter(b => b.bracketGroupId === selectedBracket.bracketGroupId)
-                      : [selectedBracket]
+                    const bracketsForPlacements = (() => {
+                      if (!selectedBracket.bracketGroupId) return [selectedBracket]
+                      const grandFinal = brackets.find(b => b.bracketGroupId === selectedBracket.bracketGroupId && b.isGrandFinal)
+                      // Se existe Grande Final, usar só ela para o pódio; senão mostrar campeões das sub-chaves
+                      if (grandFinal) return [grandFinal]
+                      return brackets.filter(b => b.bracketGroupId === selectedBracket.bracketGroupId && !b.isGrandFinal)
+                    })()
                     const placements = bracketsForPlacements.flatMap(b => computePlacements(b, brackets).map(pl => ({ ...pl, sourceBracket: b })))
                     if (placements.length === 0) {
                       return <p className="text-[#6b7280] text-sm text-center py-8">Sem dados de colocação.</p>

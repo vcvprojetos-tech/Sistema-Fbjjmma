@@ -605,36 +605,103 @@ export default function TatamePage() {
                   )}
 
                   {/* FINALIZADA / PREMIADA — pódio */}
-                  {(bracket.status === "FINALIZADA" || bracket.status === "PREMIADA") && (
+                  {groupBrackets.some(b => b.status === "FINALIZADA" || b.status === "PREMIADA") && (
                     <div className="space-y-3 py-4">
-                      <div className="flex flex-col items-center gap-3 text-center">
-                        <Trophy className="h-10 w-10 text-[#fbbf24]" />
-                        {champion && (
-                          <div>
-                            <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
-                            <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
-                            {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
+                      {(() => {
+                        const grandFinal = groupBrackets.find(b => b.isGrandFinal)
+                        const isSubOnly = isGroup && !grandFinal
+                        // Sub-chaves sem grande final ainda: mostrar apenas campeões de cada sub-chave
+                        if (isSubOnly) {
+                          const doneSubs = groupBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
+                          return (
+                            <div className="flex flex-col items-center gap-4 text-center">
+                              {doneSubs.map(b => {
+                                const bRealMatches = b.matches.filter(m => m.position1Id && m.position2Id)
+                                const bMaxRound = bRealMatches.length > 0 ? Math.max(...bRealMatches.map(m => m.round)) : 0
+                                const bFinal = bRealMatches.find(m => m.round === bMaxRound && m.matchNumber === 1)
+                                const bChamp = bFinal?.winnerId ? b.positions.find(p => p.id === bFinal.winnerId) : null
+                                return (
+                                  <div key={b.id}>
+                                    <p className="text-[#6b7280] text-xs font-semibold uppercase tracking-wider mb-1">Sub-chave #{b.bracketNumber}</p>
+                                    {bChamp ? (
+                                      <div>
+                                        <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🏅 Campeão</p>
+                                        <p className="text-white text-base font-bold">{getAthleteName(bChamp)}</p>
+                                        {getAthleteTeam(bChamp) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(bChamp)}</p>}
+                                      </div>
+                                    ) : <p className="text-[#6b7280] text-sm">Em andamento</p>}
+                                  </div>
+                                )
+                              })}
+                              <p className="text-[#f59e0b] text-sm font-semibold mt-2">⏳ Aguardando Grande Final</p>
+                              <p className="text-[#6b7280] text-xs">O pódio será definido na Grande Final entre os campeões.</p>
+                            </div>
+                          )
+                        }
+                        // Grande Final finalizada: mostrar pódio completo
+                        if (grandFinal && (grandFinal.status === "FINALIZADA" || grandFinal.status === "PREMIADA")) {
+                          return (
+                            <div className="flex flex-col items-center gap-3 text-center">
+                              <Trophy className="h-10 w-10 text-[#fbbf24]" />
+                              {champion && (
+                                <div>
+                                  <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
+                                  <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
+                                  {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
+                                </div>
+                              )}
+                              {runnerUp && (
+                                <div>
+                                  <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
+                                  <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
+                                  {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
+                                </div>
+                              )}
+                              {thirdPlace && (
+                                <div>
+                                  <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
+                                  <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
+                                  {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
+                                </div>
+                              )}
+                              <p className="text-center text-[#4ade80] font-semibold text-sm">
+                                {grandFinal.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
+                              </p>
+                            </div>
+                          )
+                        }
+                        // Chave simples (sem grupo)
+                        return (
+                          <div className="flex flex-col items-center gap-3 text-center">
+                            <Trophy className="h-10 w-10 text-[#fbbf24]" />
+                            {champion && (
+                              <div>
+                                <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
+                                <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
+                                {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
+                              </div>
+                            )}
+                            {runnerUp && (
+                              <div>
+                                <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
+                                <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
+                                {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
+                              </div>
+                            )}
+                            {thirdPlace && (
+                              <div>
+                                <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
+                                <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
+                                {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
+                              </div>
+                            )}
+                            <p className="text-center text-[#4ade80] font-semibold text-sm">
+                              {bracket?.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
+                            </p>
+                            <p className="text-center text-[#6b7280] text-xs">{bracket?.matches.length} partida(s) realizada(s)</p>
                           </div>
-                        )}
-                        {runnerUp && (
-                          <div>
-                            <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
-                            <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
-                            {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
-                          </div>
-                        )}
-                        {thirdPlace && (
-                          <div>
-                            <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
-                            <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
-                            {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-center text-[#4ade80] font-semibold text-sm">
-                        {bracket.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
-                      </p>
-                      <p className="text-center text-[#6b7280] text-xs">{bracket.matches.length} partida(s) realizada(s)</p>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
