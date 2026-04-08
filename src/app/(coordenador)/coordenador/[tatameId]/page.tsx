@@ -115,7 +115,7 @@ export default function TatamePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState("")
-  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string } | null>(null)
+  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string } | null>(null)
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -215,21 +215,28 @@ export default function TatamePage() {
   const selectedBracket = tatame.brackets.find(b => b.id === selectedId) ?? null
   const operador = tatame.operations[0]
 
-  // Computed values for selected bracket
+  // Se o bracket selecionado faz parte de um grupo, agrega todos do grupo
   const bracket = selectedBracket
-  const pendingMatches = bracket?.matches.filter(m => !m.winnerId) ?? []
-  const currentRound = pendingMatches.length > 0
-    ? Math.min(...pendingMatches.map(m => m.round))
-    : null
-  // Exibe todas as partidas prontas (ambos atletas definidos e sem vencedor),
-  // independente da rodada — permite adiantar lutas que já têm os dois atletas confirmados
-  const currentMatches = bracket?.matches.filter(
-    m => !m.winnerId && m.position1Id !== null && m.position2Id !== null
-  ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber) ?? []
-  // Partida final = última com dois atletas reais (exclui W.O. fantasma com position2Id null)
+  const groupBrackets = bracket?.bracketGroupId
+    ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId).sort((a, b) => {
+        if (a.isGrandFinal !== b.isGrandFinal) return a.isGrandFinal ? 1 : -1
+        return a.bracketNumber - b.bracketNumber
+      })
+    : bracket ? [bracket] : []
+  const isGroup = groupBrackets.length > 1
+
+  // Confrontos: todos os brackets ativos no grupo
+  const currentMatches = groupBrackets.flatMap(b =>
+    b.matches
+      .filter(m => !m.winnerId && m.position1Id !== null && m.position2Id !== null)
+      .map(m => ({ ...m, _bracketId: b.id }))
+  ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
+
+  // Para exibir progresso: total de partidas no grupo
+  const allGroupMatches = groupBrackets.flatMap(b => b.matches)
+  const maxRound = allGroupMatches.length > 0 ? Math.max(...allGroupMatches.map(m => m.round)) : 0
   const realMatches = bracket?.matches.filter(m => m.position1Id !== null && m.position2Id !== null) ?? []
   const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
-  const maxRound = bracket?.matches.length ? Math.max(...bracket.matches.map(m => m.round)) : 0
   const lastMatch = realMatches.length > 0
     ? [...realMatches].sort((a, b) => b.round - a.round || b.matchNumber - a.matchNumber)[0] ?? null
     : null
@@ -457,22 +464,27 @@ export default function TatamePage() {
                   )}
 
                   {/* PENDENTE / DESIGNADA — botão iniciar */}
-                  {(bracket.status === "PENDENTE" || bracket.status === "DESIGNADA") && (
+                  {groupBrackets.some(b => b.status === "PENDENTE" || b.status === "DESIGNADA") && (
                     <div className="space-y-3 py-4 text-center">
-                      <p className="text-[#9ca3af] text-sm">{bracket.positions.length} atleta(s) nesta chave</p>
-                      <button
-                        onClick={() => iniciarChave(bracket.id)}
-                        disabled={actionLoading}
-                        className="w-full h-14 rounded-xl text-white font-bold text-base transition-opacity disabled:opacity-40"
-                        style={{ backgroundColor: "#16a34a" }}
-                      >
-                        {actionLoading ? "Iniciando..." : "▶ INICIAR CHAVE"}
-                      </button>
+                      {groupBrackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").map(b => (
+                        <div key={b.id}>
+                          {isGroup && <p className="text-[#6b7280] text-xs mb-1">{b.isGrandFinal ? "🏆 Grande Final" : `Sub-chave #${b.bracketNumber}`} — {b.positions.length} atleta(s)</p>}
+                          {!isGroup && <p className="text-[#9ca3af] text-sm">{b.positions.length} atleta(s) nesta chave</p>}
+                          <button
+                            onClick={() => iniciarChave(b.id)}
+                            disabled={actionLoading}
+                            className="w-full h-14 rounded-xl text-white font-bold text-base transition-opacity disabled:opacity-40"
+                            style={{ backgroundColor: "#16a34a" }}
+                          >
+                            {actionLoading ? "Iniciando..." : `▶ INICIAR${isGroup ? ` #${b.bracketNumber}` : ""}`}
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
                   {/* EM_ANDAMENTO — todas as partidas prontas (ambos atletas definidos) */}
-                  {bracket.status === "EM_ANDAMENTO" && (
+                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && (
                     <div className="space-y-3">
                       {/* Indicador de progresso por rodada */}
                       {maxRound > 1 && (
@@ -482,8 +494,8 @@ export default function TatamePage() {
                           </h2>
                           <div className="flex gap-1">
                             {Array.from({ length: maxRound }, (_, i) => i + 1).map(r => {
-                              const done = bracket.matches.filter(m => m.round === r).every(m => m.winnerId)
-                              const active = r === currentRound
+                              const done = allGroupMatches.filter(m => m.round === r).every(m => m.winnerId)
+                              const active = currentMatches.length > 0 && r === Math.min(...currentMatches.map(m => m.round))
                               return (
                                 <div key={r} className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: active ? "#fbbf24" : done ? "#4ade80" : "#333" }} />
@@ -515,7 +527,7 @@ export default function TatamePage() {
                               )}
                             </div>
                             <button
-                              onClick={() => !isDone && !actionLoading && p1?.id && p1Name !== "BYE" && declararVencedor(bracket.id, match.id, p1.id)}
+                              onClick={() => !isDone && !actionLoading && p1?.id && p1Name !== "BYE" && declararVencedor(match._bracketId, match.id, p1.id)}
                               disabled={isDone || actionLoading || !p1?.id || p1Name === "BYE"}
                               className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:cursor-default"
                               style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid #1a1a1a" }}
@@ -536,7 +548,7 @@ export default function TatamePage() {
                               <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
                             </div>
                             <button
-                              onClick={() => !isDone && !actionLoading && p2?.id && p2Name !== "BYE" && declararVencedor(bracket.id, match.id, p2.id)}
+                              onClick={() => !isDone && !actionLoading && p2?.id && p2Name !== "BYE" && declararVencedor(match._bracketId, match.id, p2.id)}
                               disabled={isDone || actionLoading || !p2?.id || p2Name === "BYE"}
                               className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:cursor-default"
                               style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}
@@ -553,11 +565,11 @@ export default function TatamePage() {
                             </button>
                             {!isDone && p1?.id && p2?.id && (
                               <div className="flex gap-2 p-3" style={{ borderTop: "1px solid #1a1a1a" }}>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id })} disabled={actionLoading}
+                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId })} disabled={actionLoading}
                                   className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
                                   W.O. — {p1Name.split(" ")[0]}
                                 </button>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id })} disabled={actionLoading}
+                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId })} disabled={actionLoading}
                                   className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
                                   W.O. — {p2Name.split(" ")[0]}
                                 </button>
@@ -568,7 +580,7 @@ export default function TatamePage() {
                       })}
 
                       {/* Partidas aguardando definição de atletas (ex: próxima rodada ainda não confirmada) */}
-                      {bracket.matches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length > 0 && (
+                      {allGroupMatches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length > 0 && (
                         <p className="text-xs text-[#4b5563] text-center py-1">
                           + {bracket.matches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length} luta(s) aguardando definição de atletas
                         </p>
@@ -699,12 +711,12 @@ export default function TatamePage() {
             <p className="text-white font-bold text-center text-lg">Tipo de W.O.</p>
             <p className="text-[#9ca3af] text-sm text-center">Selecione o motivo do W.O.</p>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => declararVencedor(bracket.id, woModal.matchId, woModal.winnerId, true, "PESO")}
+              <button onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO")}
                 disabled={actionLoading}
                 className="py-4 rounded-xl font-semibold text-white text-sm" style={{ backgroundColor: "#78350f" }}>
                 Por Peso
               </button>
-              <button onClick={() => declararVencedor(bracket.id, woModal.matchId, woModal.winnerId, true, "AUSENCIA")}
+              <button onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "AUSENCIA")}
                 disabled={actionLoading}
                 className="py-4 rounded-xl font-semibold text-white text-sm" style={{ backgroundColor: "#1e3a5f" }}>
                 Por Ausência
