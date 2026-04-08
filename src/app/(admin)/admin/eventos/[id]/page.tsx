@@ -142,6 +142,8 @@ interface Bracket {
   belt: string
   status: string
   tatameId: string | null
+  bracketGroupId?: string | null
+  isGrandFinal?: boolean
   weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: {
     id: string
@@ -1384,21 +1386,7 @@ export default function EventoDetailPage() {
             <div className="text-[#6b7280] text-center py-12">Nenhuma chave encontrada. Clique em "Gerar Chaves" para criar as chaves a partir das inscrições aprovadas.</div>
           ) : (
             <div className="space-y-3">
-              {[...brackets].sort((a, b) => {
-                const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
-                const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
-                if (ageA !== ageB) return ageA - ageB
-                if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
-                return a.weightCategory.maxWeight - b.weightCategory.maxWeight
-              }).map((bracket) => {
-                const catLabel = [
-                  bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
-                  AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
-                  bracket.isAbsolute ? null : bracket.weightCategory.name,
-                  BELT_LABELS[bracket.belt] || bracket.belt,
-                  bracket.isAbsolute ? "Absoluto" : null,
-                ].filter(Boolean).join(" | ")
-
+              {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
                   PENDENTE: { bg: "#1a1a1a", text: "#6b7280" },
                   DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
@@ -1406,33 +1394,126 @@ export default function EventoDetailPage() {
                   FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
                   PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
                 }
-                const sc = statusColors[bracket.status] || statusColors.PENDENTE
+                const getBracketLabel = (bracket: Bracket) => [
+                  bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
+                  AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
+                  bracket.isAbsolute ? null : bracket.weightCategory.name,
+                  BELT_LABELS[bracket.belt] || bracket.belt,
+                  bracket.isAbsolute ? "Absoluto" : null,
+                ].filter(Boolean).join(" | ")
 
-                return (
-                  <div key={bracket.id} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "#111111", borderColor: "#222222" }}>
-                    <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #1a1a1a" }}>
-                      <span className="text-xs font-bold text-[#6b7280]">#{bracket.bracketNumber}</span>
-                      <span className="text-sm font-medium text-white flex-1 min-w-0 truncate">{catLabel}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
-                        {bracket.status}
-                      </span>
-                      <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
-                      <select
-                        className="text-xs rounded border px-2 py-1 shrink-0"
-                        style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
-                        value={bracket.tatameId || ""}
-                        onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
-                      >
-                        <option value="">Sem tatame</option>
-                        {tatames.map((t) => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <BracketView bracket={bracket} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
-                  </div>
-                )
-              })}
+                const sorted = [...brackets].sort((a, b) => {
+                  const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
+                  const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
+                  if (ageA !== ageB) return ageA - ageB
+                  if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
+                  if (a.weightCategory.maxWeight !== b.weightCategory.maxWeight)
+                    return a.weightCategory.maxWeight - b.weightCategory.maxWeight
+                  return a.bracketNumber - b.bracketNumber
+                })
+
+                // Agrupar: sub-chaves com mesmo bracketGroupId ficam juntas
+                const rendered: React.ReactNode[] = []
+                const seen = new Set<string>()
+                for (const bracket of sorted) {
+                  if (bracket.bracketGroupId && !bracket.isGrandFinal) {
+                    if (seen.has(bracket.bracketGroupId)) continue
+                    seen.add(bracket.bracketGroupId)
+                    const group = sorted.filter(b => b.bracketGroupId === bracket.bracketGroupId && !b.isGrandFinal)
+                    const grandFinal = sorted.find(b => b.bracketGroupId === bracket.bracketGroupId && b.isGrandFinal)
+                    const groupLabel = getBracketLabel(bracket)
+                    const totalAthletes = group.reduce((s, b) => s + b.positions.length, 0)
+                    rendered.push(
+                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "#111111", borderColor: "#f59e0b50" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #1a1a1a", backgroundColor: "#1a1000" }}>
+                          <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
+                          <span className="text-sm font-medium text-white flex-1 min-w-0 truncate">{groupLabel}</span>
+                          <span className="text-xs text-[#6b7280] shrink-0">{totalAthletes} atleta(s) no total</span>
+                        </div>
+                        <div className="divide-y" style={{ borderColor: "#1a1a1a" }}>
+                          {group.map((b) => {
+                            const sc = statusColors[b.status] || statusColors.PENDENTE
+                            return (
+                              <div key={b.id}>
+                                <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #111" }}>
+                                  <span className="text-xs font-bold text-[#6b7280]">Sub-chave #{b.bracketNumber}</span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{b.status}</span>
+                                  <span className="text-xs text-[#6b7280] shrink-0">{b.positions.length} atleta(s)</span>
+                                  <select
+                                    className="text-xs rounded border px-2 py-1 shrink-0 ml-auto"
+                                    style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
+                                    value={b.tatameId || ""}
+                                    onChange={(e) => atribuirTatame(b.id, e.target.value || null)}
+                                  >
+                                    <option value="">Sem tatame</option>
+                                    {tatames.map((t) => (
+                                      <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <BracketView bracket={b} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
+                              </div>
+                            )
+                          })}
+                          {grandFinal && (() => {
+                            const sc = statusColors[grandFinal.status] || statusColors.PENDENTE
+                            return (
+                              <div>
+                                <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #111", backgroundColor: "#0d0a00" }}>
+                                  <span className="text-xs font-bold text-[#fbbf24]">🏆 Grande Final #{grandFinal.bracketNumber}</span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{grandFinal.status}</span>
+                                  <span className="text-xs text-[#6b7280] shrink-0">{grandFinal.positions.length} atleta(s)</span>
+                                  <select
+                                    className="text-xs rounded border px-2 py-1 shrink-0 ml-auto"
+                                    style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
+                                    value={grandFinal.tatameId || ""}
+                                    onChange={(e) => atribuirTatame(grandFinal.id, e.target.value || null)}
+                                  >
+                                    <option value="">Sem tatame</option>
+                                    {tatames.map((t) => (
+                                      <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <BracketView bracket={grandFinal} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      </div>
+                    )
+                  } else if (!bracket.bracketGroupId) {
+                    const catLabel = getBracketLabel(bracket)
+                    const sc = statusColors[bracket.status] || statusColors.PENDENTE
+                    rendered.push(
+                      <div key={bracket.id} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "#111111", borderColor: "#222222" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #1a1a1a" }}>
+                          <span className="text-xs font-bold text-[#6b7280]">#{bracket.bracketNumber}</span>
+                          <span className="text-sm font-medium text-white flex-1 min-w-0 truncate">{catLabel}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
+                            {bracket.status}
+                          </span>
+                          <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
+                          <select
+                            className="text-xs rounded border px-2 py-1 shrink-0"
+                            style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
+                            value={bracket.tatameId || ""}
+                            onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
+                          >
+                            <option value="">Sem tatame</option>
+                            {tatames.map((t) => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <BracketView bracket={bracket} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
+                      </div>
+                    )
+                  }
+                  // isGrandFinal sozinha (sem sub-chaves visíveis) — já tratada no grupo
+                }
+                return rendered
+              })()}
             </div>
           )}
         </div>

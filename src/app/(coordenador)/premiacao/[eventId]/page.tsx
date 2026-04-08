@@ -348,29 +348,62 @@ export default function PremiacaoPage() {
               </div>
             ) : (
               <div className="flex flex-col">
-                {pendentes.map((b) => {
-                  const isSelected = b.id === selectedId
-                  const placements = computePlacements(b, brackets)
-                  const awardedCount = placements.filter((pl) => pl.registration?.awarded).length
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => setSelectedId(b.id)}
-                      className="w-full text-left px-3 py-3 border-b transition-colors"
-                      style={{
-                        borderColor: "#1a1a1a",
-                        backgroundColor: isSelected ? "#1a0a00" : "transparent",
-                        borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
-                      }}
-                    >
-                      <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                      <p className="text-sm font-medium text-white leading-tight mt-0.5 truncate pr-2">{catLabel(b)}</p>
-                      {placements.length > 0 && (
-                        <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
-                      )}
-                    </button>
-                  )
-                })}
+                {(() => {
+                  const rendered: React.ReactNode[] = []
+                  const seenGroups = new Set<string>()
+                  for (const b of pendentes) {
+                    if (b.bracketGroupId) {
+                      if (seenGroups.has(b.bracketGroupId)) continue
+                      seenGroups.add(b.bracketGroupId)
+                      const groupBrackets = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
+                      const allPlacements = groupBrackets.flatMap(x => computePlacements(x, brackets))
+                      const awardedCount = allPlacements.filter(pl => pl.registration?.awarded).length
+                      const isSelected = groupBrackets.some(x => x.id === selectedId)
+                      const label = catLabel(b).replace(" (Sub-chave)", "").replace("🏆 Grande Final — ", "")
+                      rendered.push(
+                        <button
+                          key={b.bracketGroupId}
+                          onClick={() => setSelectedId(groupBrackets[0].id)}
+                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          style={{
+                            borderColor: "#1a1a1a",
+                            backgroundColor: isSelected ? "#1a0a00" : "transparent",
+                            borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                          }}
+                        >
+                          <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
+                          <p className="text-sm font-medium text-white leading-tight mt-0.5 truncate pr-2">{label}</p>
+                          {allPlacements.length > 0 && (
+                            <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{allPlacements.length} premiado(s)</p>
+                          )}
+                        </button>
+                      )
+                    } else {
+                      const isSelected = b.id === selectedId
+                      const placements = computePlacements(b, brackets)
+                      const awardedCount = placements.filter((pl) => pl.registration?.awarded).length
+                      rendered.push(
+                        <button
+                          key={b.id}
+                          onClick={() => setSelectedId(b.id)}
+                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          style={{
+                            borderColor: "#1a1a1a",
+                            backgroundColor: isSelected ? "#1a0a00" : "transparent",
+                            borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                          }}
+                        >
+                          <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
+                          <p className="text-sm font-medium text-white leading-tight mt-0.5 truncate pr-2">{catLabel(b)}</p>
+                          {placements.length > 0 && (
+                            <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
+                          )}
+                        </button>
+                      )
+                    }
+                  }
+                  return rendered
+                })()}
               </div>
             )}
           </div>
@@ -415,7 +448,10 @@ export default function PremiacaoPage() {
 
                   {/* Colocações */}
                   {(() => {
-                    const placements = computePlacements(selectedBracket, brackets)
+                    const bracketsForPlacements = selectedBracket.bracketGroupId
+                      ? brackets.filter(b => b.bracketGroupId === selectedBracket.bracketGroupId)
+                      : [selectedBracket]
+                    const placements = bracketsForPlacements.flatMap(b => computePlacements(b, brackets).map(pl => ({ ...pl, sourceBracket: b })))
                     if (placements.length === 0) {
                       return <p className="text-[#6b7280] text-sm text-center py-8">Sem dados de colocação.</p>
                     }
@@ -446,7 +482,7 @@ export default function PremiacaoPage() {
                                 </div>
                               ) : (
                                 <button
-                                  onClick={() => handlePremiar(selectedBracket, pl)}
+                                  onClick={() => handlePremiar(pl.sourceBracket, pl)}
                                   disabled={isAwardingNow || !pl.registration}
                                   className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
                                   style={{ backgroundColor: "#dc2626", color: "#fff" }}
@@ -463,34 +499,52 @@ export default function PremiacaoPage() {
                 </div>
 
                 {/* Chave visual — área direita com scroll */}
-                <div className="flex-1 overflow-auto p-5">
-                  <BracketView
-                    bracket={{
-                      id: selectedBracket.id,
-                      bracketNumber: selectedBracket.bracketNumber,
-                      isAbsolute: selectedBracket.isAbsolute,
-                      weightCategory: {
-                        id: selectedBracket.id,
-                        name: selectedBracket.weightCategory.name,
-                        ageGroup: selectedBracket.weightCategory.ageGroup,
-                        sex: selectedBracket.weightCategory.sex,
-                        maxWeight: selectedBracket.weightCategory.maxWeight,
-                      },
-                      positions: selectedBracket.positions.map((p) => ({
-                        id: p.id,
-                        position: p.position,
-                        registration: p.registration
-                          ? {
-                              id: p.registration.id,
-                              guestName: p.registration.guestName,
-                              athlete: p.registration.athlete,
-                              team: p.registration.team,
-                            }
-                          : null,
-                      })),
-                      matches: selectedBracket.matches,
-                    }}
-                  />
+                <div className="flex-1 overflow-auto p-5 space-y-6">
+                  {(() => {
+                    const bracketsToShow = selectedBracket.bracketGroupId
+                      ? brackets.filter(b => b.bracketGroupId === selectedBracket.bracketGroupId)
+                          .sort((a, b) => {
+                            if (a.isGrandFinal !== b.isGrandFinal) return a.isGrandFinal ? 1 : -1
+                            return a.bracketNumber - b.bracketNumber
+                          })
+                      : [selectedBracket]
+                    return bracketsToShow.map(b => (
+                      <div key={b.id}>
+                        {bracketsToShow.length > 1 && (
+                          <p className="text-xs font-semibold mb-2" style={{ color: b.isGrandFinal ? "#fbbf24" : "#6b7280" }}>
+                            {b.isGrandFinal ? "🏆 Grande Final" : `Sub-chave #${b.bracketNumber}`}
+                          </p>
+                        )}
+                        <BracketView
+                          bracket={{
+                            id: b.id,
+                            bracketNumber: b.bracketNumber,
+                            isAbsolute: b.isAbsolute,
+                            weightCategory: {
+                              id: b.id,
+                              name: b.weightCategory.name,
+                              ageGroup: b.weightCategory.ageGroup,
+                              sex: b.weightCategory.sex,
+                              maxWeight: b.weightCategory.maxWeight,
+                            },
+                            positions: b.positions.map((p) => ({
+                              id: p.id,
+                              position: p.position,
+                              registration: p.registration
+                                ? {
+                                    id: p.registration.id,
+                                    guestName: p.registration.guestName,
+                                    athlete: p.registration.athlete,
+                                    team: p.registration.team,
+                                  }
+                                : null,
+                            })),
+                            matches: b.matches,
+                          }}
+                        />
+                      </div>
+                    ))
+                  })()}
                 </div>
 
               </div>

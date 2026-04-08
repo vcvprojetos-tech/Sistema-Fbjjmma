@@ -284,33 +284,67 @@ export default function TatamePage() {
                 {section && (
                   <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[#4b5563]">{section}</p>
                 )}
-                {brackets.map(b => {
-                  const isSelected = b.id === selectedId
-                  const isActive = b.status === "EM_ANDAMENTO"
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => setSelectedId(b.id)}
-                      className="w-full text-left px-3 py-3 border-b transition-colors"
-                      style={{
-                        borderColor: "#1a1a1a",
-                        backgroundColor: isSelected ? (isActive ? "#1a0d00" : "#0d0d1a") : "transparent",
-                        borderLeft: isSelected
-                          ? `3px solid ${isActive ? "#fbbf24" : color}`
-                          : "3px solid transparent",
-                      }}
-                    >
-                      <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                      <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
-                        style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb" }}>
-                        {catLabel(b)}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
-                        {b.positions.length} atleta(s) · {b.matches.filter(m => m.winnerId).length}/{b.matches.length} partidas
-                      </p>
-                    </button>
-                  )
-                })}
+                {(() => {
+                  const rendered: React.ReactNode[] = []
+                  const seenGroups = new Set<string>()
+                  for (const b of brackets) {
+                    if (b.bracketGroupId && !b.isGrandFinal) {
+                      if (seenGroups.has(b.bracketGroupId)) continue
+                      seenGroups.add(b.bracketGroupId)
+                      const group = brackets.filter(x => x.bracketGroupId === b.bracketGroupId && !x.isGrandFinal)
+                      const grandFinal = brackets.find(x => x.bracketGroupId === b.bracketGroupId && x.isGrandFinal)
+                      const allInGroup = grandFinal ? [...group, grandFinal] : group
+                      const groupIsSelected = allInGroup.some(x => x.id === selectedId)
+                      const groupIsActive = group.some(x => x.status === "EM_ANDAMENTO")
+                      rendered.push(
+                        <button
+                          key={b.bracketGroupId}
+                          onClick={() => setSelectedId(group[0].id)}
+                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          style={{
+                            borderColor: "#1a1a1a",
+                            backgroundColor: groupIsSelected ? (groupIsActive ? "#1a0d00" : "#0d0d1a") : "transparent",
+                            borderLeft: groupIsSelected ? `3px solid ${groupIsActive ? "#fbbf24" : color}` : "3px solid transparent",
+                          }}
+                        >
+                          <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {group.length} sub-chaves</p>
+                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
+                            style={{ color: groupIsActive ? "#fbbf24" : "#e5e7eb" }}>
+                            {catLabel(b).replace(" (Sub-chave)", "")}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
+                            {group.reduce((s, x) => s + x.positions.length, 0)} atleta(s) no total
+                          </p>
+                        </button>
+                      )
+                    } else if (!b.bracketGroupId) {
+                      const isSelected = b.id === selectedId
+                      const isActive = b.status === "EM_ANDAMENTO"
+                      rendered.push(
+                        <button
+                          key={b.id}
+                          onClick={() => setSelectedId(b.id)}
+                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          style={{
+                            borderColor: "#1a1a1a",
+                            backgroundColor: isSelected ? (isActive ? "#1a0d00" : "#0d0d1a") : "transparent",
+                            borderLeft: isSelected ? `3px solid ${isActive ? "#fbbf24" : color}` : "3px solid transparent",
+                          }}
+                        >
+                          <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
+                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
+                            style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb" }}>
+                            {catLabel(b)}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
+                            {b.positions.length} atleta(s) · {b.matches.filter(m => m.winnerId).length}/{b.matches.length} partidas
+                          </p>
+                        </button>
+                      )
+                    }
+                  }
+                  return rendered
+                })()}
               </div>
             ))}
           </div>
@@ -594,34 +628,52 @@ export default function TatamePage() {
                 </div>
 
                 {/* Visualização da chave */}
-                <div className="flex-1 overflow-auto p-5">
-                  <BracketView
-                    bracket={{
-                      id: bracket.id,
-                      bracketNumber: bracket.bracketNumber,
-                      isAbsolute: bracket.isAbsolute,
-                      weightCategory: {
-                        id: bracket.weightCategory.id ?? bracket.id,
-                        name: bracket.weightCategory.name,
-                        ageGroup: bracket.weightCategory.ageGroup,
-                        sex: bracket.weightCategory.sex,
-                        maxWeight: bracket.weightCategory.maxWeight,
-                      },
-                      positions: bracket.positions.map(p => ({
-                        id: p.id,
-                        position: p.position,
-                        registration: p.registration
-                          ? {
-                              id: p.registration.id,
-                              guestName: p.registration.guestName,
-                              athlete: p.registration.athlete,
-                              team: p.registration.team,
-                            }
-                          : null,
-                      })),
-                      matches: bracket.matches,
-                    }}
-                  />
+                <div className="flex-1 overflow-auto p-5 space-y-6">
+                  {(() => {
+                    const bracketsToShow = bracket.bracketGroupId && !bracket.isGrandFinal
+                      ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId)
+                          .sort((a, b) => {
+                            if (a.isGrandFinal !== b.isGrandFinal) return a.isGrandFinal ? 1 : -1
+                            return a.bracketNumber - b.bracketNumber
+                          })
+                      : [bracket]
+                    return bracketsToShow.map(b => (
+                      <div key={b.id}>
+                        {bracketsToShow.length > 1 && (
+                          <p className="text-xs font-semibold mb-2" style={{ color: b.isGrandFinal ? "#fbbf24" : "#6b7280" }}>
+                            {b.isGrandFinal ? "🏆 Grande Final" : `Sub-chave #${b.bracketNumber}`}
+                          </p>
+                        )}
+                        <BracketView
+                          bracket={{
+                            id: b.id,
+                            bracketNumber: b.bracketNumber,
+                            isAbsolute: b.isAbsolute,
+                            weightCategory: {
+                              id: b.weightCategory.id ?? b.id,
+                              name: b.weightCategory.name,
+                              ageGroup: b.weightCategory.ageGroup,
+                              sex: b.weightCategory.sex,
+                              maxWeight: b.weightCategory.maxWeight,
+                            },
+                            positions: b.positions.map(p => ({
+                              id: p.id,
+                              position: p.position,
+                              registration: p.registration
+                                ? {
+                                    id: p.registration.id,
+                                    guestName: p.registration.guestName,
+                                    athlete: p.registration.athlete,
+                                    team: p.registration.team,
+                                  }
+                                : null,
+                            })),
+                            matches: b.matches,
+                          }}
+                        />
+                      </div>
+                    ))
+                  })()}
                 </div>
 
               </div>
