@@ -124,7 +124,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
     where: { id: bracketId },
     select: {
       id: true, eventId: true, weightCategoryId: true, belt: true,
-      isAbsolute: true, bracketGroupId: true, isGrandFinal: true, status: true,
+      isAbsolute: true, bracketGroupId: true, isGrandFinal: true, status: true, tatameId: true,
       positions: { select: { id: true, registrationId: true } },
       matches: { select: { round: true, matchNumber: true, position1Id: true, position2Id: true, winnerId: true } },
     },
@@ -140,7 +140,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
       isGrandFinal: false,
     },
     select: {
-      id: true, status: true,
+      id: true, status: true, tatameId: true,
       positions: { select: { id: true, registrationId: true } },
       matches: { select: { round: true, matchNumber: true, position1Id: true, position2Id: true, winnerId: true } },
     },
@@ -163,6 +163,9 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
   const champBPos = partner.positions.find((p: { id: string; registrationId: string | null }) => p.id === finalB.winnerId)
   if (!champAPos?.registrationId || !champBPos?.registrationId) return
 
+  // Herda o tatameId da sub-chave para que apareça no coordenador de tatame
+  const tatameId = bracket.tatameId ?? partner.tatameId ?? null
+
   // Obtém o próximo bracketNumber do evento
   const agg = await prisma.bracket.aggregate({
     where: { eventId: bracket.eventId },
@@ -170,7 +173,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
   })
   const nextNumber = (agg._max.bracketNumber ?? 0) + 1
 
-  // Cria a grande final como bracket EM_ANDAMENTO com 2 posições e 1 partida
+  // Cria a grande final como PENDENTE — coordenador inicia manualmente
   const grandFinal = await prismaAny.bracket.create({
     data: {
       eventId: bracket.eventId,
@@ -180,7 +183,8 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
       bracketNumber: nextNumber,
       bracketGroupId: bracket.bracketGroupId,
       isGrandFinal: true,
-      status: "EM_ANDAMENTO",
+      status: "PENDENTE",
+      ...(tatameId ? { tatameId } : {}),
     },
   })
 
@@ -191,6 +195,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
     data: { bracketId: grandFinal.id, position: 2, registrationId: champBPos.registrationId },
   })
 
+  // Cria a partida da grande final (ainda sem resultado)
   await prisma.match.create({
     data: {
       bracketId: grandFinal.id,

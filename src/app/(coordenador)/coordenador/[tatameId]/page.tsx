@@ -209,9 +209,30 @@ export default function TatamePage() {
     )
   }
 
-  const emAndamento = sortBrackets(tatame.brackets.filter(b => b.status === "EM_ANDAMENTO"))
-  const pendentes = sortBrackets(tatame.brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA"))
-  const finalizadas = sortBrackets(tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA"))
+  // Grupos: só vão para "Finalizadas" quando a Grande Final do grupo está FINALIZADA/PREMIADA
+  const groupDone = new Set<string>()
+  for (const b of tatame.brackets) {
+    if (b.bracketGroupId && b.isGrandFinal && (b.status === "FINALIZADA" || b.status === "PREMIADA"))
+      groupDone.add(b.bracketGroupId)
+  }
+  const groupEmAndamento = new Set<string>()
+  for (const b of tatame.brackets) {
+    if (b.bracketGroupId && !groupDone.has(b.bracketGroupId) && b.status === "EM_ANDAMENTO")
+      groupEmAndamento.add(b.bracketGroupId)
+  }
+
+  const emAndamento = sortBrackets(tatame.brackets.filter(b => {
+    if (!b.bracketGroupId) return b.status === "EM_ANDAMENTO"
+    return !groupDone.has(b.bracketGroupId) && groupEmAndamento.has(b.bracketGroupId)
+  }))
+  const pendentes = sortBrackets(tatame.brackets.filter(b => {
+    if (!b.bracketGroupId) return b.status === "PENDENTE" || b.status === "DESIGNADA"
+    return !groupDone.has(b.bracketGroupId) && !groupEmAndamento.has(b.bracketGroupId)
+  }))
+  const finalizadas = sortBrackets(tatame.brackets.filter(b => {
+    if (!b.bracketGroupId) return b.status === "FINALIZADA" || b.status === "PREMIADA"
+    return groupDone.has(b.bracketGroupId)
+  }))
   const selectedBracket = tatame.brackets.find(b => b.id === selectedId) ?? null
   const operador = tatame.operations[0]
 
