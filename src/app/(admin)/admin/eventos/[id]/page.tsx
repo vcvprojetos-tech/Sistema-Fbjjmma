@@ -1863,45 +1863,94 @@ export default function EventoDetailPage() {
                 PREMIADA:     { bg: "#4a1d9640", text: "#a78bfa" },
               }
 
-              const renderRow = (bracket: typeof tatamesFilteredBrackets[0], idx: number, list: typeof tatamesFilteredBrackets) => {
-                const catLabel = [
-                  bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
-                  AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
-                  BELT_LABELS[bracket.belt] || bracket.belt,
-                  bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
-                  bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
-                  `Chave: ${bracket.bracketNumber}`,
-                ].filter(Boolean).join(" | ")
-                const sc = statusColors[bracket.status] || statusColors.PENDENTE
-                return (
-                  <div
-                    key={bracket.id}
-                    className="flex items-center gap-3 px-4 py-3 flex-wrap"
-                    style={{ borderBottom: idx < list.length - 1 ? "1px solid #1a1a1a" : "none", backgroundColor: "#111" }}
-                  >
-                    <button
-                      className="text-sm font-medium text-white flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors cursor-pointer"
-                      onClick={() => setSelectedBracketId(bracket.id)}
-                    >
-                      {catLabel}
-                    </button>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
-                      {bracket.status}
-                    </span>
-                    <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
-                    <select
-                      className="text-xs rounded border px-2 py-1 shrink-0"
-                      style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
-                      value={bracket.tatameId || ""}
-                      onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
-                    >
-                      <option value="">Sem tatame</option>
-                      {tatames.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )
+              const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [
+                bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
+                AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
+                BELT_LABELS[bracket.belt] || bracket.belt,
+                bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
+                bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
+              ].filter(Boolean).join(" | ")
+
+              const renderGroupedList = (list: typeof tatamesFilteredBrackets) => {
+                const rows: React.ReactNode[] = []
+                const seenGroups = new Set<string>()
+                list.forEach((bracket, idx) => {
+                  if (bracket.bracketGroupId && !bracket.isGrandFinal) {
+                    if (seenGroups.has(bracket.bracketGroupId)) return
+                    seenGroups.add(bracket.bracketGroupId)
+                    const group = list.filter(b => b.bracketGroupId === bracket.bracketGroupId && !b.isGrandFinal)
+                    const grandFinal = list.find(b => b.bracketGroupId === bracket.bracketGroupId && b.isGrandFinal)
+                    const allInGroup = grandFinal ? [...group, grandFinal] : group
+                    rows.push(
+                      <div key={bracket.bracketGroupId} style={{ borderBottom: idx < list.length - 1 ? "1px solid #1a1a1a" : "none", backgroundColor: "#111" }}>
+                        <div className="px-4 py-2 flex items-center gap-2" style={{ borderBottom: "1px solid #111", backgroundColor: "#0d0a00" }}>
+                          <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
+                          <span className="text-sm font-medium text-white flex-1 truncate">{getBracketLabel(bracket)}</span>
+                          <span className="text-xs text-[#6b7280]">{group.reduce((s, b) => s + b.positions.length, 0)} atleta(s)</span>
+                        </div>
+                        {allInGroup.map((b) => {
+                          const sc = statusColors[b.status] || statusColors.PENDENTE
+                          return (
+                            <div key={b.id} className="flex items-center gap-3 px-4 py-2 flex-wrap" style={{ borderBottom: "1px solid #111111" }}>
+                              <button
+                                className="text-xs font-medium text-[#9ca3af] flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors cursor-pointer"
+                                onClick={() => setSelectedBracketId(b.id)}
+                              >
+                                {b.isGrandFinal ? `🏆 Grande Final #${b.bracketNumber}` : `Sub-chave #${b.bracketNumber}`}
+                              </button>
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{b.status}</span>
+                              <span className="text-xs text-[#6b7280] shrink-0">{b.positions.length} atleta(s)</span>
+                              <select
+                                className="text-xs rounded border px-2 py-1 shrink-0"
+                                style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
+                                value={b.tatameId || ""}
+                                onChange={(e) => atribuirTatame(b.id, e.target.value || null)}
+                              >
+                                <option value="">Sem tatame</option>
+                                {tatames.map((t) => (
+                                  <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  } else if (!bracket.bracketGroupId) {
+                    const catLabel = `${getBracketLabel(bracket)} | Chave: ${bracket.bracketNumber}`
+                    const sc = statusColors[bracket.status] || statusColors.PENDENTE
+                    rows.push(
+                      <div
+                        key={bracket.id}
+                        className="flex items-center gap-3 px-4 py-3 flex-wrap"
+                        style={{ borderBottom: idx < list.length - 1 ? "1px solid #1a1a1a" : "none", backgroundColor: "#111" }}
+                      >
+                        <button
+                          className="text-sm font-medium text-white flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors cursor-pointer"
+                          onClick={() => setSelectedBracketId(bracket.id)}
+                        >
+                          {catLabel}
+                        </button>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
+                          {bracket.status}
+                        </span>
+                        <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
+                        <select
+                          className="text-xs rounded border px-2 py-1 shrink-0"
+                          style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
+                          value={bracket.tatameId || ""}
+                          onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
+                        >
+                          <option value="">Sem tatame</option>
+                          {tatames.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )
+                  }
+                })
+                return rows
               }
 
               return (
@@ -1913,7 +1962,7 @@ export default function EventoDetailPage() {
                         <span className="text-xs text-[#6b7280]">({pendentes.length})</span>
                       </div>
                       <div className="rounded-lg border overflow-hidden" style={{ borderColor: "#222" }}>
-                        {pendentes.map((b, i) => renderRow(b, i, pendentes))}
+                        {renderGroupedList(pendentes)}
                       </div>
                     </div>
                   )}
@@ -1924,7 +1973,7 @@ export default function EventoDetailPage() {
                         <span className="text-xs text-[#6b7280]">({finalizadas.length})</span>
                       </div>
                       <div className="rounded-lg border overflow-hidden" style={{ borderColor: "#222" }}>
-                        {finalizadas.map((b, i) => renderRow(b, i, finalizadas))}
+                        {renderGroupedList(finalizadas)}
                       </div>
                     </div>
                   )}
