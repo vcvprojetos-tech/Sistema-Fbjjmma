@@ -127,24 +127,26 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
 
   // 3° lugar
   if (bracket.isGrandFinal && allBrackets && bracket.bracketGroupId) {
-    // Grande final: 3° = perdedor da semi do campeão em cada sub-chave
-    const subBrackets = allBrackets.filter(
-      (b) => b.bracketGroupId === bracket.bracketGroupId && !b.isGrandFinal
-    )
-    for (const sub of subBrackets) {
-      const subReal = getRealMatches(sub.matches)
-      const subMaxRound = subReal.length > 0 ? Math.max(...subReal.map((m) => m.round)) : 0
-      const subFinal = subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1)
-      if (!subFinal?.winnerId) continue
-      const champSemi = subReal.find(
-        (m) => m.round === subMaxRound - 1 && m.winnerId === subFinal.winnerId
+    // Grande final: 3° = perdedor da final da sub-chave do campeão geral (apenas 1 terceiro lugar)
+    const champRegId = firstPos?.registration?.id
+    if (champRegId) {
+      const subBrackets = allBrackets.filter(
+        (b) => b.bracketGroupId === bracket.bracketGroupId && !b.isGrandFinal
       )
-      if (!champSemi) continue
-      const loserId =
-        champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
-      const loserPos = sub.positions.find((p) => p.id === loserId)
-      if (loserPos?.registration)
-        placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+      for (const sub of subBrackets) {
+        const subReal = getRealMatches(sub.matches)
+        const subMaxRound = subReal.length > 0 ? Math.max(...subReal.map((m) => m.round)) : 0
+        const subFinal = subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1)
+        if (!subFinal?.winnerId) continue
+        const subChamp = sub.positions.find((p) => p.id === subFinal.winnerId)
+        if (subChamp?.registration?.id !== champRegId) continue
+        // Esta é a sub-chave do campeão — 3° é o perdedor da final dela
+        const loserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
+        const loserPos = sub.positions.find((p) => p.id === loserId)
+        if (loserPos?.registration)
+          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+        break // apenas 1 terceiro lugar
+      }
     }
   } else if (maxRound > 1) {
     if (positions.length === 3) {

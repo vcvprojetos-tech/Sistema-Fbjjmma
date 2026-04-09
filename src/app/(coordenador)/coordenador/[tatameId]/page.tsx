@@ -256,31 +256,56 @@ export default function TatamePage() {
   // Para exibir progresso: total de partidas no grupo
   const allGroupMatches = groupBrackets.flatMap(b => b.matches)
   const maxRound = allGroupMatches.length > 0 ? Math.max(...allGroupMatches.map(m => m.round)) : 0
-  const realMatches = bracket?.matches.filter(m => m.position1Id !== null && m.position2Id !== null) ?? []
-  const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
-  const lastMatch = realMatches.length > 0
-    ? [...realMatches].sort((a, b) => b.round - a.round || b.matchNumber - a.matchNumber)[0] ?? null
+
+  // Pódio: sempre calculado a partir da Grande Final (se grupo) ou do bracket simples
+  const podiumBracket = isGroup
+    ? (groupBrackets.find(b => b.isGrandFinal) ?? null)
+    : bracket
+  const podiumRealMatches = podiumBracket?.matches.filter(m => m.position1Id !== null && m.position2Id !== null) ?? []
+  const podiumLastMatch = podiumRealMatches.length > 0
+    ? [...podiumRealMatches].sort((a, b) => b.round - a.round || b.matchNumber - a.matchNumber)[0] ?? null
     : null
-  const champion = (bracket?.status === "FINALIZADA" || bracket?.status === "PREMIADA") && lastMatch?.winnerId
-    ? bracket.positions.find(p => p.id === lastMatch.winnerId) ?? null
+  const champion = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch?.winnerId
+    ? podiumBracket.positions.find(p => p.id === podiumLastMatch.winnerId) ?? null
     : null
-  const runnerUp = (bracket?.status === "FINALIZADA" || bracket?.status === "PREMIADA") && lastMatch
-    ? bracket.positions.find(p =>
-        p.id === (lastMatch.winnerId === lastMatch.position1Id ? lastMatch.position2Id : lastMatch.position1Id)
+  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch
+    ? podiumBracket.positions.find(p =>
+        p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
     : null
+  // 3° lugar: perdedor da final da sub-chave do campeão geral
   const thirdPlace: BracketPositionData | null = (() => {
-    if (!bracket || (bracket.status !== "FINALIZADA" && bracket.status !== "PREMIADA") || !lastMatch?.winnerId) return null
-    if (bracket.positions.length === 3) {
-      const firstId = lastMatch.winnerId
-      const secondId = lastMatch.winnerId === lastMatch.position1Id ? lastMatch.position2Id : lastMatch.position1Id
-      return bracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+    if (!podiumBracket || (podiumBracket.status !== "FINALIZADA" && podiumBracket.status !== "PREMIADA") || !podiumLastMatch?.winnerId) return null
+    if (!isGroup) {
+      // Chave simples: 3° = perdedor da semi do campeão
+      const podiumMaxRound = podiumRealMatches.length > 0 ? Math.max(...podiumRealMatches.map(m => m.round)) : 0
+      if (podiumBracket.positions.length === 3) {
+        const firstId = podiumLastMatch.winnerId
+        const secondId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
+        return podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+      }
+      if (podiumMaxRound < 2) return null
+      const semi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
+      if (!semi) return null
+      const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
+      return loserId ? podiumBracket.positions.find(p => p.id === loserId) ?? null : null
     }
-    if (!champion || maxRealRound < 2) return null
-    const semi = realMatches.find(m => m.round === maxRealRound - 1 && m.winnerId === champion.id)
-    if (!semi) return null
-    const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
-    return loserId ? bracket.positions.find(p => p.id === loserId) ?? null : null
+    // Grupo: 3° = perdedor da final da sub-chave do campeão geral
+    const champRegId = champion?.registration?.id
+    if (!champRegId) return null
+    const subBrackets = groupBrackets.filter(b => !b.isGrandFinal)
+    for (const sub of subBrackets) {
+      const subReal = sub.matches.filter(m => m.position1Id && m.position2Id)
+      const subMax = subReal.length > 0 ? Math.max(...subReal.map(m => m.round)) : 0
+      const subFinal = subReal.find(m => m.round === subMax && m.matchNumber === 1)
+      if (!subFinal?.winnerId) continue
+      const subChamp = sub.positions.find(p => p.id === subFinal.winnerId)
+      if (subChamp?.registration?.id !== champRegId) continue
+      // Esta é a sub-chave do campeão — o 3° é o perdedor da final desta sub-chave
+      const loserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
+      return loserId ? sub.positions.find(p => p.id === loserId) ?? null : null
+    }
+    return null
   })()
 
   function SideColumn({
@@ -625,8 +650,12 @@ export default function TatamePage() {
                     </div>
                   )}
 
-                  {/* FINALIZADA / PREMIADA — pódio */}
-                  {groupBrackets.some(b => b.status === "FINALIZADA" || b.status === "PREMIADA") && (
+                  {/* FINALIZADA / PREMIADA — pódio (só quando a GF finalizou, ou chave simples finalizada) */}
+                  {(isGroup
+                    ? groupBrackets.some(b => b.isGrandFinal && (b.status === "FINALIZADA" || b.status === "PREMIADA"))
+                      || (groupBrackets.every(b => !b.isGrandFinal) && groupBrackets.some(b => b.status === "FINALIZADA" || b.status === "PREMIADA"))
+                    : bracket?.status === "FINALIZADA" || bracket?.status === "PREMIADA"
+                  ) && (
                     <div className="space-y-3 py-4">
                       {(() => {
                         const grandFinal = groupBrackets.find(b => b.isGrandFinal)
