@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { Plus, Pencil, Trash2, UserCheck, UserX } from "lucide-react"
@@ -29,8 +29,8 @@ const ROLE_STYLES: Record<string, { bg: string; text: string; border: string }> 
   PRESIDENTE: { bg: "#92400e30", text: "#fbbf24", border: "#92400e60" },
   COORDENADOR_GERAL: { bg: "#1e3a5f30", text: "#60a5fa", border: "#1e3a5f60" },
   COORDENADOR_TATAME: { bg: "#4c1d9530", text: "#c084fc", border: "#4c1d9560" },
-  ATLETA: { bg: "#1a1a1a", text: "#9ca3af", border: "#333333" },
-  CUSTOM: { bg: "#1a1a1a", text: "#9ca3af", border: "#333333" },
+  ATLETA: { bg: "var(--card-alt)", text: "#9ca3af", border: "var(--border-alt)" },
+  CUSTOM: { bg: "var(--card-alt)", text: "#9ca3af", border: "var(--border-alt)" },
 }
 
 function maskCPF(cpf: string): string {
@@ -96,12 +96,12 @@ export default function UsuariosPage() {
 
       <div
         className="rounded-lg border overflow-hidden"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid #222222" }}>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-10">
                   #
                 </th>
@@ -144,8 +144,8 @@ export default function UsuariosPage() {
                   return (
                     <tr
                       key={user.id}
-                      style={{ borderBottom: "1px solid #1a1a1a" }}
-                      className="hover:bg-[#1a1a1a] transition-colors"
+                      style={{ borderBottom: "1px solid var(--card-alt)" }}
+                      className="hover:bg-[var(--card-alt)] transition-colors"
                     >
                       <td className="px-4 py-3 text-[#6b7280]">{index + 1}</td>
                       <td className="px-4 py-3">

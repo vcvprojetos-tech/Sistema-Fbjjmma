@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -174,11 +174,11 @@ export default function CadastroPage() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#0a0a0a" }}
+        style={{ backgroundColor: "var(--background)" }}
       >
         <div
           className="rounded-lg border p-8 text-center max-w-md w-full"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <div className="text-5xl mb-4">✓</div>
           <h2 className="text-xl font-bold text-white mb-2">Cadastro realizado!</h2>
@@ -191,7 +191,7 @@ export default function CadastroPage() {
   return (
     <div
       className="min-h-screen py-8"
-      style={{ backgroundColor: "#0a0a0a" }}
+      style={{ backgroundColor: "var(--background)" }}
     >
       <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
@@ -214,7 +214,7 @@ export default function CadastroPage() {
 
         <div
           className="rounded-lg border p-8"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Dados Pessoais */}

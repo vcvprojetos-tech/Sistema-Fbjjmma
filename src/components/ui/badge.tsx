@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -12,11 +12,11 @@ const badgeVariants = cva(
         default:
           "bg-[#dc2626] text-white",
         secondary:
-          "bg-[#1a1a1a] text-white border border-[#333333]",
+          "bg-[var(--card-alt)] text-[var(--foreground)] border border-[var(--border-alt)]",
         destructive:
           "bg-[#dc2626]/20 text-[#dc2626] border border-[#dc2626]/30",
         outline:
-          "border border-[#333333] text-white",
+          "border border-[var(--border-alt)] text-[var(--foreground)]",
         success:
           "bg-green-900/30 text-green-400 border border-green-800",
         warning:

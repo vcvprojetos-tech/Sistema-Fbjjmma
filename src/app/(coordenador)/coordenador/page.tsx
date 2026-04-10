@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -64,8 +64,8 @@ export default function CoordenadorEntradaPage() {
               onChange={(e) => handlePinInput(e.target.value)}
               className="w-full text-center text-4xl font-mono tracking-[1rem] h-20 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#dc2626]"
               style={{
-                backgroundColor: "#111",
-                borderColor: error ? "#dc2626" : "#333",
+                backgroundColor: "var(--card)",
+                borderColor: error ? "#dc2626" : "var(--border-alt)",
                 color: "#fbbf24",
               }}
               maxLength={4}

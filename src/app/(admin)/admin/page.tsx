@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db"
+﻿import { prisma } from "@/lib/db"
 import { CalendarDays, Users, Trophy } from "lucide-react"
 
 async function getStats() {
@@ -67,7 +67,7 @@ export default async function DashboardPage() {
             <div
               key={card.label}
               className="rounded-lg border p-6 flex items-center gap-4"
-              style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
             >
               <div
                 className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -87,17 +87,17 @@ export default async function DashboardPage() {
       {/* Recent Events */}
       <div
         className="rounded-lg border"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div
           className="px-6 py-4 border-b"
-          style={{ borderColor: "#222222" }}
+          style={{ borderColor: "var(--border)" }}
         >
           <h2 className="text-base font-semibold text-white">
             Eventos Recentes
           </h2>
         </div>
-        <div className="divide-y" style={{ borderColor: "#222222" }}>
+        <div className="divide-y" style={{ borderColor: "var(--border)" }}>
           {recentEvents.length === 0 ? (
             <p className="px-6 py-8 text-center text-[#6b7280] text-sm">
               Nenhum evento cadastrado ainda.

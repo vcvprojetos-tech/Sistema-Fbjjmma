@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -114,7 +114,7 @@ export default function EditarUsuarioPage() {
       <form
         onSubmit={handleSubmit}
         className="rounded-lg border p-6 space-y-4"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="space-y-2">
           <Label htmlFor="name">Nome Completo *</Label>

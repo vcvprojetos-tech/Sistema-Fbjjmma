@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useParams } from "next/navigation"
 import { ArrowLeft, Search, Plus, Download, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -203,6 +203,99 @@ function toDateLocal(iso: string) {
   return new Date(iso).toISOString().slice(0, 10)
 }
 
+// ── FiltersBar ─────────────────────────────────────────────────────────────────
+// Componente separado com estado próprio para evitar re-render do componente pai
+// a cada mudança de filtro. O pai lê os valores via `filtersRef` apenas no Pesquisar.
+
+interface FilterValues {
+  nome: string; sexo: string; categoria: string; faixa: string; pesoId: string; equipeId: string
+}
+
+const FiltersBar = React.memo(function FiltersBar({
+  weightCategories, teams, filtersRef, resetKey,
+}: {
+  weightCategories: { name: string }[]
+  teams: { id: string; name: string }[]
+  filtersRef: React.MutableRefObject<FilterValues>
+  resetKey: number
+}) {
+  const [nome, setNome] = useState("")
+  const [sexo, setSexo] = useState("")
+  const [categoria, setCategoria] = useState("")
+  const [faixa, setFaixa] = useState("")
+  const [pesoId, setPesoId] = useState("")
+  const [equipeId, setEquipeId] = useState("")
+
+  // Reseta quando o pai muda de aba
+  useEffect(() => {
+    setNome(""); setSexo(""); setCategoria(""); setFaixa(""); setPesoId(""); setEquipeId("")
+    filtersRef.current = { nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey])
+
+  // Mantém a ref sincronizada para leitura síncrona pelo pai
+  const sync = (field: keyof FilterValues, value: string) => {
+    filtersRef.current = { ...filtersRef.current, [field]: value }
+  }
+
+  const uniqueWeights = Array.from(new Map(weightCategories.map((c) => [c.name, c])).values())
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+      <Input
+        placeholder="Nome"
+        value={nome}
+        onChange={(e) => { setNome(e.target.value); sync("nome", e.target.value) }}
+      />
+      <Select value={sexo} onValueChange={(v) => { setSexo(v); sync("sexo", v) }}>
+        <SelectTrigger><SelectValue placeholder="Sexo" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="MASCULINO">Masculino</SelectItem>
+          <SelectItem value="FEMININO">Feminino</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={categoria} onValueChange={(v) => { setCategoria(v); sync("categoria", v) }}>
+        <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas</SelectItem>
+          {Object.entries(AGE_GROUP_LABELS).map(([v, l]) => (
+            <SelectItem key={v} value={v}>{l}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={faixa} onValueChange={(v) => { setFaixa(v); sync("faixa", v) }}>
+        <SelectTrigger><SelectValue placeholder="Faixa" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas</SelectItem>
+          {Object.entries(BELT_LABELS).map(([v, l]) => (
+            <SelectItem key={v} value={v}>{l}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={pesoId} onValueChange={(v) => { setPesoId(v); sync("pesoId", v) }}>
+        <SelectTrigger><SelectValue placeholder="Peso" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="__absoluto__">Absoluto</SelectItem>
+          {uniqueWeights.map((c) => (
+            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={equipeId} onValueChange={(v) => { setEquipeId(v); sync("equipeId", v) }}>
+        <SelectTrigger><SelectValue placeholder="Equipe" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas</SelectItem>
+          {teams.map((t) => (
+            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+})
+
 export default function EventoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [tab, setTab] = useState<Tab>("evento")
@@ -226,13 +319,10 @@ export default function EventoDetailPage() {
   const [teams, setTeams] = useState<Team[]>([])
   const [weightCategories, setWeightCategories] = useState<WeightCategory[]>([])
 
-  // Filters shared across tabs
-  const [filterNome, setFilterNome] = useState("")
-  const [filterSexo, setFilterSexo] = useState("")
-  const [filterCategoria, setFilterCategoria] = useState("")
-  const [filterFaixa, setFilterFaixa] = useState("")
-  const [filterPesoId, setFilterPesoId] = useState("")
-  const [filterEquipeId, setFilterEquipeId] = useState("")
+  // Ref lida pelo pai apenas no clique de Pesquisar — sem estado no pai, sem re-render
+  const filtersRef = useRef<FilterValues>({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
+  // Incrementado ao trocar de aba para resetar os filtros no FiltersBar
+  const [filterResetKey, setFilterResetKey] = useState(0)
 
   // Committed filters for atletas (only update on "Pesquisar" click)
   const [atletasApplied, setAtletasApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
@@ -324,18 +414,20 @@ export default function EventoDetailPage() {
   }, [id])
 
   const buildAtletasParams = useCallback(() => {
+    const f = filtersRef.current
     const params = new URLSearchParams()
-    if (filterNome) params.set("nome", filterNome)
-    if (filterSexo && filterSexo !== "all") params.set("sexo", filterSexo)
-    if (filterCategoria && filterCategoria !== "all") params.set("categoria", filterCategoria)
-    if (filterFaixa && filterFaixa !== "all") params.set("faixa", filterFaixa)
-    if (filterPesoId && filterPesoId !== "all") {
-      if (filterPesoId === "__absoluto__") params.set("absoluto", "1")
-      else params.set("pesoNome", filterPesoId)
+    if (f.nome) params.set("nome", f.nome)
+    if (f.sexo && f.sexo !== "all") params.set("sexo", f.sexo)
+    if (f.categoria && f.categoria !== "all") params.set("categoria", f.categoria)
+    if (f.faixa && f.faixa !== "all") params.set("faixa", f.faixa)
+    if (f.pesoId && f.pesoId !== "all") {
+      if (f.pesoId === "__absoluto__") params.set("absoluto", "1")
+      else params.set("pesoNome", f.pesoId)
     }
-    if (filterEquipeId && filterEquipeId !== "all") params.set("equipeId", filterEquipeId)
+    if (f.equipeId && f.equipeId !== "all") params.set("equipeId", f.equipeId)
     return params
-  }, [filterNome, filterSexo, filterCategoria, filterFaixa, filterPesoId, filterEquipeId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Builds params from committed (applied) atletas filters only
   const buildAtletasAppliedParams = useCallback(() => {
@@ -508,8 +600,8 @@ export default function EventoDetailPage() {
     }
   }, [id, loadAllChaves])
 
-  const loadResultado = useCallback(async () => {
-    setResultadoLoading(true)
+  const loadResultado = useCallback(async (silent = false) => {
+    if (!silent) setResultadoLoading(true)
     try {
       const params = buildAtletasParams()
       const res = await fetch(`/api/admin/eventos/${id}/resultado?${params}`)
@@ -518,7 +610,7 @@ export default function EventoDetailPage() {
     } catch {
       console.error("Erro ao carregar resultado")
     } finally {
-      setResultadoLoading(false)
+      if (!silent) setResultadoLoading(false)
     }
   }, [id, buildAtletasParams])
 
@@ -540,9 +632,22 @@ export default function EventoDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
+  // Atualiza silenciosamente a aba de resultados a cada 10s enquanto está ativa,
+  // desde que o usuário não tenha edições pendentes (para não sobrescrever)
   useEffect(() => {
-    // Limpa todos os filtros compartilhados sempre que muda de aba
-    setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
+    if (tab !== "resultado") return
+    const interval = setInterval(() => {
+      if (Object.keys(resultadoEdits).length === 0) {
+        loadResultado(true)
+      }
+    }, 10000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, loadResultado])
+
+  useEffect(() => {
+    // Reseta filtros do FiltersBar e os aplicados sempre que muda de aba
+    setFilterResetKey(k => k + 1)
     setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
     setTatamesApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
     if (tab === "tatames") {
@@ -625,70 +730,6 @@ export default function EventoDetailPage() {
     { key: "tatames", label: "TATAMES" },
   ]
 
-  const sharedFilters = (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-      <Input
-        placeholder="Nome"
-        value={filterNome}
-        onChange={(e) => setFilterNome(e.target.value)}
-      />
-      <Select value={filterSexo} onValueChange={setFilterSexo}>
-        <SelectTrigger>
-          <SelectValue placeholder="Sexo" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="MASCULINO">Masculino</SelectItem>
-          <SelectItem value="FEMININO">Feminino</SelectItem>
-        </SelectContent>
-      </Select>
-      <Select value={filterCategoria} onValueChange={setFilterCategoria}>
-        <SelectTrigger>
-          <SelectValue placeholder="Categoria" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {Object.entries(AGE_GROUP_LABELS).map(([v, l]) => (
-            <SelectItem key={v} value={v}>{l}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={filterFaixa} onValueChange={setFilterFaixa}>
-        <SelectTrigger>
-          <SelectValue placeholder="Faixa" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {Object.entries(BELT_LABELS).map(([v, l]) => (
-            <SelectItem key={v} value={v}>{l}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={filterPesoId} onValueChange={setFilterPesoId}>
-        <SelectTrigger>
-          <SelectValue placeholder="Peso" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="__absoluto__">Absoluto</SelectItem>
-          {Array.from(new Map(weightCategories.map((c) => [c.name, c])).values()).map((c) => (
-            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={filterEquipeId} onValueChange={setFilterEquipeId}>
-        <SelectTrigger>
-          <SelectValue placeholder="Equipe" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {teams.map((t) => (
-            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  )
 
   const eventFormInitialData = event
     ? {
@@ -730,7 +771,7 @@ export default function EventoDetailPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             {eventLoading ? "Carregando..." : event?.name || "Evento"}
           </h1>
           <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
@@ -738,7 +779,7 @@ export default function EventoDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-lg overflow-x-auto" style={{ backgroundColor: "#1a1a1a" }}>
+      <div className="flex gap-1 p-1 rounded-lg overflow-x-auto" style={{ backgroundColor: "var(--card-alt)" }}>
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -767,7 +808,7 @@ export default function EventoDetailPage() {
         <div className="space-y-4">
           <div
             className="rounded-lg border overflow-hidden"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             {valoresLoading ? (
               <div className="p-8 text-center text-[#6b7280]">Carregando...</div>
@@ -775,7 +816,7 @@ export default function EventoDetailPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ borderBottom: "1px solid #222222" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase w-8">#</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase">Sexo</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase">Categoria</th>
@@ -786,12 +827,12 @@ export default function EventoDetailPage() {
                   </thead>
                   <tbody>
                     {valoresData.map((v, i) => (
-                      <tr key={`${v.sex}-${v.ageGroup}`} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <tr key={`${v.sex}-${v.ageGroup}`} style={{ borderBottom: "1px solid var(--border)" }}>
                         <td className="px-4 py-2 text-[#6b7280]">{i + 1}</td>
                         <td className="px-4 py-2 text-[#9ca3af]">
                           {v.sex === "MASCULINO" ? "Masculino" : "Feminino"}
                         </td>
-                        <td className="px-4 py-2 text-white">
+                        <td className="px-4 py-2" style={{ color: "var(--foreground)" }}>
                           {AGE_GROUP_LABELS[v.ageGroup] || v.ageGroup}
                         </td>
                         <td className="px-4 py-2">
@@ -883,7 +924,7 @@ export default function EventoDetailPage() {
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: "Total", value: finData.inscricoes.total, color: "#ffffff" },
+                    { label: "Total", value: finData.inscricoes.total, color: "var(--foreground)" },
                     { label: "Pendente", value: finData.inscricoes.pendente, color: "#fbbf24" },
                     { label: "Aprovado", value: finData.inscricoes.aprovado, color: "#4ade80" },
                     { label: "Cancelado", value: finData.inscricoes.cancelado, color: "#f87171" },
@@ -891,7 +932,7 @@ export default function EventoDetailPage() {
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
                       <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -906,15 +947,15 @@ export default function EventoDetailPage() {
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: "Total", value: finData.medalhas.total, color: "#ffffff" },
+                    { label: "Total", value: finData.medalhas.total, color: "var(--foreground)" },
                     { label: "Ouro", value: finData.medalhas.ouro, color: "#fbbf24" },
-                    { label: "Prata", value: finData.medalhas.prata, color: "#9ca3af" },
+                    { label: "Prata", value: finData.medalhas.prata, color: "var(--muted-foreground)" },
                     { label: "Bronze", value: finData.medalhas.bronze, color: "#d97706" },
                   ].map((s) => (
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
                       <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -929,14 +970,14 @@ export default function EventoDetailPage() {
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { label: "Total", value: finData.chaves.total, color: "#ffffff" },
+                    { label: "Total", value: finData.chaves.total, color: "var(--foreground)" },
                     { label: "Normal", value: finData.chaves.normal, color: "#60a5fa" },
                     { label: "Absoluto", value: finData.chaves.absoluto, color: "#c084fc" },
                   ].map((s) => (
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
                       <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -963,10 +1004,10 @@ export default function EventoDetailPage() {
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
-                      <p className="text-xl font-bold text-white">
+                      <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
                         {s.currency ? formatCurrency(s.value as number) : s.value}
                       </p>
                     </div>
@@ -986,7 +1027,7 @@ export default function EventoDetailPage() {
           {/* Stats bar */}
           <div className="flex gap-3 flex-wrap">
             {[
-              { label: "Total", value: totalAtletas, color: "#ffffff", filter: "" },
+              { label: "Total", value: totalAtletas, color: "var(--foreground)", filter: "" },
               { label: "Pendente", value: pendenteAtletas, color: "#fbbf24", filter: "pendente" },
               { label: "Aprovado", value: aprovadoAtletas, color: "#4ade80", filter: "aprovado" },
               { label: "Cancelado", value: canceladoAtletas, color: "#f87171", filter: "cancelado" },
@@ -994,7 +1035,7 @@ export default function EventoDetailPage() {
               <div
                 key={s.label}
                 className="rounded-lg border px-4 py-2 cursor-pointer hover:border-[#444444] transition-colors"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               >
                 <p className="text-xs text-[#6b7280]">{s.label}</p>
                 <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -1002,16 +1043,16 @@ export default function EventoDetailPage() {
             ))}
           </div>
 
-          {sharedFilters}
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
 
           <div className="flex flex-wrap items-center gap-2 justify-between">
             <div className="flex gap-2">
-              <Button onClick={() => setAtletasApplied({ nome: filterNome, sexo: filterSexo, categoria: filterCategoria, faixa: filterFaixa, pesoId: filterPesoId, equipeId: filterEquipeId })}>
+              <Button onClick={() => setAtletasApplied({ ...filtersRef.current })}>
                 <Search className="h-4 w-4 mr-2" />
                 Pesquisar
               </Button>
               <Button variant="outline" onClick={() => {
-                setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
+                setFilterResetKey(k => k + 1)
                 setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
               }}>
                 Limpar Filtros
@@ -1059,8 +1100,8 @@ export default function EventoDetailPage() {
             {/* Modal Importar Excel */}
             {importOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }} onClick={() => !importLoading && setImportOpen(false)}>
-                <div className="rounded-lg border w-full max-w-lg" style={{ backgroundColor: "#111", borderColor: "#333" }} onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "#222" }}>
+                <div className="rounded-lg border w-full max-w-lg" style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)" }} onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
                     <span className="text-sm font-semibold text-white">Importar Inscritos via Excel</span>
                     {!importLoading && (
                       <button className="text-[#6b7280] hover:text-white text-lg leading-none" onClick={() => setImportOpen(false)}>✕</button>
@@ -1070,7 +1111,7 @@ export default function EventoDetailPage() {
                     {!importResult ? (
                       <>
                         <p className="text-sm text-[#6b7280]">Selecione o arquivo <strong className="text-white">.xlsx</strong> gerado pelo site da federação. Somente inscritos com status <strong className="text-white">Aprovado</strong> serão importados.</p>
-                        <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${importLoading ? "opacity-50 cursor-not-allowed" : "hover:border-red-500"}`} style={{ borderColor: "#333" }}>
+                        <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${importLoading ? "opacity-50 cursor-not-allowed" : "hover:border-red-500"}`} style={{ borderColor: "var(--border-alt)" }}>
                           <Download className="h-8 w-8 text-[#6b7280] mb-2" />
                           <span className="text-sm text-[#6b7280]">{importLoading ? "Importando, aguarde..." : "Clique para selecionar o arquivo"}</span>
                           <input
@@ -1085,9 +1126,9 @@ export default function EventoDetailPage() {
                     ) : (
                       <div className="space-y-3">
                         <div className="grid grid-cols-3 gap-3 text-center">
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#1a1a1a" }}>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "var(--card-alt)" }}>
                             <p className="text-xs text-[#6b7280]">Total na planilha</p>
-                            <p className="text-xl font-bold text-white">{importResult.total}</p>
+                            <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>{importResult.total}</p>
                           </div>
                           <div className="rounded-lg p-3" style={{ backgroundColor: "#14532d30" }}>
                             <p className="text-xs text-[#4ade80]">Importados</p>
@@ -1099,7 +1140,7 @@ export default function EventoDetailPage() {
                           </div>
                         </div>
                         {importResult.erros.length > 0 && (
-                          <div className="rounded-lg border p-3 space-y-1 max-h-48 overflow-y-auto" style={{ borderColor: "#333", backgroundColor: "#0d0d0d" }}>
+                          <div className="rounded-lg border p-3 space-y-1 max-h-48 overflow-y-auto" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--background)" }}>
                             <p className="text-xs font-semibold text-[#f87171] mb-2">Registros com erro:</p>
                             {importResult.erros.map((e, i) => (
                               <p key={i} className="text-xs text-[#6b7280]"><span className="text-white">{e.nome}</span> — {e.motivo}</p>
@@ -1121,12 +1162,12 @@ export default function EventoDetailPage() {
           {/* Table */}
           <div
             className="rounded-lg border overflow-hidden"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid #222222" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase w-8">#</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase">Atleta</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase hidden sm:table-cell">Sexo</th>
@@ -1154,7 +1195,7 @@ export default function EventoDetailPage() {
                       return (
                         <tr
                           key={reg.id}
-                          style={{ borderBottom: "1px solid #1a1a1a" }}
+                          style={{ borderBottom: "1px solid var(--border)" }}
                           className="hover:bg-[#1a1a1a] transition-colors"
                         >
                           <td className="px-4 py-3 text-[#6b7280]">{i + 1}</td>
@@ -1234,7 +1275,7 @@ export default function EventoDetailPage() {
           </div>
 
           {/* Sub-tabs ATIVOS / LIXEIRA */}
-          <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ backgroundColor: "#1a1a1a" }}>
+          <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ backgroundColor: "var(--card-alt)" }}>
             {(["ativos", "lixeira"] as const).map((t) => (
               <button
                 key={t}
@@ -1255,7 +1296,7 @@ export default function EventoDetailPage() {
       {/* TAB: CHECAGEM */}
       {tab === "checagem" && (
         <div className="space-y-4">
-          {sharedFilters}
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
           <Button onClick={loadChecagem}>
             <Search className="h-4 w-4 mr-2" />
             Pesquisar
@@ -1277,11 +1318,11 @@ export default function EventoDetailPage() {
                   <div
                     key={key}
                     className="rounded-lg border overflow-hidden"
-                    style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   >
                     <div
-                      className="px-4 py-3 font-semibold text-sm text-white"
-                      style={{ borderBottom: "1px solid #222222" }}
+                      className="px-4 py-3 font-semibold text-sm" style={{ color: "var(--foreground)" }}
+                      style={{ borderBottom: "1px solid var(--border)" }}
                     >
                       {sex === "MASCULINO" ? "Masculino" : "Feminino"} |{" "}
                       {AGE_GROUP_LABELS[ageGroup]?.split(" (")[0] || ageGroup} |{" "}
@@ -1289,7 +1330,7 @@ export default function EventoDetailPage() {
                     </div>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Nome</th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Peso</th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Equipe</th>
@@ -1297,8 +1338,8 @@ export default function EventoDetailPage() {
                       </thead>
                       <tbody>
                         {regs.map((r) => (
-                          <tr key={r.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
-                            <td className="px-4 py-2 text-white">{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
+                          <tr key={r.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td className="px-4 py-2" style={{ color: "var(--foreground)" }}>{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
                             <td className="px-4 py-2 text-[#9ca3af] text-xs">
                               {r.weightCategory?.maxWeight
                                 ? `até ${r.weightCategory.maxWeight}kg`
@@ -1327,8 +1368,8 @@ export default function EventoDetailPage() {
           {brackets.length > 0 && (
             <div className="flex gap-3 flex-wrap">
               {[
-                { label: "Total", value: brackets.length, color: "#ffffff" },
-                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "#6b7280" },
+                { label: "Total", value: brackets.length, color: "var(--foreground)" },
+                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "var(--muted)" },
                 { label: "Em Andamento", value: brackets.filter(b => b.status === "EM_ANDAMENTO").length, color: "#fbbf24" },
                 { label: "Finalizada", value: brackets.filter(b => b.status === "FINALIZADA").length, color: "#4ade80" },
                 { label: "Premiada", value: brackets.filter(b => b.status === "PREMIADA").length, color: "#a78bfa" },
@@ -1336,7 +1377,7 @@ export default function EventoDetailPage() {
                 <div
                   key={s.label}
                   className="rounded-lg border px-4 py-2"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <p className="text-xs text-[#6b7280]">{s.label}</p>
                   <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -1345,15 +1386,13 @@ export default function EventoDetailPage() {
             </div>
           )}
 
-          {sharedFilters}
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
           <div className="flex gap-2">
             <Button onClick={loadChaves}>
               <Search className="h-4 w-4 mr-2" />
               Pesquisar
             </Button>
-            <Button variant="outline" onClick={() => {
-              setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
-            }}>
+            <Button variant="outline" onClick={() => setFilterResetKey(k => k + 1)}>
               Limpar Filtros
             </Button>
             <Button onClick={gerarChaves} disabled={chavesGenerating}>
@@ -1388,7 +1427,7 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#1a1a1a", text: "#6b7280" },
+                  PENDENTE: { bg: "#7f1d1d30", text: "#dc2626" },
                   DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
                   EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
                   FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
@@ -1426,11 +1465,11 @@ export default function EventoDetailPage() {
                     const totalAthletes = group.reduce((s, b) => s + b.positions.length, 0)
                     const groupTatameId = group[0].tatameId || ""
                     rendered.push(
-                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "#111111", borderColor: "#f59e0b50" }}>
-                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #1a1a1a", backgroundColor: "#1a1000" }}>
+                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "#1a1000" }}>
                           <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
                           <button
-                            className="text-sm font-medium text-white flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors"
+                            className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
                             onClick={() => setSelectedBracketId(group[0].id)}
                           >
                             {groupLabel}
@@ -1442,7 +1481,7 @@ export default function EventoDetailPage() {
                           })}
                           <select
                             className="text-xs rounded border px-2 py-1 shrink-0"
-                            style={{ backgroundColor: "#1a1a1a", borderColor: "#f59e0b60", color: "#fff" }}
+                            style={{ backgroundColor: "var(--card-alt)", borderColor: "#f59e0b60", color: "var(--foreground)" }}
                             value={groupTatameId}
                             onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
                           >
@@ -1458,11 +1497,11 @@ export default function EventoDetailPage() {
                     const catLabel = getBracketLabel(bracket)
                     const sc = statusColors[bracket.status] || statusColors.PENDENTE
                     rendered.push(
-                      <div key={bracket.id} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "#111111", borderColor: "#222222" }}>
-                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <div key={bracket.id} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
                           <span className="text-xs font-bold text-[#6b7280]">#{bracket.bracketNumber}</span>
                           <button
-                            className="text-sm font-medium text-white flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors"
+                            className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors" style={{ color: "var(--foreground)" }}
                             onClick={() => setSelectedBracketId(bracket.id)}
                           >
                             {catLabel}
@@ -1473,7 +1512,7 @@ export default function EventoDetailPage() {
                           <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
                           <select
                             className="text-xs rounded border px-2 py-1 shrink-0"
-                            style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
+                            style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
                             value={bracket.tatameId || ""}
                             onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
                           >
@@ -1498,8 +1537,14 @@ export default function EventoDetailPage() {
       {/* TAB: RESULTADO */}
       {tab === "resultado" && (
         <div className="space-y-4">
-          {sharedFilters}
-          <Button onClick={loadResultado}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--muted)" }}>
+              <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80] inline-block animate-pulse" />
+              Sincronizando ao vivo com a premiação
+            </span>
+          </div>
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
+          <Button onClick={() => loadResultado()}>
             <Search className="h-4 w-4 mr-2" />
             Pesquisar
           </Button>
@@ -1532,11 +1577,11 @@ export default function EventoDetailPage() {
                       <div
                         key={wcId}
                         className="rounded-lg border overflow-hidden"
-                        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                       >
                         <div
-                          className="px-4 py-3 font-semibold text-sm text-white"
-                          style={{ borderBottom: "1px solid #222222" }}
+                          className="px-4 py-3 font-semibold text-sm" style={{ color: "var(--foreground)" }}
+                          style={{ borderBottom: "1px solid var(--border)" }}
                         >
                           {wc
                             ? `${wc.sex === "MASCULINO" ? "Masculino" : "Feminino"} | ${AGE_GROUP_LABELS[wc.ageGroup]?.split(" (")[0] || wc.ageGroup} | ${wc.name}`
@@ -1544,7 +1589,7 @@ export default function EventoDetailPage() {
                         </div>
                         <table className="w-full text-sm">
                           <thead>
-                            <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+                            <tr style={{ borderBottom: "1px solid var(--border)" }}>
                               <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase w-8">#</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Nome</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase hidden sm:table-cell">Equipe</th>
@@ -1558,9 +1603,9 @@ export default function EventoDetailPage() {
                             {regs.map((r, idx) => {
                               const edit = resultadoEdits[r.id] || {}
                               return (
-                                <tr key={r.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                                <tr key={r.id} style={{ borderBottom: "1px solid var(--border)" }}>
                                   <td className="px-4 py-2 text-[#6b7280]">{idx + 1}</td>
-                                  <td className="px-4 py-2 text-white text-xs">{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
+                                  <td className="px-4 py-2 text-xs" style={{ color: "var(--foreground)" }}>{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
                                   <td className="px-4 py-2 text-[#9ca3af] text-xs hidden sm:table-cell">
                                     {r.team?.name || "—"}
                                   </td>
@@ -1694,8 +1739,8 @@ export default function EventoDetailPage() {
           {brackets.length > 0 && (
             <div className="flex gap-3 flex-wrap">
               {[
-                { label: "Total", value: brackets.length, color: "#ffffff" },
-                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "#6b7280" },
+                { label: "Total", value: brackets.length, color: "var(--foreground)" },
+                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "var(--muted)" },
                 { label: "Em Andamento", value: brackets.filter(b => b.status === "EM_ANDAMENTO").length, color: "#fbbf24" },
                 { label: "Finalizada", value: brackets.filter(b => b.status === "FINALIZADA").length, color: "#4ade80" },
                 { label: "Premiada", value: brackets.filter(b => b.status === "PREMIADA").length, color: "#a78bfa" },
@@ -1703,7 +1748,7 @@ export default function EventoDetailPage() {
                 <div
                   key={s.label}
                   className="rounded-lg border px-4 py-2"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <p className="text-xs text-[#6b7280]">{s.label}</p>
                   <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -1715,7 +1760,7 @@ export default function EventoDetailPage() {
           {/* Tatame cards */}
           <div className="space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex-1">Tatames</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>Tatames</h3>
               {tatamesLoading && <span className="text-xs text-[#6b7280]">Carregando...</span>}
               <div className="flex gap-2">
                 <Input
@@ -1742,13 +1787,13 @@ export default function EventoDetailPage() {
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
-                      style={{ borderColor: tatame.isActive ? "#16a34a40" : "#333", backgroundColor: tatame.isActive ? "#0d1f0d" : "#111" }}
+                      style={{ borderColor: tatame.isActive ? "#16a34a40" : "var(--border-alt)", backgroundColor: tatame.isActive ? "#0d1f0d" : "var(--card)" }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">{tatame.name}</span>
+                        <span className="font-semibold" style={{ color: tatame.isActive ? "#ffffff" : "var(--foreground)" }}>{tatame.name}</span>
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: tatame.isActive ? "#14532d40" : "#1a1a1a", color: tatame.isActive ? "#4ade80" : "#6b7280" }}
+                          style={{ backgroundColor: tatame.isActive ? "#14532d40" : "var(--card-alt)", color: tatame.isActive ? "#4ade80" : "var(--muted)" }}
                         >
                           {tatame.isActive ? "ATIVO" : "INATIVO"}
                         </span>
@@ -1779,12 +1824,12 @@ export default function EventoDetailPage() {
           </div>
 
           {/* Link Coordenador de Premiação */}
-          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "#0d0d1a" }}>
+          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
             <div className="flex items-center gap-2">
               <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
             </div>
             <p className="text-xs text-[#6b7280]">Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "#333", backgroundColor: "#111" }}>
+            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--card)" }}>
               <span className="text-xs text-[#9ca3af] flex-1 truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}</span>
               <button
                 className="text-xs text-[#a78bfa] hover:text-white font-semibold shrink-0 transition-colors"
@@ -1805,16 +1850,16 @@ export default function EventoDetailPage() {
 
           {/* Bracket assignment list */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Chaves Geradas</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--foreground)" }}>Chaves Geradas</h3>
             <div className="space-y-3">
-              {sharedFilters}
+              <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => setTatamesApplied({ nome: filterNome, sexo: filterSexo, categoria: filterCategoria, faixa: filterFaixa, pesoId: filterPesoId, equipeId: filterEquipeId })}>
+                <Button size="sm" onClick={() => setTatamesApplied({ ...filtersRef.current })}>
                   <Search className="h-3.5 w-3.5 mr-1" />
                   Pesquisar
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => {
-                  setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
+                  setFilterResetKey(k => k + 1)
                   setTatamesApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
                 }}>
                   Limpar Filtros
@@ -1832,7 +1877,7 @@ export default function EventoDetailPage() {
               const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#1a1a1a",   text: "#6b7280" },
+                PENDENTE:     { bg: "#7f1d1d30",  text: "#dc2626" },
                 DESIGNADA:    { bg: "#1e3a5f40", text: "#60a5fa" },
                 EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
                 FINALIZADA:   { bg: "#14532d40", text: "#4ade80" },
@@ -1862,11 +1907,11 @@ export default function EventoDetailPage() {
                       <div
                         key={bracket.bracketGroupId}
                         className="flex items-center gap-3 px-4 py-3 flex-wrap"
-                        style={{ borderBottom: idx < list.length - 1 ? "1px solid #1a1a1a" : "none", backgroundColor: "#111" }}
+                        style={{ borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: "var(--card)" }}
                       >
                         <span className="text-xs font-bold text-[#f59e0b] shrink-0">GRUPO</span>
                         <button
-                          className="text-sm font-medium text-white flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors"
+                          className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
                           onClick={() => setSelectedBracketId(group[0].id)}
                         >
                           {getBracketLabel(bracket)}
@@ -1878,7 +1923,7 @@ export default function EventoDetailPage() {
                         <span className="text-xs text-[#6b7280] shrink-0">{group.reduce((s, b) => s + b.positions.length, 0)} atleta(s)</span>
                         <select
                           className="text-xs rounded border px-2 py-1 shrink-0"
-                          style={{ backgroundColor: "#1a1a1a", borderColor: "#f59e0b60", color: "#fff" }}
+                          style={{ backgroundColor: "var(--card-alt)", borderColor: "#f59e0b60", color: "var(--foreground)" }}
                           value={groupTatameId}
                           onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
                         >
@@ -1896,10 +1941,10 @@ export default function EventoDetailPage() {
                       <div
                         key={bracket.id}
                         className="flex items-center gap-3 px-4 py-3 flex-wrap"
-                        style={{ borderBottom: idx < list.length - 1 ? "1px solid #1a1a1a" : "none", backgroundColor: "#111" }}
+                        style={{ borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: "var(--card)" }}
                       >
                         <button
-                          className="text-sm font-medium text-white flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors cursor-pointer"
+                          className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors cursor-pointer" style={{ color: "var(--foreground)" }}
                           onClick={() => setSelectedBracketId(bracket.id)}
                         >
                           {catLabel}
@@ -1910,7 +1955,7 @@ export default function EventoDetailPage() {
                         <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
                         <select
                           className="text-xs rounded border px-2 py-1 shrink-0"
-                          style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
+                          style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
                           value={bracket.tatameId || ""}
                           onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
                         >
@@ -1934,7 +1979,7 @@ export default function EventoDetailPage() {
                         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Pendentes</span>
                         <span className="text-xs text-[#6b7280]">({pendentes.length})</span>
                       </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "#222" }}>
+                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
                         {renderGroupedList(pendentes)}
                       </div>
                     </div>
@@ -1945,7 +1990,7 @@ export default function EventoDetailPage() {
                         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>Finalizadas</span>
                         <span className="text-xs text-[#6b7280]">({finalizadas.length})</span>
                       </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "#222" }}>
+                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
                         {renderGroupedList(finalizadas)}
                       </div>
                     </div>
@@ -1981,10 +2026,10 @@ export default function EventoDetailPage() {
           >
             <div
               className="relative rounded-lg border w-full max-w-4xl max-h-[90vh] overflow-auto"
-              style={{ backgroundColor: "#111", borderColor: "#333" }}
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10" style={{ borderColor: "#222", backgroundColor: "#111" }}>
+              <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
                 <span className="text-sm font-semibold text-white">{modalTitle}</span>
                 <button
                   className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { Plus, Search, Pencil, Trash2, User } from "lucide-react"
@@ -56,7 +56,7 @@ const BELT_STYLES: Record<string, { bg: string; text: string; border: string }> 
   AZUL: { bg: "#3b82f620", text: "#60a5fa", border: "#3b82f640" },
   ROXA: { bg: "#a855f720", text: "#c084fc", border: "#a855f740" },
   MARROM: { bg: "#92400e30", text: "#d97706", border: "#92400e50" },
-  PRETA: { bg: "#11111180", text: "#e5e7eb", border: "#444444" },
+  PRETA: { bg: "var(--card)80", text: "#e5e7eb", border: "#444444" },
 }
 
 function maskCPF(cpf: string): string {
@@ -172,14 +172,14 @@ export default function AtletasPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total", value: stats.total, color: "#ffffff" },
+          { label: "Total", value: stats.total, color: "var(--foreground)" },
           { label: "Ativos", value: stats.ativos, color: "#16a34a" },
           { label: "Afiliados", value: stats.afiliados, color: "#2563eb" },
         ].map((s) => (
           <div
             key={s.label}
             className="rounded-lg border p-4"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">
               {s.label}
@@ -194,7 +194,7 @@ export default function AtletasPage() {
       {/* Filters */}
       <div
         className="rounded-lg border p-4"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <Input
@@ -250,12 +250,12 @@ export default function AtletasPage() {
       {/* Table */}
       <div
         className="rounded-lg border overflow-hidden"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid #222222" }}>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-10">
                   #
                 </th>
@@ -304,8 +304,8 @@ export default function AtletasPage() {
                   return (
                     <tr
                       key={athlete.id}
-                      style={{ borderBottom: "1px solid #1a1a1a" }}
-                      className="hover:bg-[#1a1a1a] transition-colors"
+                      style={{ borderBottom: "1px solid var(--card-alt)" }}
+                      className="hover:bg-[var(--card-alt)] transition-colors"
                     >
                       <td className="px-4 py-3 text-[#6b7280]">
                         {(page - 1) * limit + index + 1}
@@ -321,7 +321,7 @@ export default function AtletasPage() {
                         ) : (
                           <div
                             className="w-8 h-8 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: "#222222" }}
+                            style={{ backgroundColor: "var(--border)" }}
                           >
                             <User className="h-4 w-4 text-[#6b7280]" />
                           </div>
@@ -388,7 +388,7 @@ export default function AtletasPage() {
         {totalPages > 1 && (
           <div
             className="flex items-center justify-between px-4 py-3 border-t"
-            style={{ borderColor: "#222222" }}
+            style={{ borderColor: "var(--border)" }}
           >
             <p className="text-sm text-[#6b7280]">
               Mostrando {(page - 1) * limit + 1}–{Math.min(page * limit, total)} de {total}

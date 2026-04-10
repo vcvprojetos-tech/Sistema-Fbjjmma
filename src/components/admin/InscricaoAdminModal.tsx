@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { X, Upload, Save } from "lucide-react"
@@ -256,12 +256,12 @@ export default function InscricaoAdminModal({
     >
       <div
         className="relative w-full max-w-2xl max-h-[95vh] flex flex-col rounded-xl border"
-        style={{ backgroundColor: "#0f0f0f", borderColor: "#222222" }}
+        style={{ backgroundColor: "#0f0f0f", borderColor: "var(--border)" }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-4 border-b shrink-0"
-          style={{ borderColor: "#222222" }}
+          style={{ borderColor: "var(--border)" }}
         >
           <h2 className="text-base font-bold text-white">Cadastrar atleta no evento</h2>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
@@ -279,7 +279,7 @@ export default function InscricaoAdminModal({
             </p>
 
             <FormRow label="Evento">
-              <Input value={resolvedEventName} readOnly className="bg-[#1a1a1a] text-[#9ca3af] border-[#333]" />
+              <Input value={resolvedEventName} readOnly className="bg-[var(--card-alt)] text-[#9ca3af] border-[#333]" />
             </FormRow>
 
             {/* Atleta combobox */}
@@ -298,7 +298,7 @@ export default function InscricaoAdminModal({
                 {athleteOpen && (athleteResults.length > 0 || searchingAthletes) && (
                   <div
                     className="absolute z-50 w-full top-full mt-1 rounded-md border shadow-lg overflow-hidden"
-                    style={{ backgroundColor: "#1a1a1a", borderColor: "#333" }}
+                    style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)" }}
                   >
                     {searchingAthletes ? (
                       <div className="px-4 py-3 text-sm text-[#6b7280]">Buscando...</div>
@@ -417,7 +417,7 @@ export default function InscricaoAdminModal({
           </div>
 
           {/* Seção: Informações de inscrição */}
-          <div className="border-t pt-4" style={{ borderColor: "#222" }}>
+          <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
             <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">
               Informações de inscrição
             </p>
@@ -428,7 +428,7 @@ export default function InscricaoAdminModal({
                 onChange={(e) => set("observation", e.target.value)}
                 rows={3}
                 className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none resize-none"
-                style={{ backgroundColor: "#1a1a1a", borderColor: "#333" }}
+                style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)" }}
                 placeholder="Observações..."
               />
             </FormRow>
@@ -462,7 +462,7 @@ export default function InscricaoAdminModal({
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-white border transition-colors hover:bg-[#222]"
-                  style={{ backgroundColor: "#1a1a1a", borderColor: "#333" }}
+                  style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)" }}
                 >
                   <Upload className="h-4 w-4" />
                   {form.proofFile ? form.proofFile.name : "Selecionar arquivo"}
@@ -479,7 +479,7 @@ export default function InscricaoAdminModal({
           </div>
 
           {/* Seção: Premiação */}
-          <div className="border-t pt-4" style={{ borderColor: "#222" }}>
+          <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
             <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">
               Premiação
             </p>
@@ -505,7 +505,7 @@ export default function InscricaoAdminModal({
         {/* Footer */}
         <div
           className="flex items-center justify-end gap-3 px-6 py-4 border-t shrink-0"
-          style={{ borderColor: "#222" }}
+          style={{ borderColor: "var(--border)" }}
         >
           <Button variant="outline" onClick={onClose} disabled={saving}>
             <X className="h-4 w-4 mr-2" />

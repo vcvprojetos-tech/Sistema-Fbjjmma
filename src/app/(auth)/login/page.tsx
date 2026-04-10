@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { signIn } from "next-auth/react"
@@ -42,7 +42,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: "#0a0a0a" }}
+      style={{ backgroundColor: "var(--background)" }}
     >
       <div className="w-full max-w-md px-4">
         {/* Logo / Branding */}
@@ -70,7 +70,7 @@ export default function LoginPage() {
         {/* Card */}
         <div
           className="rounded-lg border p-8"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h2 className="text-xl font-semibold text-white mb-6 text-center">
             Entrar no Sistema

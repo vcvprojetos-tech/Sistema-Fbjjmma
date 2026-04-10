@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -101,7 +101,7 @@ export default function EventosPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ backgroundColor: "#1a1a1a" }}>
+      <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ backgroundColor: "var(--card-alt)" }}>
         {(["ativos", "lixeira"] as const).map((t) => (
           <button
             key={t}
@@ -131,12 +131,12 @@ export default function EventosPage() {
       {/* Table */}
       <div
         className="rounded-lg border overflow-hidden"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid #222222" }}>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-10">
                   #
                 </th>
@@ -177,8 +177,8 @@ export default function EventosPage() {
                 events.map((event, index) => (
                   <tr
                     key={event.id}
-                    style={{ borderBottom: "1px solid #1a1a1a" }}
-                    className="hover:bg-[#1a1a1a] transition-colors"
+                    style={{ borderBottom: "1px solid var(--card-alt)" }}
+                    className="hover:bg-[var(--card-alt)] transition-colors"
                   >
                     <td className="px-4 py-3 text-[#6b7280]">{index + 1}</td>
                     <td className="px-4 py-3">
@@ -192,9 +192,9 @@ export default function EventosPage() {
                       ) : (
                         <div
                           className="w-12 h-8 rounded flex items-center justify-center"
-                          style={{ backgroundColor: "#1a1a1a" }}
+                          style={{ backgroundColor: "var(--card-alt)" }}
                         >
-                          <ImageIcon className="h-4 w-4 text-[#333333]" />
+                          <ImageIcon className="h-4 w-4 text-[var(--border-alt)]" />
                         </div>
                       )}
                     </td>

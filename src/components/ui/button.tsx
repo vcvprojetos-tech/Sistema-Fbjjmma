@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -14,11 +14,11 @@ const buttonVariants = cva(
         destructive:
           "bg-[#dc2626] text-white hover:bg-[#b91c1c]",
         outline:
-          "border border-[#333333] bg-transparent text-white hover:bg-[#1a1a1a]",
+          "border border-[var(--border-alt)] bg-transparent text-white hover:bg-[var(--card-alt)]",
         secondary:
-          "bg-[#1a1a1a] text-white hover:bg-[#222222]",
+          "bg-[var(--card-alt)] text-white hover:bg-[var(--border)]",
         ghost:
-          "bg-transparent text-white hover:bg-[#1a1a1a]",
+          "bg-transparent text-white hover:bg-[var(--card-alt)]",
         link:
           "text-[#dc2626] underline-offset-4 hover:underline bg-transparent p-0 h-auto",
       },

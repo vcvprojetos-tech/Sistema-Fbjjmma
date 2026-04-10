@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -31,8 +31,8 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   INSCRICOES_ABERTAS: { bg: "#16a34a20", text: "#4ade80" },
   INSCRICOES_ENCERRADAS: { bg: "#92400e20", text: "#fbbf24" },
   EM_ANDAMENTO: { bg: "#1e3a5f30", text: "#60a5fa" },
-  ENCERRADO: { bg: "#1a1a1a", text: "#6b7280" },
-  RASCUNHO: { bg: "#1a1a1a", text: "#6b7280" },
+  ENCERRADO: { bg: "var(--card-alt)", text: "#6b7280" },
+  RASCUNHO: { bg: "var(--card-alt)", text: "#6b7280" },
 }
 
 export default function EventosPage() {
@@ -98,9 +98,9 @@ export default function EventosPage() {
               onClick={() => setFilter(f)}
               className="px-4 py-2 rounded-md text-sm font-medium transition-colors capitalize"
               style={{
-                backgroundColor: filter === f ? "#dc2626" : "#111111",
+                backgroundColor: filter === f ? "#dc2626" : "var(--card)",
                 color: filter === f ? "#ffffff" : "#9ca3af",
-                border: `1px solid ${filter === f ? "#dc2626" : "#222222"}`,
+                border: `1px solid ${filter === f ? "#dc2626" : "var(--border)"}`,
               }}
             >
               {f === "todos" ? "Todos" : f === "abertos" ? "Abertos" : "Encerrados"}
@@ -116,16 +116,16 @@ export default function EventosPage() {
             <div
               key={i}
               className="rounded-xl border h-64 animate-pulse"
-              style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
             />
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <div
           className="rounded-xl border p-16 text-center"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
-          <Trophy className="h-10 w-10 text-[#333333] mx-auto mb-3" />
+          <Trophy className="h-10 w-10 text-[var(--border-alt)] mx-auto mb-3" />
           <p className="text-[#6b7280]">Nenhum evento encontrado.</p>
         </div>
       ) : (
@@ -140,7 +140,7 @@ export default function EventosPage() {
                 key={event.id}
                 href={`/eventos/${event.id}`}
                 className="group block rounded-xl border overflow-hidden hover:border-[#dc2626] transition-colors"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               >
                 {event.banner ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -152,7 +152,7 @@ export default function EventosPage() {
                 ) : (
                   <div
                     className="w-full h-44 flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, #1a0000 0%, #111111 100%)" }}
+                    style={{ background: "linear-gradient(135deg, #1a0000 0%, var(--card) 100%)" }}
                   >
                     <div
                       className="w-14 h-14 flex items-center justify-center opacity-30"

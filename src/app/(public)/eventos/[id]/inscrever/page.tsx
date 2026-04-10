@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -227,7 +227,7 @@ export default function InscreverPage() {
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div
           className="rounded-xl border p-8 text-center"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <AlertCircle className="h-10 w-10 text-[#fbbf24] mx-auto mb-4" />
           <h2 className="text-white font-semibold mb-2">Perfil de atleta não encontrado</h2>
@@ -249,7 +249,7 @@ export default function InscreverPage() {
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div
           className="rounded-xl border p-8 text-center"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <AlertCircle className="h-10 w-10 text-[#fbbf24] mx-auto mb-4" />
           <h2 className="text-white font-semibold mb-2">Inscrições encerradas</h2>
@@ -269,7 +269,7 @@ export default function InscreverPage() {
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div
           className="rounded-xl border p-8 text-center"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <CheckCircle className="h-12 w-12 text-[#4ade80] mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Inscrição Realizada!</h2>
@@ -303,7 +303,7 @@ export default function InscreverPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-white">Inscrição</h1>
+          <h1 className="text-xl font-bold" style={{ color: "var(--foreground)" }}>Inscrição</h1>
           <p className="text-[#6b7280] text-sm">{event.name}</p>
         </div>
       </div>
@@ -311,7 +311,7 @@ export default function InscreverPage() {
       {/* Athlete info */}
       <div
         className="rounded-xl border p-4 flex items-center gap-4"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
@@ -332,7 +332,7 @@ export default function InscreverPage() {
         {/* Category selection */}
         <section
           className="rounded-xl border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
             Categoria
@@ -420,7 +420,7 @@ export default function InscreverPage() {
         {event.paymentInfo && (
           <section
             className="rounded-xl border p-6"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider mb-3">
               Informações de Pagamento
@@ -431,7 +431,7 @@ export default function InscreverPage() {
             />
             <div
               className="mt-4 p-3 rounded-lg text-sm"
-              style={{ backgroundColor: "#1a1a1a" }}
+              style={{ backgroundColor: "var(--card-alt)" }}
             >
               <p className="text-white font-medium">
                 Total: R$ {(event.value + (isAbsolute && event.absoluteValue ? event.absoluteValue : 0)).toFixed(2)}
@@ -443,7 +443,7 @@ export default function InscreverPage() {
         {/* Terms */}
         <section
           className="rounded-xl border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
             Termos e Condições
@@ -453,7 +453,7 @@ export default function InscreverPage() {
             <div className="space-y-2">
               <div
                 className="rounded-lg p-3 text-xs text-[#6b7280] max-h-32 overflow-y-auto"
-                style={{ backgroundColor: "#0a0a0a" }}
+                style={{ backgroundColor: "var(--background)" }}
                 dangerouslySetInnerHTML={{ __html: event.imageRights }}
               />
               <div className="flex items-center gap-2">
@@ -473,7 +473,7 @@ export default function InscreverPage() {
             <div className="space-y-2">
               <div
                 className="rounded-lg p-3 text-xs text-[#6b7280] max-h-32 overflow-y-auto"
-                style={{ backgroundColor: "#0a0a0a" }}
+                style={{ backgroundColor: "var(--background)" }}
                 dangerouslySetInnerHTML={{ __html: event.physicalIntegrity }}
               />
               <div className="flex items-center gap-2">

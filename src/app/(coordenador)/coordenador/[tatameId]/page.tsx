@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
@@ -116,6 +116,8 @@ export default function TatamePage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState("")
   const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string } | null>(null)
+  const [pesoStep, setPesoStep] = useState(false)
+  const [pesoInput, setPesoInput] = useState("")
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -172,14 +174,14 @@ export default function TatamePage() {
     }
   }, [load])
 
-  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string) => {
+  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string) => {
     setActionLoading(true)
     setError("")
     try {
       const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ winnerId, isWO, woType: woType || null }),
+        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error || "Erro ao registrar resultado.")
@@ -189,6 +191,8 @@ export default function TatamePage() {
     } finally {
       setActionLoading(false)
       setWoModal(null)
+      setPesoStep(false)
+      setPesoInput("")
     }
   }, [load])
 
@@ -319,8 +323,8 @@ export default function TatamePage() {
   }) {
     const allBrackets = items.flatMap(i => i.brackets)
     return (
-      <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "#1a1a1a" }}>
-        <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "#1a1a1a", backgroundColor: "#0a0a0a" }}>
+      <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
+        <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
           <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color }}>
             <span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: dot === "pulse" ? color : color }} />
             {title}
@@ -355,7 +359,7 @@ export default function TatamePage() {
                           onClick={() => setSelectedId(group[0].id)}
                           className="w-full text-left px-3 py-3 border-b transition-colors"
                           style={{
-                            borderColor: "#1a1a1a",
+                            borderColor: "var(--border)",
                             backgroundColor: groupIsSelected ? (groupIsActive ? "#1a0d00" : "#0d0d1a") : "transparent",
                             borderLeft: groupIsSelected ? `3px solid ${groupIsActive ? "#fbbf24" : color}` : "3px solid transparent",
                           }}
@@ -379,7 +383,7 @@ export default function TatamePage() {
                           onClick={() => setSelectedId(b.id)}
                           className="w-full text-left px-3 py-3 border-b transition-colors"
                           style={{
-                            borderColor: "#1a1a1a",
+                            borderColor: "var(--border)",
                             backgroundColor: isSelected ? (isActive ? "#1a0d00" : "#0d0d1a") : "transparent",
                             borderLeft: isSelected ? `3px solid ${isActive ? "#fbbf24" : color}` : "3px solid transparent",
                           }}
@@ -409,7 +413,7 @@ export default function TatamePage() {
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "#1a1a1a" }}>
+      <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-3">
           <Link href="/coordenador" className="text-[#6b7280] hover:text-white">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -417,7 +421,7 @@ export default function TatamePage() {
             </svg>
           </Link>
           <div>
-            <h1 className="text-base font-bold text-white leading-tight">{tatame.name}</h1>
+            <h1 className="text-base font-bold leading-tight" style={{ color: "var(--foreground)" }}>{tatame.name}</h1>
             <p className="text-[#6b7280] text-xs">{tatame.event.name}</p>
           </div>
           {operador && (
@@ -469,9 +473,9 @@ export default function TatamePage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Controles */}
-                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "#1a1a1a" }}>
+                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho da chave */}
-                  <div className="rounded-xl border p-4" style={{ backgroundColor: "#111", borderColor: "#222" }}>
+                  <div className="rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
@@ -561,8 +565,8 @@ export default function TatamePage() {
                         const winnerIsP2 = match.winnerId === match.position2Id
                         return (
                           <div key={match.id} className="rounded-xl border overflow-hidden"
-                            style={{ borderColor: isDone ? "#14532d40" : "#333", backgroundColor: "#111" }}>
-                            <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid #1a1a1a" }}>
+                            style={{ borderColor: isDone ? "#14532d40" : "#333", backgroundColor: "var(--card)" }}>
+                            <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
                               <span className="text-xs text-[#6b7280]">
                                 R{match.round} · Partida {match.matchNumber}
                               </span>
@@ -576,10 +580,10 @@ export default function TatamePage() {
                               onClick={() => !isDone && !actionLoading && p1?.id && p1Name !== "BYE" && declararVencedor(match._bracketId, match.id, p1.id)}
                               disabled={isDone || actionLoading || !p1?.id || p1Name === "BYE"}
                               className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:cursor-default"
-                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid #1a1a1a" }}
+                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid var(--border)" }}
                             >
                               <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : "#222", color: "#fff" }}>
+                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : "#222", color: "var(--foreground)" }}>
                                 {isDone && winnerIsP1 ? "✓" : "1"}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -588,7 +592,7 @@ export default function TatamePage() {
                               </div>
                               {!isDone && p1Name !== "BYE" && <span className="text-xs text-[#dc2626] font-bold shrink-0">TAP</span>}
                             </button>
-                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "#0d0d0d" }}>
+                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
                               <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
                               <span className="text-xs text-[#444] font-bold py-1">VS</span>
                               <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
@@ -600,7 +604,7 @@ export default function TatamePage() {
                               style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}
                             >
                               <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : "#222", color: "#fff" }}>
+                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : "#222", color: "var(--foreground)" }}>
                                 {isDone && winnerIsP2 ? "✓" : "2"}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -610,7 +614,7 @@ export default function TatamePage() {
                               {!isDone && p2Name !== "BYE" && <span className="text-xs text-[#dc2626] font-bold shrink-0">TAP</span>}
                             </button>
                             {!isDone && p1?.id && p2?.id && (
-                              <div className="flex gap-2 p-3" style={{ borderTop: "1px solid #1a1a1a" }}>
+                              <div className="flex gap-2 p-3" style={{ borderTop: "1px solid var(--border)" }}>
                                 <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId })} disabled={actionLoading}
                                   className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
                                   W.O. — {p1Name.split(" ")[0]}
@@ -821,28 +825,72 @@ export default function TatamePage() {
         </div>
       )}
 
-      {/* W.O. modal */}
+      {/* W.O. / Desclassificação modal */}
       {woModal && bracket && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "#1a1a1a" }}>
-            <p className="text-white font-bold text-center text-lg">Tipo de W.O.</p>
-            <p className="text-[#9ca3af] text-sm text-center">Selecione o motivo do W.O.</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO")}
-                disabled={actionLoading}
-                className="py-4 rounded-xl font-semibold text-white text-sm" style={{ backgroundColor: "#78350f" }}>
-                Por Peso
-              </button>
-              <button onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "AUSENCIA")}
-                disabled={actionLoading}
-                className="py-4 rounded-xl font-semibold text-white text-sm" style={{ backgroundColor: "#1e3a5f" }}>
-                Por Ausência
-              </button>
-            </div>
-            <button onClick={() => setWoModal(null)}
-              className="w-full py-3 rounded-xl text-[#6b7280] text-sm" style={{ backgroundColor: "#111" }}>
-              Cancelar
-            </button>
+          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
+            {!pesoStep ? (
+              <>
+                <p className="text-white font-bold text-center text-lg">Motivo</p>
+                <p className="text-[#9ca3af] text-sm text-center">Selecione o motivo</p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "AUSENCIA")}
+                    disabled={actionLoading}
+                    className="py-4 rounded-xl font-semibold text-white text-sm"
+                    style={{ backgroundColor: "#1e3a5f" }}
+                  >
+                    W.O. por Ausência
+                  </button>
+                  <button
+                    onClick={() => setPesoStep(true)}
+                    disabled={actionLoading}
+                    className="py-4 rounded-xl font-semibold text-white text-sm"
+                    style={{ backgroundColor: "#78350f" }}
+                  >
+                    Desclassificação por Peso
+                  </button>
+                </div>
+                <button
+                  onClick={() => setWoModal(null)}
+                  className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+                  style={{ backgroundColor: "var(--card)" }}
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-white font-bold text-center text-lg">Peso do Atleta</p>
+                <p className="text-[#9ca3af] text-sm text-center">Informe o peso aferido (kg)</p>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="Ex: 77.3"
+                  value={pesoInput}
+                  onChange={e => setPesoInput(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
+                  style={{ backgroundColor: "var(--card)", borderColor: pesoInput ? "#dc2626" : "#333" }}
+                  autoFocus
+                />
+                <button
+                  onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO", pesoInput)}
+                  disabled={actionLoading || !pesoInput}
+                  className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
+                  style={{ backgroundColor: "#dc2626" }}
+                >
+                  {actionLoading ? "Confirmando..." : "Confirmar Desclassificação"}
+                </button>
+                <button
+                  onClick={() => setPesoStep(false)}
+                  className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+                  style={{ backgroundColor: "var(--card)" }}
+                >
+                  Voltar
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

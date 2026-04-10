@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
@@ -316,12 +316,12 @@ export default function PremiacaoPage() {
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3 border-b shrink-0"
-        style={{ borderColor: "#1a1a1a" }}
+        style={{ borderColor: "var(--border)" }}
       >
         <div className="flex items-center gap-3">
           <Trophy className="h-5 w-5 text-[#fbbf24]" />
           <div>
-            <h1 className="text-base font-bold text-white leading-tight">Premiação</h1>
+            <h1 className="text-base font-bold leading-tight" style={{ color: "var(--foreground)" }}>Premiação</h1>
             <p className="text-[#6b7280] text-xs">{eventName}</p>
           </div>
         </div>
@@ -351,8 +351,8 @@ export default function PremiacaoPage() {
         <div className="flex flex-1 overflow-hidden">
 
           {/* Coluna esquerda — Aguardando premiação */}
-          <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "#1a1a1a" }}>
-            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "#1a1a1a", backgroundColor: "#0a0a0a" }}>
+          <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
+            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
               <span className="text-xs font-bold text-[#fbbf24] uppercase tracking-wider flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#fbbf24] inline-block animate-pulse" />
                 Aguardando ({pendentes.length})
@@ -384,13 +384,13 @@ export default function PremiacaoPage() {
                           onClick={() => setSelectedId(groupBrackets[0].id)}
                           className="w-full text-left px-3 py-3 border-b transition-colors"
                           style={{
-                            borderColor: "#1a1a1a",
+                            borderColor: "var(--border)",
                             backgroundColor: isSelected ? "#1a0a00" : "transparent",
                             borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
                           }}
                         >
                           <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
-                          <p className="text-sm font-medium text-white leading-tight mt-0.5 truncate pr-2">{label}</p>
+                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{label}</p>
                           {allPlacements.length > 0 && (
                             <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{allPlacements.length} premiado(s)</p>
                           )}
@@ -406,13 +406,13 @@ export default function PremiacaoPage() {
                           onClick={() => setSelectedId(b.id)}
                           className="w-full text-left px-3 py-3 border-b transition-colors"
                           style={{
-                            borderColor: "#1a1a1a",
+                            borderColor: "var(--border)",
                             backgroundColor: isSelected ? "#1a0a00" : "transparent",
                             borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                          <p className="text-sm font-medium text-white leading-tight mt-0.5 truncate pr-2">{catLabel(b)}</p>
+                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
                           {placements.length > 0 && (
                             <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
                           )}
@@ -437,7 +437,7 @@ export default function PremiacaoPage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Colocações — coluna fixa esquerda */}
-                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "#1a1a1a" }}>
+                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho */}
                   <div
                     className="rounded-xl border p-4"
@@ -493,8 +493,8 @@ export default function PremiacaoPage() {
                             >
                               <span className="text-3xl shrink-0">{cfg.icon}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-base font-bold truncate" style={{ color: awarded ? "#4ade80" : "#f9fafb" }}>{regName}</p>
-                                {teamName && <p className="text-sm text-[#6b7280] truncate">{teamName}</p>}
+                                <p className="text-base font-bold leading-snug" style={{ color: awarded ? "#4ade80" : "#f9fafb" }}>{regName}</p>
+                                {teamName && <p className="text-sm text-[#6b7280] leading-snug">{teamName}</p>}
                                 <p className="text-xs font-semibold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
                               </div>
                               {awarded ? (
@@ -507,7 +507,7 @@ export default function PremiacaoPage() {
                                   onClick={() => handlePremiar(pl.sourceBracket, pl)}
                                   disabled={isAwardingNow || !pl.registration}
                                   className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
-                                  style={{ backgroundColor: "#dc2626", color: "#fff" }}
+                                  style={{ backgroundColor: "#dc2626", color: "var(--foreground)" }}
                                 >
                                   {isAwardingNow ? "..." : "Premiar"}
                                 </button>
@@ -574,8 +574,8 @@ export default function PremiacaoPage() {
           </div>
 
           {/* Coluna direita — Premiadas */}
-          <div className="w-56 shrink-0 flex flex-col border-l overflow-y-auto" style={{ borderColor: "#1a1a1a" }}>
-            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "#1a1a1a", backgroundColor: "#0a0a0a" }}>
+          <div className="w-56 shrink-0 flex flex-col border-l overflow-y-auto" style={{ borderColor: "var(--border)" }}>
+            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
               <span className="text-xs font-bold text-[#a78bfa] uppercase tracking-wider flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] inline-block" />
                 Premiadas ({premiadas.length})
@@ -597,7 +597,7 @@ export default function PremiacaoPage() {
                       onClick={() => setSelectedId(b.id)}
                       className="w-full text-left px-3 py-3 border-b transition-colors"
                       style={{
-                        borderColor: "#1a1a1a",
+                        borderColor: "var(--border)",
                         backgroundColor: isSelected ? "#0d0d1a" : "transparent",
                         borderLeft: isSelected ? "3px solid #a78bfa" : "3px solid transparent",
                       }}

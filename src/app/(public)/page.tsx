@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -31,8 +31,8 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   INSCRICOES_ABERTAS: { bg: "#16a34a20", text: "#4ade80" },
   INSCRICOES_ENCERRADAS: { bg: "#92400e20", text: "#fbbf24" },
   EM_ANDAMENTO: { bg: "#1e3a5f30", text: "#60a5fa" },
-  ENCERRADO: { bg: "#1a1a1a", text: "#6b7280" },
-  RASCUNHO: { bg: "#1a1a1a", text: "#6b7280" },
+  ENCERRADO: { bg: "var(--card-alt)", text: "#6b7280" },
+  RASCUNHO: { bg: "var(--card-alt)", text: "#6b7280" },
 }
 
 export default function HomePage() {
@@ -55,7 +55,7 @@ export default function HomePage() {
       <section
         className="relative py-24 px-4 overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #0a0a0a 0%, #1a0000 50%, #0a0a0a 100%)",
+          background: "linear-gradient(135deg, var(--background) 0%, #1a0000 50%, var(--background) 100%)",
         }}
       >
         {/* Red glow */}
@@ -93,7 +93,7 @@ export default function HomePage() {
             <Link
               href="/cadastro"
               className="px-8 py-3 rounded-lg font-semibold border transition-colors hover:border-white hover:text-white"
-              style={{ borderColor: "#333333", color: "#9ca3af" }}
+              style={{ borderColor: "var(--border-alt)", color: "var(--muted-foreground)" }}
             >
               Criar Conta
             </Link>
@@ -123,16 +123,16 @@ export default function HomePage() {
               <div
                 key={i}
                 className="rounded-xl border h-56 animate-pulse"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               />
             ))}
           </div>
         ) : events.length === 0 ? (
           <div
             className="rounded-xl border p-16 text-center"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
-            <Trophy className="h-10 w-10 text-[#333333] mx-auto mb-3" />
+            <Trophy className="h-10 w-10 text-[var(--border-alt)] mx-auto mb-3" />
             <p className="text-[#6b7280]">Nenhum evento programado no momento.</p>
           </div>
         ) : (
@@ -147,7 +147,7 @@ export default function HomePage() {
                   key={event.id}
                   href={`/eventos/${event.id}`}
                   className="group block rounded-xl border overflow-hidden hover:border-[#dc2626] transition-colors"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   {/* Banner */}
                   {event.banner ? (
@@ -161,7 +161,7 @@ export default function HomePage() {
                     <div
                       className="w-full h-40 flex items-center justify-center"
                       style={{
-                        background: "linear-gradient(135deg, #1a0000 0%, #111111 100%)",
+                        background: "linear-gradient(135deg, #1a0000 0%, var(--card) 100%)",
                       }}
                     >
                       <div

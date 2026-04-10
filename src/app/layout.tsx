@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { SessionProvider } from "next-auth/react"
 import { auth } from "@/lib/auth"
+import { Providers } from "@/components/Providers"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,12 +22,9 @@ export default async function RootLayout({
   const session = await auth()
 
   return (
-    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
-      <body
-        className="min-h-full flex flex-col"
-        style={{ backgroundColor: "#0a0a0a", color: "#ffffff" }}
-      >
-        <SessionProvider session={session}>{children}</SessionProvider>
+    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col">
+        <Providers session={session}>{children}</Providers>
       </body>
     </html>
   )
