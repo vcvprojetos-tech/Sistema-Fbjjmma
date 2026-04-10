@@ -126,17 +126,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-[#6b7280]">
-            Não tem conta?{" "}
-            <Link
-              href="/cadastro"
-              className="text-[#dc2626] hover:text-[#ef4444] font-medium transition-colors"
-            >
-              Criar conta
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   )

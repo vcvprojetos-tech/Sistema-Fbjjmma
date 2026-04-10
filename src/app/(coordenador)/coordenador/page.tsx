@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -7,24 +7,24 @@ import { useSession } from "next-auth/react"
 export default function CoordenadorEntradaPage() {
   const router = useRouter()
   const { data: session } = useSession()
-  const [pin, setPin] = useState("")
+  const [tatameNum, setTatameNum] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (pin.length < 4) return
+    if (!tatameNum) return
     setLoading(true)
     setError("")
     try {
-      const res = await fetch("/api/coordenador/pin", {
+      const res = await fetch("/api/coordenador/entrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ tatameNum }),
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "PIN inválido.")
+        setError(data.error || "Erro ao entrar.")
       } else {
         router.push(`/coordenador/${data.tatameId}`)
       }
@@ -35,51 +35,45 @@ export default function CoordenadorEntradaPage() {
     }
   }
 
-  function handlePinInput(val: string) {
-    const digits = val.replace(/\D/g, "").slice(0, 4)
-    setPin(digits)
-    setError("")
-  }
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-white">Controle de Tatame</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Controle de Tatame</h1>
           {session?.user && (
-            <p className="text-[#9ca3af] text-sm">Olá, {session.user.name?.split(" ")[0]}</p>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Olá, {session.user.name?.split(" ")[0]}</p>
           )}
-          <p className="text-[#6b7280] text-sm mt-2">
-            Digite o PIN do tatame para iniciar o controle
+          <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>
+            Selecione o número do tatame que você está operando
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              placeholder="PIN do tatame"
-              value={pin}
-              onChange={(e) => handlePinInput(e.target.value)}
-              className="w-full text-center text-4xl font-mono tracking-[1rem] h-20 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#dc2626]"
-              style={{
-                backgroundColor: "var(--card)",
-                borderColor: error ? "#dc2626" : "var(--border-alt)",
-                color: "#fbbf24",
-              }}
-              maxLength={4}
-            />
-            {error && <p className="text-[#dc2626] text-sm text-center">{error}</p>}
-          </div>
+          <select
+            value={tatameNum}
+            onChange={(e) => { setTatameNum(e.target.value); setError("") }}
+            className="w-full h-16 rounded-xl border text-xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-[#dc2626]"
+            style={{
+              backgroundColor: "var(--card)",
+              borderColor: error ? "#dc2626" : "var(--border-alt)",
+              color: tatameNum ? "#fbbf24" : "var(--muted)",
+            }}
+          >
+            <option value="">Selecione o tatame</option>
+            {[1,2,3,4,5,6,7,8].map(n => (
+              <option key={n} value={String(n)}>Tatame {n}</option>
+            ))}
+          </select>
+
+          {error && <p className="text-[#dc2626] text-sm text-center">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading || pin.length < 4}
+            disabled={loading || !tatameNum}
             className="w-full h-14 rounded-xl font-bold text-lg text-white transition-opacity disabled:opacity-40"
             style={{ backgroundColor: "#dc2626" }}
           >
-            {loading ? "Verificando..." : "Entrar"}
+            {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
       </div>
