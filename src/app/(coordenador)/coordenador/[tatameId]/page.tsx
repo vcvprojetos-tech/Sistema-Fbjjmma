@@ -119,11 +119,15 @@ export default function TatamePage() {
   const [pesoStep, setPesoStep] = useState(false)
   const [pesoInput, setPesoInput] = useState("")
 
+  const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
+
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     else setRefreshing(true)
     try {
-      const res = await fetch(`/api/coordenador/tatame/${tatameId}`)
+      const res = await fetch(`/api/coordenador/tatame/${tatameId}`, {
+        headers: { "x-tatame-pin": getPin() },
+      })
       const data = await res.json()
       if (data.id) setTatame(data)
     } catch {
@@ -132,17 +136,41 @@ export default function TatamePage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [tatameId])
+  }, [tatameId, getPin])
 
   useEffect(() => { load() }, [load])
 
+  // Desconectar ao sair da página
+  useEffect(() => {
+    const disconnect = () => {
+      const pin = getPin()
+      if (!pin) return
+      navigator.sendBeacon(
+        `/api/coordenador/tatame/${tatameId}`,
+        new Blob([JSON.stringify({})], { type: "application/json" })
+      )
+      // sendBeacon não suporta headers customizados, usamos fetch com keepalive
+      fetch(`/api/coordenador/tatame/${tatameId}`, {
+        method: "PATCH",
+        headers: { "x-tatame-pin": pin },
+        keepalive: true,
+      }).catch(() => {})
+    }
+    window.addEventListener("beforeunload", disconnect)
+    return () => {
+      window.removeEventListener("beforeunload", disconnect)
+      disconnect()
+    }
+  }, [tatameId, getPin])
+
   // SSE: server pushes "refresh" instantly when brackets change
   useEffect(() => {
-    const es = new EventSource(`/api/coordenador/tatame/${tatameId}/stream`)
+    const pin = getPin()
+    const es = new EventSource(`/api/coordenador/tatame/${tatameId}/stream?pin=${encodeURIComponent(pin)}`)
     es.onmessage = () => load(true)
-    es.onerror = () => es.close() // fall back to polling on error
+    es.onerror = () => es.close()
     return () => es.close()
-  }, [tatameId, load])
+  }, [tatameId, load, getPin])
 
   // Fallback polling every 10s (covers SSE reconnect gaps)
   useEffect(() => {
@@ -163,7 +191,10 @@ export default function TatamePage() {
     setActionLoading(true)
     setError("")
     try {
-      const res = await fetch(`/api/coordenador/chave/${bracketId}/iniciar`, { method: "POST" })
+      const res = await fetch(`/api/coordenador/chave/${bracketId}/iniciar`, {
+        method: "POST",
+        headers: { "x-tatame-pin": getPin() },
+      })
       const data = await res.json()
       if (!res.ok) setError(data.error || "Erro ao iniciar chave.")
       else await load(true)
@@ -172,7 +203,7 @@ export default function TatamePage() {
     } finally {
       setActionLoading(false)
     }
-  }, [load])
+  }, [load, getPin])
 
   const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string) => {
     setActionLoading(true)
@@ -180,7 +211,7 @@ export default function TatamePage() {
     try {
       const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
         body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null }),
       })
       const data = await res.json()
@@ -194,7 +225,7 @@ export default function TatamePage() {
       setPesoStep(false)
       setPesoInput("")
     }
-  }, [load])
+  }, [load, getPin])
 
   if (loading) {
     return (

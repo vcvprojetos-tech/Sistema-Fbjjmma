@@ -1081,7 +1081,7 @@ export default function EventoDetailPage() {
                   if (!res.ok) alert(data.error || "Erro ao excluir atletas.")
                   else {
                     setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
-                    setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
+                    setFilterResetKey(k => k + 1)
                   }
                 } catch {
                   alert("Erro ao excluir atletas.")
@@ -1321,8 +1321,8 @@ export default function EventoDetailPage() {
                     style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   >
                     <div
-                      className="px-4 py-3 font-semibold text-sm" style={{ color: "var(--foreground)" }}
-                      style={{ borderBottom: "1px solid var(--border)" }}
+                      className="px-4 py-3 font-semibold text-sm"
+                      style={{ color: "var(--foreground)", borderBottom: "1px solid var(--border)" }}
                     >
                       {sex === "MASCULINO" ? "Masculino" : "Feminino"} |{" "}
                       {AGE_GROUP_LABELS[ageGroup]?.split(" (")[0] || ageGroup} |{" "}
@@ -1580,8 +1580,8 @@ export default function EventoDetailPage() {
                         style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                       >
                         <div
-                          className="px-4 py-3 font-semibold text-sm" style={{ color: "var(--foreground)" }}
-                          style={{ borderBottom: "1px solid var(--border)" }}
+                          className="px-4 py-3 font-semibold text-sm"
+                          style={{ color: "var(--foreground)", borderBottom: "1px solid var(--border)" }}
                         >
                           {wc
                             ? `${wc.sex === "MASCULINO" ? "Masculino" : "Feminino"} | ${AGE_GROUP_LABELS[wc.ageGroup]?.split(" (")[0] || wc.ageGroup} | ${wc.name}`
@@ -1770,25 +1770,37 @@ export default function EventoDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
+                  const emEspera = !operador
                   return (
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
-                      style={{ borderColor: "#16a34a40", backgroundColor: "#0d1f0d" }}
+                      style={{
+                        borderColor: emEspera ? "#7f1d1d40" : "#16a34a40",
+                        backgroundColor: emEspera ? "#1c0a0a" : "#0d1f0d",
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-white">{tatame.name}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#14532d40", color: "#4ade80" }}>
-                          ATIVO
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{
+                            backgroundColor: emEspera ? "#7f1d1d40" : "#14532d40",
+                            color: emEspera ? "#f87171" : "#4ade80",
+                          }}
+                        >
+                          {emEspera ? "EM ESPERA" : "ATIVO"}
                         </span>
                       </div>
                       <div className="text-xs text-[#6b7280] space-y-1">
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
-                        {operador && (
+                        {operador ? (
                           <p className="text-[#4ade80]">
                             Operando: {operador.user.name} desde{" "}
                             {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
+                        ) : (
+                          <p className="text-[#f87171]">Coordenador desconectado</p>
                         )}
                       </div>
                       <div className="flex justify-end">

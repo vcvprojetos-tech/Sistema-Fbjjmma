@@ -19,13 +19,54 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "CPF não encontrado ou sem permissão de acesso." }, { status: 403 })
   }
 
-  const event = await prisma.event.findFirst({
-    where: { deletedAt: null },
-    orderBy: { date: "desc" },
+  // Pega o evento mais próximo de hoje (próximo futuro ou o mais recente passado)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  let event = await prisma.event.findFirst({
+    where: { deletedAt: null, date: { gte: today } },
+    orderBy: { date: "asc" },
   })
 
   if (!event) {
+    event = await prisma.event.findFirst({
+      where: { deletedAt: null },
+      orderBy: { date: "desc" },
+    })
+  }
+
+  if (!event) {
     return NextResponse.json({ error: "Nenhum evento encontrado." }, { status: 404 })
+  }
+
+  // Verifica se o número do tatame já está sendo operado por outro coordenador
+  const tatameOcupado = await prisma.tatame.findFirst({
+    where: {
+      eventId: event.id,
+      name: { endsWith: `- Tatame ${tatameNum}` },
+      isActive: true,
+      operations: {
+        some: {
+          endedAt: null,
+          NOT: { userId: user.id },
+        },
+      },
+    },
+    include: {
+      operations: {
+        where: { endedAt: null },
+        include: { user: { select: { name: true } } },
+        take: 1,
+      },
+    },
+  })
+
+  if (tatameOcupado) {
+    const operador = tatameOcupado.operations[0]?.user.name || "outro coordenador"
+    return NextResponse.json(
+      { error: `Tatame ${tatameNum} já está sendo operado por ${operador}.` },
+      { status: 409 }
+    )
   }
 
   const tatameName = `${user.name} - Tatame ${tatameNum}`
@@ -63,6 +104,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     tatameId: tatame.id,
     tatameName: tatame.name,
+    pin: tatame.pin,
     event: { id: event.id, name: event.name },
   })
 }

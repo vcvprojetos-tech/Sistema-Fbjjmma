@@ -33,6 +33,7 @@ export default function CoordenadorEntradaPage() {
       if (!res.ok) {
         setError(data.error || "Erro ao entrar.")
       } else {
+        sessionStorage.setItem(`tatame_pin_${data.tatameId}`, data.pin)
         router.push(`/coordenador/${data.tatameId}`)
       }
     } catch {

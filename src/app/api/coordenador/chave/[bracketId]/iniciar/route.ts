@@ -9,7 +9,8 @@ export async function POST(
   { params }: { params: Promise<{ bracketId: string }> }
 ) {
   const session = await auth()
-  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
+  const pin = _req.headers.get("x-tatame-pin")
+  if (!session && !pin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
 
   const { bracketId } = await params
 
