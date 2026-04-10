@@ -12,7 +12,7 @@ export async function GET(
   const { id } = await params
 
   const tatames = await prisma.tatame.findMany({
-    where: { eventId: id },
+    where: { eventId: id, isActive: true },
     include: {
       brackets: {
         select: { id: true, bracketNumber: true, status: true, weightCategory: true, belt: true, isAbsolute: true },

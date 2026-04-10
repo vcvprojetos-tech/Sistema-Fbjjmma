@@ -1759,26 +1759,13 @@ export default function EventoDetailPage() {
 
           {/* Tatame cards */}
           <div className="space-y-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>Tatames</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>Tatames Ativos</h3>
               {tatamesLoading && <span className="text-xs text-[#6b7280]">Carregando...</span>}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nome (ex: Tatame 1)"
-                  value={novoTatameNome}
-                  onChange={(e) => setNovoTatameNome(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") criarTatame() }}
-                  className="w-48"
-                />
-                <Button size="sm" onClick={criarTatame} disabled={novoTatameSaving || !novoTatameNome.trim()}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  {novoTatameSaving ? "Criando..." : "Adicionar"}
-                </Button>
-              </div>
             </div>
 
             {tatames.length === 0 ? (
-              <p className="text-sm text-[#6b7280] py-4">Nenhum tatame criado. Adicione tatames para ativar o controle ao vivo.</p>
+              <p className="text-sm text-[#6b7280] py-4">Nenhum coordenador conectado. Os tatames aparecem aqui quando os coordenadores acessam a tela de controle.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {tatames.map((tatame) => {
@@ -1787,31 +1774,24 @@ export default function EventoDetailPage() {
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
-                      style={{ borderColor: tatame.isActive ? "#16a34a40" : "var(--border-alt)", backgroundColor: tatame.isActive ? "#0d1f0d" : "var(--card)" }}
+                      style={{ borderColor: "#16a34a40", backgroundColor: "#0d1f0d" }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold" style={{ color: tatame.isActive ? "#ffffff" : "var(--foreground)" }}>{tatame.name}</span>
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: tatame.isActive ? "#14532d40" : "var(--card-alt)", color: tatame.isActive ? "#4ade80" : "var(--muted)" }}
-                        >
-                          {tatame.isActive ? "ATIVO" : "INATIVO"}
+                        <span className="font-semibold text-white">{tatame.name}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "#14532d40", color: "#4ade80" }}>
+                          ATIVO
                         </span>
                       </div>
                       <div className="text-xs text-[#6b7280] space-y-1">
-                        <p>PIN: <span className="font-mono text-[#fbbf24] font-bold tracking-widest text-sm">{tatame.pin}</span></p>
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
                         {operador && (
                           <p className="text-[#4ade80]">
-                            Operando: {operador.user.name.split(" ")[0]} desde{" "}
+                            Operando: {operador.user.name} desde{" "}
                             {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => toggleTatameAtivo(tatame.id, !tatame.isActive)}>
-                          {tatame.isActive ? "Desativar" : "Ativar"}
-                        </Button>
+                      <div className="flex justify-end">
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-[#dc2626]" onClick={() => excluirTatame(tatame.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
