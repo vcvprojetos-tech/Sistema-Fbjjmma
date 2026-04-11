@@ -46,6 +46,7 @@ interface BMatch {
   winnerId: string | null
   position1Id: string | null
   position2Id: string | null
+  isWO?: boolean
 }
 
 interface BracketData {
@@ -754,7 +755,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       return third?.registration ?? null
     }
     const champSemi = matches.find(m => m.round === maxRound - 1 && m.winnerId === finalWinnerId)
-    if (!champSemi) return null
+    // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
+    if (!champSemi || champSemi.isWO) return null
     const loserId = champSemi.winnerId === champSemi.position1Id ? champSemi.position2Id : champSemi.position1Id
     return loserId ? posIdMap.get(loserId)?.registration ?? null : null
   })()
