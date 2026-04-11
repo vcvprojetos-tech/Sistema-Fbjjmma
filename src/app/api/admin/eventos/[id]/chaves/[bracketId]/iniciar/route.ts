@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { resetBracketAwards, propagateBracket, checkAndCreateGrandFinal } from "@/lib/bracket-utils"
+import { propagateBracket } from "@/lib/bracket-utils"
 
 export async function POST(
   _req: NextRequest,
@@ -32,12 +32,19 @@ export async function POST(
     // Delete any existing matches
     await prisma.match.deleteMany({ where: { bracketId } })
 
-    // Special case: only 1 athlete — bracket finishes immediately
+    // Special case: only 1 athlete — cria partida solo para pesagem
     if (positions.length === 1) {
-      await resetBracketAwards(bracketId)
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
-      await checkAndCreateGrandFinal(bracketId)
-      return NextResponse.json({ message: "Chave finalizada (único atleta)." })
+      await prisma.match.create({
+        data: {
+          bracketId,
+          round: 1,
+          matchNumber: 1,
+          position1Id: positions[0].id,
+          position2Id: null,
+        },
+      })
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      return NextResponse.json({ message: "Chave iniciada." })
     }
 
     // 3-athlete FBJJMMA special bracket (rule 2.3):

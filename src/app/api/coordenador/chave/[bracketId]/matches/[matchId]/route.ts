@@ -26,6 +26,39 @@ export async function PUT(
     if (!match) return NextResponse.json({ error: "Partida não encontrada." }, { status: 404 })
     if (match.winnerId) return NextResponse.json({ error: "Partida já finalizada." }, { status: 400 })
 
+    // Chave com 1 atleta: position2Id é null
+    const isSoloMatch = match.position2Id === null
+
+    if (isSoloMatch) {
+      // W.O. no único atleta: finaliza sem campeão
+      if (isWO) {
+        await prisma.match.update({
+          where: { id: matchId },
+          data: {
+            winnerId: null,
+            isWO: true,
+            woType: woType ? (woType as WOType) : null,
+            ...(woWeight != null && woType === "PESO" && { woWeight1: Number(woWeight) }),
+            endedAt: new Date(),
+          },
+        })
+        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
+        if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+        return NextResponse.json({ message: "Atleta desclassificado. Chave finalizada sem campeão." })
+      }
+      // Campeão confirmado: usa position1Id como vencedor
+      if (!match.position1Id) return NextResponse.json({ error: "Atleta não encontrado." }, { status: 400 })
+      await prisma.match.update({
+        where: { id: matchId },
+        data: { winnerId: match.position1Id, isWO: false, endedAt: new Date() },
+      })
+      await resetBracketAwards(bracketId)
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
+      await checkAndCreateGrandFinal(bracketId)
+      if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+      return NextResponse.json({ message: "Campeão declarado. Chave finalizada." })
+    }
+
     if (!winnerId) return NextResponse.json({ error: "Vencedor obrigatório." }, { status: 400 })
     if (winnerId !== match.position1Id && winnerId !== match.position2Id) {
       return NextResponse.json({ error: "Vencedor inválido." }, { status: 400 })

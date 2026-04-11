@@ -313,6 +313,13 @@ export default function TatamePage() {
       .map(m => ({ ...m, _bracketId: b.id }))
   ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
 
+  // Partidas solo (1 atleta): pesagem individual
+  const soloMatches = groupBrackets.flatMap(b =>
+    b.matches
+      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
+      .map(m => ({ ...m, _bracketId: b.id }))
+  )
+
   // Para exibir progresso: total de partidas no grupo
   const allGroupMatches = groupBrackets.flatMap(b => b.matches)
   const maxRound = allGroupMatches.length > 0 ? Math.max(...allGroupMatches.map(m => m.round)) : 0
@@ -325,8 +332,14 @@ export default function TatamePage() {
   const podiumLastMatch = podiumRealMatches.length > 0
     ? [...podiumRealMatches].sort((a, b) => b.round - a.round || b.matchNumber - a.matchNumber)[0] ?? null
     : null
-  const champion = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch?.winnerId
-    ? podiumBracket.positions.find(p => p.id === podiumLastMatch.winnerId) ?? null
+  // Chave de 1 atleta: a "partida final" é a partida solo (sem position2Id)
+  const soloFinalMatch = podiumBracket?.matches.find(m => m.position1Id !== null && m.position2Id === null && m.endedAt) ?? null
+  const champion = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA")
+    ? (podiumLastMatch?.winnerId
+        ? podiumBracket!.positions.find(p => p.id === podiumLastMatch.winnerId) ?? null
+        : soloFinalMatch?.winnerId
+          ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
+          : null)
     : null
   const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch
     ? podiumBracket.positions.find(p =>
@@ -590,6 +603,43 @@ export default function TatamePage() {
                       ))}
                     </div>
                   )}
+
+                  {/* Partidas solo: 1 atleta aguardando pesagem */}
+                  {soloMatches.map(match => {
+                    const p1 = match.position1
+                    const p1Name = getAthleteName(p1)
+                    return (
+                      <div key={match.id} className="rounded-xl border overflow-hidden" style={{ borderColor: "#78350f60", backgroundColor: "var(--card)" }}>
+                        <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <span className="text-xs text-[#fbbf24] font-semibold">Pesagem — Atleta Único</span>
+                        </div>
+                        <div className="px-4 py-4 flex items-center gap-3">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm" style={{ backgroundColor: "#222", color: "var(--foreground)" }}>1</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-white text-sm truncate">{p1Name}</p>
+                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 p-3" style={{ borderTop: "1px solid var(--border)" }}>
+                          <button
+                            onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
+                            disabled={actionLoading}
+                            className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
+                            style={{ backgroundColor: "#15803d" }}
+                          >
+                            ✓ Campeão
+                          </button>
+                          <button
+                            onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId })}
+                            disabled={actionLoading}
+                            className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
+                          >
+                            W.O.
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
 
                   {/* EM_ANDAMENTO — todas as partidas prontas (ambos atletas definidos) */}
                   {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && (
