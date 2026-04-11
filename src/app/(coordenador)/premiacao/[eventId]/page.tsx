@@ -102,6 +102,9 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   }
 
   if (positions.length === 1 && positions[0].registration) {
+    // Se o único atleta tomou W.O., não há colocação
+    const soloMatch = matches.find(m => m.position1Id !== null && m.position2Id === null)
+    if (soloMatch?.isWO) return []
     return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
   }
 
@@ -299,6 +302,11 @@ export default function PremiacaoPage() {
       if (b.status !== "FINALIZADA") return false
       // Sub-chave com grande final em andamento: não listar ainda
       if (b.bracketGroupId && !b.isGrandFinal && grandFinalGroups.has(b.bracketGroupId)) return false
+      // Chave de 1 atleta que tomou W.O.: não vai para premiação
+      if (b.positions.length === 1) {
+        const soloMatch = b.matches.find(m => m.position1Id !== null && m.position2Id === null)
+        if (soloMatch?.isWO) return false
+      }
       return true
     })
   )
