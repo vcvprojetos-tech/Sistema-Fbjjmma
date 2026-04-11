@@ -661,11 +661,11 @@ export default function TatamePage() {
                             </button>
                             {!isDone && p1?.id && p2?.id && (
                               <div className="flex gap-2 p-3" style={{ borderTop: "1px solid var(--border)" }}>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId })} disabled={actionLoading}
+                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId })} disabled={actionLoading}
                                   className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
                                   W.O. — {p1Name.split(" ")[0]}
                                 </button>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId })} disabled={actionLoading}
+                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId })} disabled={actionLoading}
                                   className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
                                   W.O. — {p2Name.split(" ")[0]}
                                 </button>
