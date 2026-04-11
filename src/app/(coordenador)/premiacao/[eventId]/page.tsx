@@ -55,6 +55,7 @@ interface Match {
   position1Id: string | null
   position2Id: string | null
   winnerId: string | null
+  isWO: boolean
 }
 
 interface BracketData {
@@ -157,7 +158,8 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
       const champSemi = realMatches.find(
         (m) => m.round === maxRound - 1 && m.winnerId === finalMatch.winnerId
       )
-      if (champSemi) {
+      // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
+      if (champSemi && !champSemi.isWO) {
         const loserId =
           champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
         const loserPos = positions.find((p) => p.id === loserId)

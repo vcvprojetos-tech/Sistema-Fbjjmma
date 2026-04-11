@@ -337,6 +337,8 @@ export default function TatamePage() {
       if (podiumMaxRound < 2) return null
       const semi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
       if (!semi) return null
+      // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
+      if (semi.isWO) return null
       const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
       return loserId ? podiumBracket.positions.find(p => p.id === loserId) ?? null : null
     }
