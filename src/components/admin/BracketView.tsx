@@ -3,18 +3,18 @@
 import React, { useMemo } from "react"
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
-const ATHLETE_H = 42
-const ATHLETE_W = 132
+const ATHLETE_H = 40
+const ATHLETE_W = 116
 // Result boxes (inner rounds) — small placeholders
 const RESULT_H = 16
-const RESULT_W = 26
+const RESULT_W = 24
 // Final center boxes
-const CENTER_W = 72
+const CENTER_W = 68
 // Spacing
-const ROUND_GAP = 9   // horizontal gap between any two columns
+const ROUND_GAP = 8   // horizontal gap between any two columns
 const GROUP_GAP = 8   // vertical gap between match pairs in athlete column
-const PADDING = 14
-const POS_LABEL_W = 18 // space for position number label beside athlete card
+const PADDING = 10
+const POS_LABEL_W = 16 // space for position number label beside athlete card
 const LINE_COLOR = "#555"
 const SCALE = 0.82     // fator de redução para caber na tela sem scroll horizontal
 
