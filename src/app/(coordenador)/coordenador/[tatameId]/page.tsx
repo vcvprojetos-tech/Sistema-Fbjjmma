@@ -118,6 +118,16 @@ export default function TatamePage() {
   const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string } | null>(null)
   const [pesoStep, setPesoStep] = useState(false)
   const [pesoInput, setPesoInput] = useState("")
+  const [presentAthletes, setPresentAthletes] = useState<Set<string>>(new Set())
+
+  const togglePresent = useCallback((posId: string) => {
+    setPresentAthletes(prev => {
+      const next = new Set(prev)
+      if (next.has(posId)) next.delete(posId)
+      else next.add(posId)
+      return next
+    })
+  }, [])
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -611,56 +621,93 @@ export default function TatamePage() {
                         const isDone = !!match.winnerId
                         const winnerIsP1 = match.winnerId === match.position1Id
                         const winnerIsP2 = match.winnerId === match.position2Id
+                        const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
+                        const p2Present = !!(p2?.id && presentAthletes.has(p2.id))
+                        const bothPresent = p1Present && p2Present
                         return (
                           <div key={match.id} className="rounded-xl border overflow-hidden"
-                            style={{ borderColor: isDone ? "#14532d40" : "#333", backgroundColor: "var(--card)" }}>
+                            style={{
+                              borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "#333",
+                              backgroundColor: "var(--card)",
+                            }}>
                             <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
                               <span className="text-xs text-[#6b7280]">
                                 R{match.round} · Partida {match.matchNumber}
                               </span>
-                              {isDone && (
+                              {isDone ? (
                                 <span className="text-xs text-[#4ade80] font-semibold">
                                   {match.isWO ? `W.O. (${match.woType === "PESO" ? "Peso" : "Ausência"})` : "Finalizada"}
                                 </span>
+                              ) : bothPresent ? (
+                                <span className="text-xs text-[#4ade80] font-semibold">● Prontos para lutar</span>
+                              ) : (
+                                <span className="text-xs text-[#6b7280]">Confirme a presença</span>
                               )}
                             </div>
-                            <button
-                              onClick={() => !isDone && !actionLoading && p1?.id && p1Name !== "BYE" && declararVencedor(match._bracketId, match.id, p1.id)}
-                              disabled={isDone || actionLoading || !p1?.id || p1Name === "BYE"}
-                              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:cursor-default"
-                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid var(--border)" }}
-                            >
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : "#222", color: "var(--foreground)" }}>
-                                {isDone && winnerIsP1 ? "✓" : "1"}
-                              </div>
+
+                            {/* Atleta 1 */}
+                            <div className="w-full px-4 py-3 flex items-center gap-3"
+                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid var(--border)" }}>
+                              <button
+                                onClick={() => !isDone && p1?.id && p1Name !== "BYE" && togglePresent(p1.id)}
+                                disabled={isDone || !p1?.id || p1Name === "BYE"}
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
+                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                                title={p1Present ? "Marcar como ausente" : "Marcar como presente"}
+                              >
+                                {(isDone && winnerIsP1) || p1Present ? "✓" : "1"}
+                              </button>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-white text-sm truncate">{p1Name}</p>
                                 {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                               </div>
-                              {!isDone && p1Name !== "BYE" && <span className="text-xs text-[#dc2626] font-bold shrink-0">TAP</span>}
-                            </button>
-                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
-                              <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
-                              <span className="text-xs text-[#444] font-bold py-1">VS</span>
-                              <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
+                              {!isDone && p1Name !== "BYE" && (
+                                <button
+                                  onClick={() => bothPresent && !actionLoading && p1?.id && declararVencedor(match._bracketId, match.id, p1.id)}
+                                  disabled={!bothPresent || actionLoading}
+                                  className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
+                                  style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                >
+                                  TAP
+                                </button>
+                              )}
                             </div>
-                            <button
-                              onClick={() => !isDone && !actionLoading && p2?.id && p2Name !== "BYE" && declararVencedor(match._bracketId, match.id, p2.id)}
-                              disabled={isDone || actionLoading || !p2?.id || p2Name === "BYE"}
-                              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:cursor-default"
-                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}
-                            >
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : "#222", color: "var(--foreground)" }}>
-                                {isDone && winnerIsP2 ? "✓" : "2"}
-                              </div>
+
+                            {/* VS */}
+                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "#222" }} />
+                              <span className="text-xs font-bold py-1" style={{ color: bothPresent && !isDone ? "#4ade80" : "#444" }}>VS</span>
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "#222" }} />
+                            </div>
+
+                            {/* Atleta 2 */}
+                            <div className="w-full px-4 py-3 flex items-center gap-3"
+                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}>
+                              <button
+                                onClick={() => !isDone && p2?.id && p2Name !== "BYE" && togglePresent(p2.id)}
+                                disabled={isDone || !p2?.id || p2Name === "BYE"}
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
+                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : p2Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                                title={p2Present ? "Marcar como ausente" : "Marcar como presente"}
+                              >
+                                {(isDone && winnerIsP2) || p2Present ? "✓" : "2"}
+                              </button>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-white text-sm truncate">{p2Name !== "BYE" ? p2Name : "— BYE —"}</p>
                                 {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p2)}</p>}
                               </div>
-                              {!isDone && p2Name !== "BYE" && <span className="text-xs text-[#dc2626] font-bold shrink-0">TAP</span>}
-                            </button>
+                              {!isDone && p2Name !== "BYE" && (
+                                <button
+                                  onClick={() => bothPresent && !actionLoading && p2?.id && declararVencedor(match._bracketId, match.id, p2.id)}
+                                  disabled={!bothPresent || actionLoading}
+                                  className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
+                                  style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                >
+                                  TAP
+                                </button>
+                              )}
+                            </div>
+
                             {!isDone && p1?.id && p2?.id && (
                               <div className="flex gap-2 p-3" style={{ borderTop: "1px solid var(--border)" }}>
                                 <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId })} disabled={actionLoading}
