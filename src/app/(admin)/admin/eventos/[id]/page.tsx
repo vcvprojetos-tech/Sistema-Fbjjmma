@@ -162,6 +162,7 @@ interface Bracket {
     winnerId: string | null
     position1Id: string | null
     position2Id: string | null
+    isWO: boolean
   }[]
 }
 
@@ -1928,7 +1929,9 @@ export default function EventoDetailPage() {
                     )
                   } else if (!bracket.bracketGroupId) {
                     const catLabel = `${getBracketLabel(bracket)} | Chave: ${bracket.bracketNumber}`
-                    const sc = statusColors[bracket.status] || statusColors.PENDENTE
+                    const isSoloWO = bracket.positions.length === 1 && bracket.matches.some(m => m.position1Id !== null && m.position2Id === null && m.isWO)
+                    const sc = isSoloWO ? { bg: "#78350f40", text: "#f97316" } : (statusColors[bracket.status] || statusColors.PENDENTE)
+                    const statusLabel = isSoloWO ? "W.O." : bracket.status
                     rows.push(
                       <div
                         key={bracket.id}
@@ -1942,7 +1945,7 @@ export default function EventoDetailPage() {
                           {catLabel}
                         </button>
                         <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
-                          {bracket.status}
+                          {statusLabel}
                         </span>
                         <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
                         <select
