@@ -329,13 +329,14 @@ model EventCoordinator {
 }
 
 model TatameOperation {
-  id        String    @id @default(cuid())
-  tatameId  String
-  tatame    Tatame    @relation(fields: [tatameId], references: [id])
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  startedAt DateTime  @default(now())
-  endedAt   DateTime?
+  id             String    @id @default(cuid())
+  tatameId       String
+  tatame         Tatame    @relation(fields: [tatameId], references: [id])
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  lastHeartbeat  DateTime?
 
   @@map("tatame_operations")
 }

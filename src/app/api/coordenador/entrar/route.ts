@@ -69,6 +69,25 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Verifica se este coordenador já está conectado em outro dispositivo
+  // Considera ativo apenas se houve heartbeat nos últimos 2 minutos
+  const heartbeatCutoff = new Date(Date.now() - 2 * 60 * 1000)
+  const sessaoAtiva = await prisma.tatameOperation.findFirst({
+    where: {
+      userId: user.id,
+      endedAt: null,
+      lastHeartbeat: { gte: heartbeatCutoff },
+    },
+    include: { tatame: { select: { name: true } } },
+  })
+
+  if (sessaoAtiva) {
+    return NextResponse.json(
+      { error: `Você já está conectado no ${sessaoAtiva.tatame.name} em outro dispositivo. Feche a outra sessão antes de continuar.` },
+      { status: 409 }
+    )
+  }
+
   const tatameName = `${user.name} - Tatame ${tatameNum}`
 
   let tatame = await prisma.tatame.findFirst({
@@ -98,7 +117,7 @@ export async function POST(req: NextRequest) {
   })
 
   await prisma.tatameOperation.create({
-    data: { tatameId: tatame.id, userId: user.id },
+    data: { tatameId: tatame.id, userId: user.id, lastHeartbeat: new Date() },
   })
 
   return NextResponse.json({

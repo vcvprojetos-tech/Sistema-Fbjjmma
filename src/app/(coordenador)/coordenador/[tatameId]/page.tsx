@@ -178,6 +178,21 @@ export default function TatamePage() {
     return () => clearInterval(interval)
   }, [load])
 
+  // Heartbeat a cada 30s: mantém a sessão vinculada a este dispositivo
+  useEffect(() => {
+    const pin = getPin()
+    if (!pin) return
+    const sendHeartbeat = () => {
+      fetch(`/api/coordenador/tatame/${tatameId}/heartbeat`, {
+        method: "POST",
+        headers: { "x-tatame-pin": pin },
+      }).catch(() => {})
+    }
+    sendHeartbeat()
+    const interval = setInterval(sendHeartbeat, 30000)
+    return () => clearInterval(interval)
+  }, [tatameId, getPin])
+
   // Auto-seleciona a primeira em andamento ou pendente
   useEffect(() => {
     if (!tatame || selectedId) return

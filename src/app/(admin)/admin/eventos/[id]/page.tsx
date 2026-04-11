@@ -1776,8 +1776,8 @@ export default function EventoDetailPage() {
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
                       style={{
-                        borderColor: emEspera ? "#7f1d1d40" : "#16a34a40",
-                        backgroundColor: emEspera ? "#1c0a0a" : "#0d1f0d",
+                        borderColor: emEspera ? "#78350f40" : "#16a34a40",
+                        backgroundColor: emEspera ? "#1c1200" : "#0d1f0d",
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -1785,11 +1785,11 @@ export default function EventoDetailPage() {
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
                           style={{
-                            backgroundColor: emEspera ? "#7f1d1d40" : "#14532d40",
-                            color: emEspera ? "#f87171" : "#4ade80",
+                            backgroundColor: emEspera ? "#78350f40" : "#14532d40",
+                            color: emEspera ? "#fbbf24" : "#4ade80",
                           }}
                         >
-                          {emEspera ? "EM ESPERA" : "ATIVO"}
+                          {emEspera ? "AGUARDANDO" : "ATIVO"}
                         </span>
                       </div>
                       <div className="text-xs text-[#6b7280] space-y-1">
@@ -1800,7 +1800,7 @@ export default function EventoDetailPage() {
                             {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         ) : (
-                          <p className="text-[#f87171]">Coordenador desconectado</p>
+                          <p className="text-[#fbbf24]">Aguardando reconexão...</p>
                         )}
                       </div>
                       <div className="flex justify-end">
