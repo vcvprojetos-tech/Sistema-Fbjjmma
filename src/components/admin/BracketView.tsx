@@ -865,7 +865,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         const champSemi = realMatches.find(
           m => m.round === maxRealRound - 1 && m.winnerId === finalMatch.winnerId
         )
-        if (champSemi) {
+        if (champSemi && !champSemi.isWO) {
           const losId = champSemi.winnerId === champSemi.position1Id ? champSemi.position2Id : champSemi.position1Id
           if (losId) terceiro = posMap2.get(losId)?.registration ?? null
         }
