@@ -286,6 +286,7 @@ model Registration {
   medal            String?
   teamPoints       Boolean            @default(true)
   awarded          Boolean            @default(false)
+  prizePix         String?
   affiliated       Boolean            @default(false)
   pointDiff        Boolean            @default(false)
   registeredAt     DateTime           @default(now())

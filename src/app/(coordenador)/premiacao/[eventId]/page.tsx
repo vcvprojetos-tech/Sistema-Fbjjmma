@@ -35,6 +35,7 @@ const MEDAL_BY_PLACE: Record<number, string> = { 1: "OURO", 2: "PRATA", 3: "BRON
 interface RegInfo {
   id: string
   awarded: boolean
+  prizePix: string | null
   medal: string | null
   guestName: string | null
   athlete: { user: { id: string; name: string } } | null
@@ -210,6 +211,8 @@ export default function PremiacaoPage() {
   const [awarding, setAwarding] = useState<Set<string>>(new Set())
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [pixModal, setPixModal] = useState<{ bracket: BracketData; placement: Placement } | null>(null)
+  const [pixValue, setPixValue] = useState("")
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -244,7 +247,7 @@ export default function PremiacaoPage() {
     if (pendentes.length > 0) setSelectedId(pendentes[0].id)
   }, [brackets, selectedId])
 
-  const handlePremiar = useCallback(async (bracket: BracketData, placement: Placement) => {
+  const handlePremiar = useCallback(async (bracket: BracketData, placement: Placement, prizePix?: string) => {
     if (!placement.registration) return
     const regId = placement.registration.id
     const medal = MEDAL_BY_PLACE[placement.place] ?? null
@@ -259,7 +262,7 @@ export default function PremiacaoPage() {
           ...b,
           positions: b.positions.map((p) => {
             if (p.registration?.id !== regId) return p
-            return { ...p, registration: { ...p.registration!, awarded: true, medal } }
+            return { ...p, registration: { ...p.registration!, awarded: true, medal, ...(prizePix !== undefined ? { prizePix } : {}) } }
           }),
         }
       })
@@ -269,7 +272,7 @@ export default function PremiacaoPage() {
       const res = await fetch(`/api/premiacao/${eventId}/award`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registrationId: regId, bracketId: bracket.id, medal }),
+        body: JSON.stringify({ registrationId: regId, bracketId: bracket.id, medal, ...(prizePix !== undefined ? { prizePix } : {}) }),
       })
       if (!res.ok) throw new Error("Erro")
       // Reload to get fresh bracket status from server (server decides when to mark PREMIADA)
@@ -335,7 +338,61 @@ export default function PremiacaoPage() {
     )
   }
 
+  const regName = pixModal?.placement.registration?.athlete?.user.name ?? pixModal?.placement.registration?.guestName ?? ""
+
   return (
+    <>
+    {pixModal && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
+        onClick={() => setPixModal(null)}
+      >
+        <div
+          className="rounded-2xl p-6 w-full max-w-sm mx-4 flex flex-col gap-4"
+          style={{ backgroundColor: "#111", border: "1px solid #333" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div>
+            <p className="text-xs text-[#6b7280] font-semibold uppercase tracking-wider mb-1">Premiação — 1° Lugar Absoluto</p>
+            <p className="text-white font-bold text-lg leading-tight">{regName}</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-[#9ca3af]">Chave PIX do atleta <span className="text-[#6b7280] font-normal">(opcional)</span></label>
+            <input
+              type="text"
+              value={pixValue}
+              onChange={(e) => setPixValue(e.target.value)}
+              placeholder="CPF, e-mail, telefone ou chave aleatória"
+              autoFocus
+              className="rounded-xl px-4 py-3 text-sm outline-none"
+              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff" }}
+            />
+          </div>
+          <div className="flex gap-3 mt-1">
+            <button
+              onClick={() => setPixModal(null)}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-colors"
+              style={{ backgroundColor: "#1f2937", color: "#9ca3af" }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                const { bracket, placement } = pixModal
+                setPixModal(null)
+                handlePremiar(bracket, placement, pixValue.trim() || undefined)
+              }}
+              className="flex-1 py-3 rounded-xl text-sm font-bold transition-colors"
+              style={{ backgroundColor: "#dc2626", color: "#fff" }}
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    {/*  page body  */}
     <div className="flex flex-col h-[calc(100vh-57px)]">
       {/* Header */}
       <div
@@ -528,7 +585,14 @@ export default function PremiacaoPage() {
                                 </div>
                               ) : (
                                 <button
-                                  onClick={() => handlePremiar(pl.sourceBracket, pl)}
+                                  onClick={() => {
+                                    if (pl.place === 1 && pl.sourceBracket.isAbsolute) {
+                                      setPixModal({ bracket: pl.sourceBracket, placement: pl })
+                                      setPixValue(pl.registration?.prizePix ?? "")
+                                    } else {
+                                      handlePremiar(pl.sourceBracket, pl)
+                                    }
+                                  }}
                                   disabled={isAwardingNow || !pl.registration}
                                   className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
                                   style={{ backgroundColor: "#dc2626", color: "var(--foreground)" }}
@@ -582,6 +646,7 @@ export default function PremiacaoPage() {
                                     guestName: p.registration.guestName,
                                     athlete: p.registration.athlete,
                                     team: p.registration.team,
+                                    prizePix: p.registration.prizePix,
                                   }
                                 : null,
                             })),
@@ -644,5 +709,6 @@ export default function PremiacaoPage() {
         </div>
       )}
     </div>
+    </>
   )
 }

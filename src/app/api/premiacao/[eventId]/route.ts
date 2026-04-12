@@ -28,6 +28,7 @@ export async function GET(
             select: {
               id: true,
               awarded: true,
+              prizePix: true,
               guestName: true,
               athlete: {
                 include: { user: { select: { id: true, name: true } } },

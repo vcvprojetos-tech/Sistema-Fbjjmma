@@ -9,7 +9,7 @@ export async function PUT(
   const { eventId } = await params
 
   try {
-    const { registrationId, bracketId, medal } = await req.json()
+    const { registrationId, bracketId, medal, prizePix } = await req.json()
 
     if (!registrationId) {
       return NextResponse.json({ error: "registrationId obrigatório." }, { status: 400 })
@@ -28,6 +28,7 @@ export async function PUT(
       data: {
         awarded: true,
         ...(medal ? { medal } : {}),
+        ...(prizePix !== undefined ? { prizePix: prizePix || null } : {}),
       },
     })
 

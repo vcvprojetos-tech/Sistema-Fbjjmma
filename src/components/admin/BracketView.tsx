@@ -31,6 +31,7 @@ interface Reg {
   athlete: { user: { name: string } } | null
   guestName: string | null
   team: { name: string } | null
+  prizePix?: string | null
 }
 
 interface BPos {
@@ -436,6 +437,9 @@ function ThreeAthleteBracket({
               <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
               <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
               {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
+              {label === "1° Lugar" && isAbsolute && reg.prizePix && (
+                <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
+              )}
             </div>
           ) : null)}
         </div>
@@ -944,6 +948,9 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
               <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
               <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
               {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
+              {label === "1° Lugar" && isAbsolute && reg.prizePix && (
+                <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
+              )}
             </div>
           ))}
         </div>
