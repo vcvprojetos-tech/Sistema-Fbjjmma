@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Search, Plus, Download, Pencil, Trash2 } from "lucide-react"
+import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -591,6 +591,19 @@ export default function EventoDetailPage() {
     if (!confirm("Excluir esta chave? Esta ação não pode ser desfeita.")) return
     setBrackets(prev => prev.filter(b => b.id !== bracketId))
     await fetch(`/api/admin/eventos/${id}/chaves/${bracketId}`, { method: "DELETE" })
+  }, [id])
+
+  const reiniciarChave = useCallback(async (bracketId: string) => {
+    if (!confirm("Reiniciar esta chave? Todos os resultados serão apagados e ela voltará para as pendentes.")) return
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/chaves/${bracketId}`, { method: "PATCH" })
+      if (!res.ok) { alert("Erro ao reiniciar chave."); return }
+      setBrackets(prev => prev.map(b => b.id !== bracketId ? b : {
+        ...b,
+        status: b.tatameId ? "DESIGNADA" : "PENDENTE",
+        matches: [],
+      }))
+    } catch { alert("Erro ao reiniciar chave.") }
   }, [id])
 
   const gerarChaves = useCallback(async () => {
@@ -1970,6 +1983,14 @@ export default function EventoDetailPage() {
                             <option key={t.id} value={t.id}>{t.name}</option>
                           ))}
                         </select>
+                        <button
+                          onClick={() => reiniciarChave(bracket.id)}
+                          className="shrink-0 p-1 rounded hover:text-[#fbbf24] transition-colors"
+                          style={{ color: "#6b7280" }}
+                          title="Reiniciar chave"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
                         <button
                           onClick={() => excluirChave(bracket.id)}
                           className="shrink-0 p-1 rounded hover:text-[#dc2626] transition-colors"
