@@ -19,7 +19,8 @@ export async function GET(
         orderBy: { bracketNumber: "asc" },
       },
       operations: {
-        where: { endedAt: null },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        where: { endedAt: null, lastHeartbeat: { gte: new Date(Date.now() - 2 * 60 * 1000) } } as any,
         include: { user: { select: { id: true, name: true } } },
         orderBy: { startedAt: "desc" },
         take: 1,
