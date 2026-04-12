@@ -47,6 +47,9 @@ interface BMatch {
   position1Id: string | null
   position2Id: string | null
   isWO?: boolean
+  woType?: string | null
+  woWeight1?: number | null
+  woWeight2?: number | null
 }
 
 interface BracketData {
@@ -98,6 +101,35 @@ function slotCenterY(slotIndex: number): number {
 
 function getRegName(reg: Reg | null): string {
   return reg?.athlete?.user.name ?? reg?.guestName ?? "—"
+}
+
+function woLabel(woType?: string | null, weight?: number | null): string {
+  if (woType === "PESO") return weight ? `Peso (${weight}kg)` : "Peso"
+  return "Ausência"
+}
+
+function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<string, BPos> }) {
+  const woMatches = matches.filter(m => m.isWO && m.winnerId && m.position1Id && m.position2Id)
+  if (woMatches.length === 0) return null
+  return (
+    <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
+      <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>W.O.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        {woMatches.map(m => {
+          const loserId = m.winnerId === m.position1Id ? m.position2Id : m.position1Id
+          const loserReg = loserId ? posIdMap.get(loserId)?.registration ?? null : null
+          const weight = m.winnerId === m.position1Id ? m.woWeight2 : m.woWeight1
+          return (
+            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
+              <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{getRegName(loserReg)}</span>
+              <span style={{ fontSize: 9, color: "#6b7280" }}>— {woLabel(m.woType, weight ?? null)}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function shortName(reg: Reg | null): string {
@@ -404,6 +436,7 @@ function ThreeAthleteBracket({
           ) : null)}
         </div>
       )}
+      <WOHistory matches={matches} posIdMap={posIdMap3} />
     </div>
   )
 }
@@ -911,6 +944,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           ))}
         </div>
       )}
+      <WOHistory matches={matches} posIdMap={posIdMap} />
     </div>
   )
 }

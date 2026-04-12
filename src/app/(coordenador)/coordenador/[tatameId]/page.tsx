@@ -46,6 +46,8 @@ interface MatchData {
   winnerId: string | null
   isWO: boolean
   woType: string | null
+  woWeight1: number | null
+  woWeight2: number | null
   startedAt: string | null
   endedAt: string | null
   position1: BracketPositionData | null

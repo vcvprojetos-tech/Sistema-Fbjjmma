@@ -56,6 +56,9 @@ interface Match {
   position2Id: string | null
   winnerId: string | null
   isWO: boolean
+  woType: string | null
+  woWeight1: number | null
+  woWeight2: number | null
 }
 
 interface BracketData {

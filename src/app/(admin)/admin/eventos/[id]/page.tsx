@@ -163,6 +163,9 @@ interface Bracket {
     position1Id: string | null
     position2Id: string | null
     isWO: boolean
+    woType: string | null
+    woWeight1: number | null
+    woWeight2: number | null
   }[]
 }
 
