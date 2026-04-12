@@ -1804,6 +1804,8 @@ export default function EventoDetailPage() {
                       </div>
                       <div className="text-xs text-[#6b7280] space-y-1">
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
+                        <p style={{ color: "#fbbf24" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
+                        <p style={{ color: "#4ade80" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
                         {operador ? (
                           <p className="text-[#4ade80]">
                             Operando: {operador.user.name} desde{" "}
