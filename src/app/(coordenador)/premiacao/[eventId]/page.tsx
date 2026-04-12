@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
-import { RefreshCw, Trophy, Award, CheckCircle2, ChevronRight } from "lucide-react"
+import { RefreshCw, Trophy, Award, CheckCircle2, ChevronRight, Search, X } from "lucide-react"
 import BracketView from "@/components/admin/BracketView"
 
 const AGE_GROUP_LABELS: Record<string, string> = {
@@ -192,6 +192,24 @@ function catLabel(bracket: BracketData): string {
   return base
 }
 
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+}
+
+function bracketMatchesSearch(bracket: BracketData, query: string): boolean {
+  const q = normalize(query)
+  if (!q) return false
+  return bracket.positions.some((p) => {
+    const name = p.registration?.athlete?.user.name ?? p.registration?.guestName ?? ""
+    return normalize(name).includes(q)
+  })
+}
+
 function sortBrackets(list: BracketData[]) {
   return [...list].sort((a, b) => {
     const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
@@ -213,6 +231,7 @@ export default function PremiacaoPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [pixModal, setPixModal] = useState<{ bracket: BracketData; placement: Placement } | null>(null)
   const [pixValue, setPixValue] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -406,7 +425,24 @@ export default function PremiacaoPage() {
             <p className="text-[#6b7280] text-xs">{eventName}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Campo de busca */}
+          <div className="relative flex items-center">
+            <Search className="absolute left-2.5 h-3.5 w-3.5 text-[#6b7280] pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar atleta..."
+              className="pl-8 pr-7 py-1.5 rounded-lg text-xs outline-none w-40"
+              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff" }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-2 text-[#6b7280] hover:text-white">
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
           {lastUpdated && (
             <span className="text-[#4b5563] text-xs hidden sm:inline">
               {lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -431,21 +467,75 @@ export default function PremiacaoPage() {
       ) : (
         <div className="flex flex-1 overflow-hidden">
 
-          {/* Coluna esquerda — Aguardando premiação */}
+          {/* Coluna esquerda — Busca ou Aguardando premiação */}
           <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
+            {searchQuery ? (
+              <>
+                <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
+                  <span className="text-xs font-bold text-[#3b82f6] uppercase tracking-wider flex items-center gap-1.5">
+                    <Search className="h-3 w-3" />
+                    Resultados ({brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length})
+                  </span>
+                </div>
+                {brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
+                    <p className="text-[#6b7280] text-xs">Nenhum atleta encontrado.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {brackets.filter(b => bracketMatchesSearch(b, searchQuery)).map(b => {
+                      const isSelected = b.id === selectedId
+                      const isPending = b.status === "FINALIZADA"
+                      const isAwarded = b.status === "PREMIADA"
+                      return (
+                        <button
+                          key={b.id}
+                          onClick={() => setSelectedId(b.id)}
+                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          style={{
+                            borderColor: "var(--border)",
+                            backgroundColor: isSelected ? "#0d1525" : "transparent",
+                            borderLeft: isSelected ? "3px solid #3b82f6" : "3px solid transparent",
+                          }}
+                        >
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
+                            {isPending && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#78350f40", color: "#fbbf24" }}>PENDENTE</span>}
+                            {isAwarded && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#4a1d9640", color: "#a78bfa" }}>PREMIADA</span>}
+                          </div>
+                          <p className="text-sm font-medium leading-tight truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
+                          {/* Destacar nomes que batem com a busca */}
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            {b.positions.filter(p => {
+                              const name = p.registration?.athlete?.user.name ?? p.registration?.guestName ?? ""
+                              return normalize(name).includes(normalize(searchQuery))
+                            }).map(p => (
+                              <p key={p.id} className="text-[10px] text-[#3b82f6] font-semibold truncate">
+                                {p.registration?.athlete?.user.name ?? p.registration?.guestName}
+                              </p>
+                            ))}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
             <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
               <span className="text-xs font-bold text-[#fbbf24] uppercase tracking-wider flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#fbbf24] inline-block animate-pulse" />
                 Aguardando ({pendentes.length})
               </span>
             </div>
+            )}
 
-            {pendentes.length === 0 ? (
+            {!searchQuery && pendentes.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
                 <CheckCircle2 className="h-8 w-8 text-[#4ade80]" />
                 <p className="text-[#4ade80] text-xs font-medium">Todas premiadas!</p>
               </div>
-            ) : (
+            ) : !searchQuery && (
               <div className="flex flex-col">
                 {(() => {
                   const rendered: React.ReactNode[] = []
