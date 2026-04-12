@@ -53,6 +53,15 @@ export async function PUT(
         const maxRound = realMatches.length > 0 ? Math.max(...realMatches.map((m) => m.round)) : 0
         const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
 
+        // Chave de 1 atleta: partida solo (position2Id = null)
+        const soloMatch = matches.find((m) => m.position1Id !== null && m.position2Id === null && m.winnerId !== null)
+        if (soloMatch?.winnerId && !finalMatch) {
+          await prisma.bracket.update({
+            where: { id: bracketId },
+            data: { status: "PREMIADA" },
+          })
+        }
+
         if (finalMatch?.winnerId) {
           const placementIds: string[] = []
 
