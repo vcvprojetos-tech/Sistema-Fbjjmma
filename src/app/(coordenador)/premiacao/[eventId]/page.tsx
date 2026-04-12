@@ -307,10 +307,21 @@ export default function PremiacaoPage() {
         const soloMatch = b.matches.find(m => m.position1Id !== null && m.position2Id === null)
         if (soloMatch?.isWO) return false
       }
+      // Já totalmente premiada (status travado): não mostrar em aguardando
+      const placements = computePlacements(b, brackets)
+      if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return false
       return true
     })
   )
-  const premiadas = sortBrackets(brackets.filter((b) => b.status === "PREMIADA"))
+  const premiadas = sortBrackets(brackets.filter((b) => {
+    if (b.status === "PREMIADA") return true
+    // FINALIZADA com todos os colocados já premiados (status travado): tratar como premiada
+    if (b.status === "FINALIZADA") {
+      const placements = computePlacements(b, brackets)
+      if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return true
+    }
+    return false
+  }))
   const selectedBracket = brackets.find((b) => b.id === selectedId) ?? null
 
   if (loading) {
