@@ -587,6 +587,12 @@ export default function EventoDetailPage() {
     } catch { /* silencioso */ }
   }, [id])
 
+  const excluirChave = useCallback(async (bracketId: string) => {
+    if (!confirm("Excluir esta chave? Esta ação não pode ser desfeita.")) return
+    setBrackets(prev => prev.filter(b => b.id !== bracketId))
+    await fetch(`/api/admin/eventos/${id}/chaves/${bracketId}`, { method: "DELETE" })
+  }, [id])
+
   const gerarChaves = useCallback(async () => {
     setChavesGenerating(true)
     try {
@@ -1962,6 +1968,14 @@ export default function EventoDetailPage() {
                             <option key={t.id} value={t.id}>{t.name}</option>
                           ))}
                         </select>
+                        <button
+                          onClick={() => excluirChave(bracket.id)}
+                          className="shrink-0 p-1 rounded hover:text-[#dc2626] transition-colors"
+                          style={{ color: "#6b7280" }}
+                          title="Excluir chave"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     )
                   }

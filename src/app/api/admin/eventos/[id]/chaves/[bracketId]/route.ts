@@ -105,3 +105,29 @@ export async function PUT(
     return NextResponse.json({ error: "Erro ao atualizar chave." }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string; bracketId: string }> }
+) {
+  const session = await auth()
+  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
+
+  const { id, bracketId } = await params
+
+  try {
+    const bracket = await prisma.bracket.findFirst({ where: { id: bracketId, eventId: id } })
+    if (!bracket) return NextResponse.json({ error: "Chave não encontrada." }, { status: 404 })
+
+    await prisma.match.deleteMany({ where: { bracketId } })
+    await prisma.bracketPosition.deleteMany({ where: { bracketId } })
+    await prisma.bracket.delete({ where: { id: bracketId } })
+
+    if (bracket.tatameId) notifyTatame(bracket.tatameId)
+
+    return NextResponse.json({ message: "Chave removida." })
+  } catch (error) {
+    console.error("[BRACKET DELETE ERROR]", error)
+    return NextResponse.json({ error: "Erro ao remover chave." }, { status: 500 })
+  }
+}
