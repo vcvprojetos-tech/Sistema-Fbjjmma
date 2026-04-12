@@ -109,16 +109,20 @@ function woLabel(woType?: string | null, weight?: number | null): string {
 }
 
 function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<string, BPos> }) {
-  const woMatches = matches.filter(m => m.isWO && m.winnerId && m.position1Id && m.position2Id)
+  const woMatches = matches.filter(m => m.isWO && m.position1Id)
   if (woMatches.length === 0) return null
   return (
     <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
       <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>W.O.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         {woMatches.map(m => {
-          const loserId = m.winnerId === m.position1Id ? m.position2Id : m.position1Id
+          // Partida solo (1 atleta): o próprio atleta tomou W.O.
+          const isSolo = m.position2Id === null
+          const loserId = isSolo
+            ? m.position1Id
+            : (m.winnerId === m.position1Id ? m.position2Id : m.position1Id)
           const loserReg = loserId ? posIdMap.get(loserId)?.registration ?? null : null
-          const weight = m.winnerId === m.position1Id ? m.woWeight2 : m.woWeight1
+          const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
           return (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
