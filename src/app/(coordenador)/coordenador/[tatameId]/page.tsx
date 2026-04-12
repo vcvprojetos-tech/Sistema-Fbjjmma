@@ -117,7 +117,7 @@ export default function TatamePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState("")
-  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string } | null>(null)
+  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string } | null>(null)
   const [pesoStep, setPesoStep] = useState(false)
   const [pesoInput, setPesoInput] = useState("")
   const [presentAthletes, setPresentAthletes] = useState<Set<string>>(new Set())
@@ -761,14 +761,21 @@ export default function TatamePage() {
                             </div>
 
                             {!isDone && p1?.id && p2?.id && (
-                              <div className="flex gap-2 p-3" style={{ borderTop: "1px solid var(--border)" }}>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId })} disabled={actionLoading}
-                                  className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                  W.O. — {p1Name.split(" ")[0]}
-                                </button>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId })} disabled={actionLoading}
-                                  className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                  W.O. — {p2Name.split(" ")[0]}
+                              <div className="flex flex-col gap-1.5 p-3" style={{ borderTop: "1px solid var(--border)" }}>
+                                <div className="flex gap-2">
+                                  <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
+                                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                    W.O. — {p1Name.split(" ")[0]}
+                                  </button>
+                                  <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
+                                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                    W.O. — {p2Name.split(" ")[0]}
+                                  </button>
+                                </div>
+                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
+                                  className="w-full py-2 rounded-lg text-xs font-semibold border transition-colors"
+                                  style={{ color: "#f97316", borderColor: "#7c2d1240", backgroundColor: "#7c2d1210" }}>
+                                  W.O. — Ambos Ausentes
                                 </button>
                               </div>
                             )}
@@ -976,7 +983,31 @@ export default function TatamePage() {
       {woModal && bracket && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
           <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
-            {!pesoStep ? (
+            {/* W.O. Duplo — confirmação */}
+            {woModal.winnerId === "" && !pesoStep ? (
+              <>
+                <p className="text-white font-bold text-center text-lg">W.O. — Ambos Ausentes</p>
+                <p className="text-[#9ca3af] text-sm text-center">
+                  {woModal.p1Name?.split(" ")[0]} e {woModal.p2Name?.split(" ")[0]} não compareceram.<br />
+                  Nenhum atleta avança nesta partida.
+                </p>
+                <button
+                  onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, "", true, "AUSENCIA")}
+                  disabled={actionLoading}
+                  className="w-full py-4 rounded-xl font-bold text-white text-sm"
+                  style={{ backgroundColor: "#f97316" }}
+                >
+                  {actionLoading ? "Confirmando..." : "Confirmar Dupla Ausência"}
+                </button>
+                <button
+                  onClick={() => setWoModal(null)}
+                  className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+                  style={{ backgroundColor: "var(--card)" }}
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : !pesoStep ? (
               <>
                 <p className="text-white font-bold text-center text-lg">Motivo</p>
                 <p className="text-[#9ca3af] text-sm text-center">Selecione o motivo</p>

@@ -42,6 +42,11 @@ function computeNextRoundPairs(n: number): [number, number][] {
  * da árvore de chaves — posições do mesmo lado da chave só se encontram
  * na semifinal, nunca em rodadas anteriores.
  */
+// Uma partida está resolvida se tem vencedor OU se é W.O. duplo (isWO=true, winnerId=null, endedAt preenchido)
+function isMatchResolved(m: { winnerId: string | null; isWO: boolean; endedAt: Date | null }): boolean {
+  return m.winnerId !== null || (m.isWO && m.endedAt !== null)
+}
+
 export async function propagateBracket(bracketId: string): Promise<boolean> {
   const allMatches = await prisma.match.findMany({
     where: { bracketId },
@@ -82,19 +87,57 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
 
       const m1 = sorted[i]
       const m2 = sorted[j]
-      if (!m1 || !m2) continue // partida ainda não existe (resultado pendente)
-      if (!m1.winnerId || !m2.winnerId) continue // ainda sem vencedor
+      if (!m1 || !m2) continue // partida ainda não existe
+      if (!isMatchResolved(m1) || !isMatchResolved(m2)) continue // ainda pendente
 
-      const created = await prisma.match.create({
-        data: { bracketId, round: nextRound, matchNumber: nextMN, position1Id: m1.winnerId, position2Id: m2.winnerId },
-      })
+      const adv1 = m1.winnerId // null se W.O. duplo
+      const adv2 = m2.winnerId // null se W.O. duplo
+
+      let created
+      if (adv1 === null && adv2 === null) {
+        // Ambos os lados sem vencedor → propaga W.O. duplo para cima
+        created = await prisma.match.create({
+          data: {
+            bracketId, round: nextRound, matchNumber: nextMN,
+            position1Id: null, position2Id: null,
+            isWO: true, woType: "AUSENCIA", winnerId: null, endedAt: new Date(),
+          },
+        })
+      } else if (adv1 === null) {
+        // Lado esquerdo sem vencedor → lado direito avança automaticamente
+        created = await prisma.match.create({
+          data: {
+            bracketId, round: nextRound, matchNumber: nextMN,
+            position1Id: adv2, position2Id: null,
+            isWO: true, woType: "AUSENCIA", winnerId: adv2, endedAt: new Date(),
+          },
+        })
+      } else if (adv2 === null) {
+        // Lado direito sem vencedor → lado esquerdo avança automaticamente
+        created = await prisma.match.create({
+          data: {
+            bracketId, round: nextRound, matchNumber: nextMN,
+            position1Id: adv1, position2Id: null,
+            isWO: true, woType: "AUSENCIA", winnerId: adv1, endedAt: new Date(),
+          },
+        })
+      } else {
+        // Partida normal com dois atletas
+        created = await prisma.match.create({
+          data: { bracketId, round: nextRound, matchNumber: nextMN, position1Id: adv1, position2Id: adv2 },
+        })
+      }
+
       // Atualiza rastreamento em memória para permitir propagação na mesma chamada
       if (!byRound.has(nextRound)) byRound.set(nextRound, [])
       byRound.get(nextRound)!.push(created)
     }
   }
 
-  const pending = await prisma.match.count({ where: { bracketId, winnerId: null } })
+  // Bracket finalizado = todas as partidas resolvidas (com vencedor ou W.O. duplo)
+  const pending = await prisma.match.count({
+    where: { bracketId, winnerId: null, OR: [{ isWO: false }, { endedAt: null }] },
+  })
   return pending === 0
 }
 

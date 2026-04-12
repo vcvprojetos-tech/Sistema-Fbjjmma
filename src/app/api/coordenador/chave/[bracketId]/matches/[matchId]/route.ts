@@ -59,6 +59,31 @@ export async function PUT(
       return NextResponse.json({ message: "Campeão declarado. Chave finalizada." })
     }
 
+    // W.O. duplo: ambos ausentes, nenhum avança
+    const isDoubleWO = Boolean(isWO) && (!winnerId || winnerId === "") && !isSoloMatch
+    if (isDoubleWO) {
+      await prisma.$transaction([
+        prisma.match.update({
+          where: { id: matchId },
+          data: { winnerId: null, isWO: true, woType: "AUSENCIA", endedAt: new Date() },
+        }),
+        ...(match.position1Id
+          ? [prisma.bracketPosition.update({ where: { id: match.position1Id }, data: { isEliminated: true } })]
+          : []),
+        ...(match.position2Id
+          ? [prisma.bracketPosition.update({ where: { id: match.position2Id }, data: { isEliminated: true } })]
+          : []),
+      ])
+      const finished = await propagateBracket(bracketId)
+      if (finished) {
+        await resetBracketAwards(bracketId)
+        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
+        await checkAndCreateGrandFinal(bracketId)
+      }
+      if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+      return NextResponse.json({ message: "Dupla ausência registrada." })
+    }
+
     if (!winnerId) return NextResponse.json({ error: "Vencedor obrigatório." }, { status: 400 })
     if (winnerId !== match.position1Id && winnerId !== match.position2Id) {
       return NextResponse.json({ error: "Vencedor inválido." }, { status: 400 })
