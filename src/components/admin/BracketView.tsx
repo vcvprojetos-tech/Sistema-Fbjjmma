@@ -51,6 +51,7 @@ interface BMatch {
   woType?: string | null
   woWeight1?: number | null
   woWeight2?: number | null
+  endedAt?: string | null
 }
 
 interface BracketData {
@@ -110,28 +111,43 @@ function woLabel(woType?: string | null, weight?: number | null): string {
 }
 
 function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<string, BPos> }) {
-  const woMatches = matches.filter(m => m.isWO && m.position1Id)
+  const woMatches = matches.filter(m => m.isWO)
   if (woMatches.length === 0) return null
+
+  // Expande cada partida W.O. em entradas individuais por atleta
+  const entries: { key: string; name: string; label: string }[] = []
+  for (const m of woMatches) {
+    const isSolo = m.position2Id === null
+    const isDoubleWO = !isSolo && m.winnerId === null && !!m.position1Id && !!m.position2Id
+
+    if (isDoubleWO) {
+      // Ambos ausentes — lista os dois
+      const reg1 = posIdMap.get(m.position1Id!)?.registration ?? null
+      const reg2 = posIdMap.get(m.position2Id!)?.registration ?? null
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null) })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null) })
+    } else if (m.position1Id) {
+      const loserId = isSolo
+        ? m.position1Id
+        : (m.winnerId === m.position1Id ? m.position2Id : m.position1Id)
+      const loserReg = loserId ? posIdMap.get(loserId)?.registration ?? null : null
+      const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null) })
+    }
+  }
+
+  if (entries.length === 0) return null
   return (
     <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
       <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>W.O.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        {woMatches.map(m => {
-          // Partida solo (1 atleta): o próprio atleta tomou W.O.
-          const isSolo = m.position2Id === null
-          const loserId = isSolo
-            ? m.position1Id
-            : (m.winnerId === m.position1Id ? m.position2Id : m.position1Id)
-          const loserReg = loserId ? posIdMap.get(loserId)?.registration ?? null : null
-          const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
-          return (
-            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
-              <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{getRegName(loserReg)}</span>
-              <span style={{ fontSize: 9, color: "#6b7280" }}>— {woLabel(m.woType, weight ?? null)}</span>
-            </div>
-          )
-        })}
+        {entries.map(e => (
+          <div key={e.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
+            <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
+            <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -769,7 +785,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
 
   // Final center: 1° Lugar / 2° Lugar boxes — only show when ALL matches are complete
   const finalBoxH = 24
-  const allMatchesDone = matches.length > 0 && matches.every(m => m.winnerId)
+  const allMatchesDone = matches.length > 0 && matches.every(m => m.winnerId || (m.isWO && m.endedAt))
   // Partida final = a de maior rodada com dois atletas reais (exclui W.O. fantasma com position2Id null)
   const realMatches = matches.filter(m => m.position1Id !== null && m.position2Id !== null)
   const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
