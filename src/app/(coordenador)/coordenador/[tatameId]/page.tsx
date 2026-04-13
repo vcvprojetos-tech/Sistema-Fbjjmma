@@ -311,7 +311,7 @@ export default function TatamePage() {
   // Confrontos: todos os brackets ativos no grupo
   const currentMatches = groupBrackets.flatMap(b =>
     b.matches
-      .filter(m => !m.winnerId && m.position1Id !== null && m.position2Id !== null)
+      .filter(m => !m.winnerId && !(m.isWO && m.endedAt) && m.position1Id !== null && m.position2Id !== null)
       .map(m => ({ ...m, _bracketId: b.id }))
   ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
 
@@ -670,7 +670,7 @@ export default function TatamePage() {
                         const p2 = match.position2
                         const p1Name = getAthleteName(p1)
                         const p2Name = getAthleteName(p2)
-                        const isDone = !!match.winnerId
+                        const isDone = !!match.winnerId || (match.isWO && !!match.endedAt)
                         const winnerIsP1 = match.winnerId === match.position1Id
                         const winnerIsP2 = match.winnerId === match.position2Id
                         const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
