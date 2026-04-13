@@ -1996,7 +1996,7 @@ export default function EventoDetailPage() {
                 bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
               ].filter(Boolean).join(" | ")
 
-              const renderGroupedList = (list: typeof tatamesFilteredBrackets) => {
+              const renderGroupedList = (list: typeof tatamesFilteredBrackets, selectable = false) => {
                 const rows: React.ReactNode[] = []
                 const seenGroups = new Set<string>()
                 list.forEach((bracket, idx) => {
@@ -2015,7 +2015,7 @@ export default function EventoDetailPage() {
                         className="flex items-center gap-3 px-4 py-3 flex-wrap"
                         style={{ borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: "var(--card)" }}
                       >
-                        {selectionMode && (
+                        {selectionMode && selectable && (
                           <input type="checkbox" checked={allGroupSelected}
                             onChange={() => { setSelectedBrackets(prev => { const next = new Set(prev); groupIds.forEach(bid => allGroupSelected ? next.delete(bid) : next.add(bid)); return next }) }}
                             className="shrink-0 w-4 h-4 cursor-pointer"
@@ -2057,7 +2057,7 @@ export default function EventoDetailPage() {
                         className="flex items-center gap-3 px-4 py-3 flex-wrap"
                         style={{ borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: "var(--card)" }}
                       >
-                        {selectionMode && (
+                        {selectionMode && selectable && (
                           <input type="checkbox" checked={selectedBrackets.has(bracket.id)}
                             onChange={() => toggleBracketSelection(bracket.id)}
                             className="shrink-0 w-4 h-4 cursor-pointer"
@@ -2107,6 +2107,18 @@ export default function EventoDetailPage() {
                 return rows
               }
 
+              // IDs de todas as pendentes selecionáveis
+              const allPendentesIds = pendentes.flatMap(b =>
+                b.bracketGroupId && !b.isGrandFinal ? [] : [b.id]
+              ).concat(
+                pendentes.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
+                  const group = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
+                  const gf = brackets.find(x => x.bracketGroupId === b.bracketGroupId && x.isGrandFinal)
+                  return [...group, ...(gf ? [gf] : [])].map(x => x.id)
+                })
+              )
+              const allPendentesSelected = allPendentesIds.length > 0 && allPendentesIds.every(bid => selectedBrackets.has(bid))
+
               return (
                 <div className="space-y-4">
                   {pendentes.length > 0 && (
@@ -2114,9 +2126,21 @@ export default function EventoDetailPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Pendentes</span>
                         <span className="text-xs text-[#6b7280]">({pendentes.length})</span>
+                        {selectionMode && (
+                          <button
+                            className="text-xs text-[#60a5fa] hover:text-white transition-colors ml-1"
+                            onClick={() => setSelectedBrackets(prev => {
+                              const next = new Set(prev)
+                              allPendentesIds.forEach(bid => allPendentesSelected ? next.delete(bid) : next.add(bid))
+                              return next
+                            })}
+                          >
+                            {allPendentesSelected ? "Desmarcar todas" : "Selecionar todas"}
+                          </button>
+                        )}
                       </div>
                       <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {renderGroupedList(pendentes)}
+                        {renderGroupedList(pendentes, true)}
                       </div>
                     </div>
                   )}
@@ -2127,7 +2151,7 @@ export default function EventoDetailPage() {
                         <span className="text-xs text-[#6b7280]">({finalizadas.length})</span>
                       </div>
                       <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {renderGroupedList(finalizadas)}
+                        {renderGroupedList(finalizadas, false)}
                       </div>
                     </div>
                   )}
