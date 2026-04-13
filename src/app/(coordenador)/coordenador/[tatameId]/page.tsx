@@ -319,7 +319,7 @@ export default function TatamePage() {
   const soloMatches = groupBrackets.flatMap(b =>
     b.matches
       .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
-      .map(m => ({ ...m, _bracketId: b.id }))
+      .map(m => ({ ...m, _bracketId: b.id, _isMidBracket: b.positions.length > 1 }))
   )
 
   // Para exibir progresso: total de partidas no grupo
@@ -610,26 +610,39 @@ export default function TatamePage() {
                   {soloMatches.map(match => {
                     const p1 = match.position1
                     const p1Name = getAthleteName(p1)
+                    const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
+                    const isMid = match._isMidBracket
                     return (
-                      <div key={match.id} className="rounded-xl border overflow-hidden" style={{ borderColor: "#78350f60", backgroundColor: "var(--card)" }}>
+                      <div key={match.id} className="rounded-xl border overflow-hidden"
+                        style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
                         <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-                          <span className="text-xs text-[#fbbf24] font-semibold">Pesagem — Atleta Único</span>
+                          <span className="text-xs font-semibold" style={{ color: isMid ? "#60a5fa" : "#fbbf24" }}>
+                            {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
+                          </span>
                         </div>
-                        <div className="px-4 py-4 flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm" style={{ backgroundColor: "#222", color: "var(--foreground)" }}>1</div>
+                        <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <button
+                            onClick={() => p1?.id && togglePresent(p1.id)}
+                            disabled={actionLoading}
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
+                            style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                          >
+                            {p1Present ? "✓" : "1"}
+                          </button>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-sm truncate">{p1Name}</p>
                             {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                           </div>
+                          <span className="text-xs text-[#6b7280]">TAP</span>
                         </div>
-                        <div className="flex gap-2 p-3" style={{ borderTop: "1px solid var(--border)" }}>
+                        <div className="flex gap-2 p-3">
                           <button
                             onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
-                            disabled={actionLoading}
+                            disabled={actionLoading || (isMid && !p1Present)}
                             className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
                             style={{ backgroundColor: "#15803d" }}
                           >
-                            ✓ Campeão
+                            {isMid ? "▶ Avançar" : "✓ Campeão"}
                           </button>
                           <button
                             onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId })}
