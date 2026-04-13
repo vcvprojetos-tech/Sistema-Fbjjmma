@@ -30,33 +30,35 @@ export async function PUT(
     const isSoloMatch = match.position2Id === null
 
     if (isSoloMatch) {
-      // W.O. no único atleta: finaliza sem campeão
       if (isWO) {
+        // Atleta tomou W.O.: atualiza match e propaga (pode ser mid-bracket solo criado por duplo W.O.)
         await prisma.match.update({
           where: { id: matchId },
           data: {
             winnerId: null,
             isWO: true,
-            woType: woType ? (woType as WOType) : null,
+            woType: woType ? (woType as WOType) : "AUSENCIA",
             ...(woWeight != null && woType === "PESO" && { woWeight1: Number(woWeight) }),
             endedAt: new Date(),
           },
         })
-        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
-        if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
-        return NextResponse.json({ message: "Atleta desclassificado. Chave finalizada sem campeão." })
+      } else {
+        // Campeão confirmado
+        if (!match.position1Id) return NextResponse.json({ error: "Atleta não encontrado." }, { status: 400 })
+        await prisma.match.update({
+          where: { id: matchId },
+          data: { winnerId: match.position1Id, isWO: false, endedAt: new Date() },
+        })
       }
-      // Campeão confirmado: usa position1Id como vencedor
-      if (!match.position1Id) return NextResponse.json({ error: "Atleta não encontrado." }, { status: 400 })
-      await prisma.match.update({
-        where: { id: matchId },
-        data: { winnerId: match.position1Id, isWO: false, endedAt: new Date() },
-      })
-      await resetBracketAwards(bracketId)
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
-      await checkAndCreateGrandFinal(bracketId)
+      // Propaga: pode haver rodadas seguintes (ex: solo criado por W.O. duplo no meio da chave)
+      const finished = await propagateBracket(bracketId)
+      if (finished) {
+        await resetBracketAwards(bracketId)
+        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
+        await checkAndCreateGrandFinal(bracketId)
+      }
       if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
-      return NextResponse.json({ message: "Campeão declarado. Chave finalizada." })
+      return NextResponse.json({ message: isWO ? "Atleta desclassificado." : "Campeão declarado." })
     }
 
     // W.O. duplo: ambos ausentes, nenhum avança

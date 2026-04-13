@@ -95,7 +95,7 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
 
       let created
       if (adv1 === null && adv2 === null) {
-        // Ambos os lados sem vencedor → propaga W.O. duplo para cima
+        // Ambos os lados sem vencedor → propaga W.O. duplo para cima (auto-resolvido)
         created = await prisma.match.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
@@ -104,21 +104,21 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
           },
         })
       } else if (adv1 === null) {
-        // Lado esquerdo sem vencedor → lado direito avança automaticamente
+        // Lado esquerdo sem vencedor → criar partida solo PENDENTE para adv2
+        // O coordenador confirma presença ou aplica W.O. ao atleta restante
         created = await prisma.match.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
             position1Id: adv2, position2Id: null,
-            isWO: true, woType: "AUSENCIA", winnerId: adv2, endedAt: new Date(),
+            // sem winnerId nem endedAt → coordenador decide
           },
         })
       } else if (adv2 === null) {
-        // Lado direito sem vencedor → lado esquerdo avança automaticamente
+        // Lado direito sem vencedor → criar partida solo PENDENTE para adv1
         created = await prisma.match.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
             position1Id: adv1, position2Id: null,
-            isWO: true, woType: "AUSENCIA", winnerId: adv1, endedAt: new Date(),
           },
         })
       } else {
