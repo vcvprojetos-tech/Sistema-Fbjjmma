@@ -311,7 +311,7 @@ export default function TatamePage() {
   // Confrontos: todos os brackets ativos no grupo
   const currentMatches = groupBrackets.flatMap(b =>
     b.matches
-      .filter(m => !m.winnerId && !(m.isWO && m.endedAt) && m.position1Id !== null && m.position2Id !== null)
+      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id !== null)
       .map(m => ({ ...m, _bracketId: b.id }))
   ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
 
@@ -654,7 +654,7 @@ export default function TatamePage() {
                           </h2>
                           <div className="flex gap-1">
                             {Array.from({ length: maxRound }, (_, i) => i + 1).map(r => {
-                              const done = allGroupMatches.filter(m => m.round === r).every(m => m.winnerId)
+                              const done = allGroupMatches.filter(m => m.round === r).every(m => m.endedAt)
                               const active = currentMatches.length > 0 && r === Math.min(...currentMatches.map(m => m.round))
                               return (
                                 <div key={r} className="w-2 h-2 rounded-full"
@@ -670,7 +670,7 @@ export default function TatamePage() {
                         const p2 = match.position2
                         const p1Name = getAthleteName(p1)
                         const p2Name = getAthleteName(p2)
-                        const isDone = !!match.winnerId || (match.isWO && !!match.endedAt)
+                        const isDone = !!match.endedAt
                         const winnerIsP1 = match.winnerId === match.position1Id
                         const winnerIsP2 = match.winnerId === match.position2Id
                         const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
