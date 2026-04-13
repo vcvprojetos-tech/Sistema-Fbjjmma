@@ -127,6 +127,8 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null) })
       if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null) })
     } else if (m.position1Id) {
+      // Solo com winnerId preenchido = BYE automático (atleta avançou, ninguém tomou W.O.)
+      if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
         ? m.position1Id
         : (m.winnerId === m.position1Id ? m.position2Id : m.position1Id)
@@ -801,22 +803,6 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     : null
   const secondPlaceReg = secondPosId ? posIdMap.get(secondPosId)?.registration ?? null : null
 
-  const thirdPlaceReg = (() => {
-    if (!allMatchesDone || !finalMatch || !finalWinnerId) return null
-    const maxRound = Math.max(...matches.map(m => m.round))
-    if (maxRound < 2) return null
-    // 3-athlete bracket: 3rd place = whoever is neither 1st nor 2nd
-    if (positions.length === 3) {
-      const secondId = finalWinnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
-      const third = positions.find(p => p.id !== finalWinnerId && p.id !== secondId)
-      return third?.registration ?? null
-    }
-    const champSemi = matches.find(m => m.round === maxRound - 1 && m.winnerId === finalWinnerId)
-    // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
-    if (!champSemi || champSemi.isWO) return null
-    const loserId = champSemi.winnerId === champSemi.position1Id ? champSemi.position2Id : champSemi.position1Id
-    return loserId ? posIdMap.get(loserId)?.registration ?? null : null
-  })()
 
   const leftFinalistPosNum = leftSlots[numHalfRounds - 1]?.[0]?.posId
     ? posIdMap.get(leftSlots[numHalfRounds - 1][0].posId!)?.position ?? null
@@ -883,17 +869,6 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     }}>
       <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
       {secondPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
-    </div>,
-    <div key="final-3" style={{
-      position: "absolute", left: centerX,
-      top: finalCenterY + finalBoxH + 9,
-      width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${thirdPlaceReg ? "#5c3010" : "var(--border)"}`,
-      backgroundColor: thirdPlaceReg ? "#1a0e00" : "var(--card)",
-      borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
-    }}>
-      <span style={{ fontSize: 7, color: "#c97941", fontWeight: 600, lineHeight: 1.2 }}>3° Lugar</span>
-      {thirdPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
     </div>
   )
 
@@ -902,7 +877,6 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const posMap2 = new Map(positions.map(p => [p.id, p]))
   let primeiro: Reg | null = null
   let segundo: Reg | null = null
-  let terceiro: Reg | null = null
 
   if (allMatchesDone && finalMatch?.winnerId) {
     const winnerPos = posMap2.get(finalMatch.winnerId)
@@ -910,30 +884,11 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
 
     const loserId = finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
     if (loserId) segundo = posMap2.get(loserId)?.registration ?? null
-
-    // 3° lugar
-    if (maxRealRound > 1) {
-      if (positions.length === 3) {
-        // 3-athlete bracket: 3rd = position that is neither 1st nor 2nd
-        const secondId = finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
-        const thirdPos = positions.find(p => p.id !== finalMatch.winnerId && p.id !== secondId)
-        terceiro = thirdPos?.registration ?? null
-      } else {
-        const champSemi = realMatches.find(
-          m => m.round === maxRealRound - 1 && m.winnerId === finalMatch.winnerId
-        )
-        if (champSemi && !champSemi.isWO) {
-          const losId = champSemi.winnerId === champSemi.position1Id ? champSemi.position2Id : champSemi.position1Id
-          if (losId) terceiro = posMap2.get(losId)?.registration ?? null
-        }
-      }
-    }
   }
 
   const placements = [
     { label: "1° Lugar", color: "#fbbf24", reg: primeiro },
     { label: "2° Lugar", color: "var(--muted-foreground)", reg: segundo },
-    { label: "3° Lugar", color: "#cd7c2f", reg: terceiro },
   ]
 
   const title = [
@@ -957,7 +912,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           {cards}
         </div>
       </div>
-      {(primeiro || segundo || terceiro) && (
+      {(primeiro || segundo) && (
         <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--card-alt)", backgroundColor: "var(--card)", flexWrap: "wrap" }}>
           {placements.map(({ label, color, reg }) => reg && (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
