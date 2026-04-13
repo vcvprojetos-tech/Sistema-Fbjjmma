@@ -255,7 +255,7 @@ const FiltersBar = React.memo(function FiltersBar({
       />
       <Select value={sexo} onValueChange={(v) => { setSexo(v); sync("sexo", v) }}>
         <SelectTrigger><SelectValue placeholder="Sexo" /></SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <SelectItem value="all">Todos</SelectItem>
           <SelectItem value="MASCULINO">Masculino</SelectItem>
           <SelectItem value="FEMININO">Feminino</SelectItem>
@@ -263,7 +263,7 @@ const FiltersBar = React.memo(function FiltersBar({
       </Select>
       <Select value={categoria} onValueChange={(v) => { setCategoria(v); sync("categoria", v) }}>
         <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <SelectItem value="all">Todas</SelectItem>
           {Object.entries(AGE_GROUP_LABELS).map(([v, l]) => (
             <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -272,7 +272,7 @@ const FiltersBar = React.memo(function FiltersBar({
       </Select>
       <Select value={faixa} onValueChange={(v) => { setFaixa(v); sync("faixa", v) }}>
         <SelectTrigger><SelectValue placeholder="Faixa" /></SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <SelectItem value="all">Todas</SelectItem>
           {Object.entries(BELT_LABELS).map(([v, l]) => (
             <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -281,7 +281,7 @@ const FiltersBar = React.memo(function FiltersBar({
       </Select>
       <Select value={pesoId} onValueChange={(v) => { setPesoId(v); sync("pesoId", v) }}>
         <SelectTrigger><SelectValue placeholder="Peso" /></SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <SelectItem value="all">Todos</SelectItem>
           <SelectItem value="__absoluto__">Absoluto</SelectItem>
           {uniqueWeights.map((c) => (
@@ -291,7 +291,7 @@ const FiltersBar = React.memo(function FiltersBar({
       </Select>
       <Select value={equipeId} onValueChange={(v) => { setEquipeId(v); sync("equipeId", v) }}>
         <SelectTrigger><SelectValue placeholder="Equipe" /></SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <SelectItem value="all">Todas</SelectItem>
           {teams.map((t) => (
             <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
@@ -300,7 +300,7 @@ const FiltersBar = React.memo(function FiltersBar({
       </Select>
       <Select value={qtdAtletas} onValueChange={(v) => { setQtdAtletas(v); sync("qtdAtletas", v) }}>
         <SelectTrigger><SelectValue placeholder="Atletas" /></SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-60 overflow-y-auto">
           <SelectItem value="all">Todos</SelectItem>
           {atletasCounts.map((n) => (
             <SelectItem key={n} value={String(n)}>{n} atleta{n !== 1 ? "s" : ""}</SelectItem>
