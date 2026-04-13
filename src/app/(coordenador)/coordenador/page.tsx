@@ -49,15 +49,7 @@ export default function CoordenadorEntradaPage() {
     >
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <div
-            className="w-16 h-16 flex items-center justify-center mx-auto mb-4"
-            style={{
-              clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-              backgroundColor: "#dc2626",
-            }}
-          >
-            <span className="text-white font-black text-xs tracking-widest">FBJJ</span>
-          </div>
+          <img src="/logo.png" alt="FBJJMMA" className="w-16 h-16 object-contain mx-auto mb-4" />
           <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             Controle de Tatame
           </h1>

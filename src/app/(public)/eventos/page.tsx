@@ -154,15 +154,7 @@ export default function EventosPage() {
                     className="w-full h-44 flex items-center justify-center"
                     style={{ background: "linear-gradient(135deg, #1a0000 0%, var(--card) 100%)" }}
                   >
-                    <div
-                      className="w-14 h-14 flex items-center justify-center opacity-30"
-                      style={{
-                        clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-                        backgroundColor: "#dc2626",
-                      }}
-                    >
-                      <span className="text-white font-black text-base">FBJ</span>
-                    </div>
+                    <img src="/logo.png" alt="FBJJMMA" className="w-14 h-14 object-contain opacity-30" />
                   </div>
                 )}
 

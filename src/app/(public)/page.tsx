@@ -65,15 +65,7 @@ export default function HomePage() {
         />
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div
-            className="w-16 h-16 mx-auto mb-6 flex items-center justify-center"
-            style={{
-              clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-              backgroundColor: "#dc2626",
-            }}
-          >
-            <span className="text-white font-black text-lg">FBJ</span>
-          </div>
+          <img src="/logo.png" alt="FBJJMMA" className="w-16 h-16 mx-auto mb-6 object-contain" />
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
             Federação Baiana de
             <br />
@@ -164,15 +156,7 @@ export default function HomePage() {
                         background: "linear-gradient(135deg, #1a0000 0%, var(--card) 100%)",
                       }}
                     >
-                      <div
-                        className="w-12 h-12 flex items-center justify-center opacity-30"
-                        style={{
-                          clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-                          backgroundColor: "#dc2626",
-                        }}
-                      >
-                        <span className="text-white font-black text-sm">FBJ</span>
-                      </div>
+                      <img src="/logo.png" alt="FBJJMMA" className="w-12 h-12 object-contain opacity-30" />
                     </div>
                   )}
 

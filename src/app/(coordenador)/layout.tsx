@@ -14,15 +14,7 @@ export default function CoordenadorLayout({ children }: { children: React.ReactN
         style={{ backgroundColor: "var(--background)", borderColor: "var(--border)" }}
       >
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 flex items-center justify-center flex-shrink-0"
-            style={{
-              clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-              backgroundColor: "#dc2626",
-            }}
-          >
-            <span className="text-white font-black text-xs">FBJ</span>
-          </div>
+          <img src="/logo.png" alt="FBJJMMA" className="w-8 h-8 object-contain flex-shrink-0" />
           <div>
             <p className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
             <p className="text-xs leading-tight" style={{ color: "var(--muted)" }}>Controle de Chaves</p>

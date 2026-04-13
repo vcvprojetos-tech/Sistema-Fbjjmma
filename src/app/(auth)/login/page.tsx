@@ -47,18 +47,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md px-4">
         {/* Logo / Branding */}
         <div className="flex flex-col items-center mb-8">
-          <div
-            className="w-24 h-24 flex items-center justify-center mb-4"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-              backgroundColor: "#dc2626",
-            }}
-          >
-            <span className="text-white font-black text-sm tracking-widest">
-              FBJJMMA
-            </span>
-          </div>
+          <img src="/logo.png" alt="FBJJMMA" className="w-24 h-24 object-contain mb-4" />
           <h1 className="text-2xl font-bold text-white tracking-wider">
             FBJJMMA
           </h1>
