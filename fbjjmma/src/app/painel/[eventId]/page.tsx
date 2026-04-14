@@ -93,19 +93,17 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   const name = getName(pos)
   const team = getTeam(pos)
   if (name === "BYE") return (
-    <div style={{ height: "52px", backgroundColor: "#0f172a", display: "flex", alignItems: "center", paddingLeft: "12px" }}>
-      <span style={{ color: "#334155", fontSize: "0.75rem" }}>BYE</span>
-    </div>
+    <div style={{ height: "48px", backgroundColor: "#0f172a" }} />
   )
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "flex-start", gap: "8px", padding: "10px 12px", minHeight: "56px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "0.9rem", width: "16px", textAlign: "center", flexShrink: 0, paddingTop: "2px" }}>{seed}</span>
+    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", minHeight: "48px" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: "1rem", width: "18px", textAlign: "center", flexShrink: 0 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "0.92rem", lineHeight: 1.3, wordBreak: "break-word" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "0.7rem", marginTop: "2px" }}>{team}</div>}
+        {/* Nome numa linha — sem texto de status, a cor já indica o estado (igual ao IBJJF) */}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.7rem, 1.05vw, 0.9rem)", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: "clamp(0.6rem, 0.8vw, 0.72rem)", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
-      <span style={{ color: s.sub, fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.04em", flexShrink: 0, paddingTop: "2px", textAlign: "right", minWidth: "64px" }}>{s.label}</span>
     </div>
   )
 }
@@ -137,7 +135,7 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
       )}
       {/* Placeholder quando solo para manter altura uniforme */}
       {isSolo && (
-        <div style={{ height: "52px", backgroundColor: "#0a0f1a" }} />
+        <div style={{ height: "48px", backgroundColor: "#0a0f1a" }} />
       )}
     </div>
   )
