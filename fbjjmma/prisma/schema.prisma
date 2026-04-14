@@ -416,6 +416,8 @@ model Match {
   woWeight1   Float?
   woWeight2   Float?
   callTimes   Json?
+  p1CheckedIn Boolean          @default(false)
+  p2CheckedIn Boolean          @default(false)
   startedAt   DateTime?
   endedAt     DateTime?
   createdAt   DateTime         @default(now())

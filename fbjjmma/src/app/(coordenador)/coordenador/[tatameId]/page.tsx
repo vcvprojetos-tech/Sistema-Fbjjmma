@@ -37,6 +37,8 @@ interface BracketPositionData {
   } | null
 }
 
+interface CallTime { call: number; at: string }
+
 interface MatchData {
   id: string
   round: number
@@ -48,6 +50,9 @@ interface MatchData {
   woType: string | null
   woWeight1: number | null
   woWeight2: number | null
+  callTimes: CallTime[] | null
+  p1CheckedIn: boolean
+  p2CheckedIn: boolean
   startedAt: string | null
   endedAt: string | null
   position1: BracketPositionData | null
@@ -120,16 +125,8 @@ export default function TatamePage() {
   const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string } | null>(null)
   const [pesoStep, setPesoStep] = useState(false)
   const [pesoInput, setPesoInput] = useState("")
-  const [presentAthletes, setPresentAthletes] = useState<Set<string>>(new Set())
-
-  const togglePresent = useCallback((posId: string) => {
-    setPresentAthletes(prev => {
-      const next = new Set(prev)
-      if (next.has(posId)) next.delete(posId)
-      else next.add(posId)
-      return next
-    })
-  }, [])
+  const [callLoading, setCallLoading] = useState<string | null>(null)
+  const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -204,6 +201,39 @@ export default function TatamePage() {
     const interval = setInterval(sendHeartbeat, 30000)
     return () => clearInterval(interval)
   }, [tatameId, getPin])
+
+  const togglePresent = useCallback(async (matchId: string, bracketId: string, position: "p1" | "p2", current: boolean) => {
+    try {
+      await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}/chamada`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
+        body: JSON.stringify({ action: "checkin", position, checked: !current }),
+      })
+      await load(true)
+    } catch { /* silencioso */ }
+  }, [getPin, load])
+
+  const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number) => {
+    setCallLoading(`${matchId}-${callNumber}`)
+    setCallError(null)
+    try {
+      const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}/chamada`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
+        body: JSON.stringify({ action: "call", callNumber }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCallError({ matchId, msg: data.error || "Erro ao registrar chamada.", remaining: data.remaining })
+      } else {
+        await load(true)
+      }
+    } catch {
+      setCallError({ matchId, msg: "Erro de conexão." })
+    } finally {
+      setCallLoading(null)
+    }
+  }, [getPin, load])
 
   // Auto-seleciona a primeira em andamento ou pendente
   useEffect(() => {
@@ -610,8 +640,10 @@ export default function TatamePage() {
                   {soloMatches.map(match => {
                     const p1 = match.position1
                     const p1Name = getAthleteName(p1)
-                    const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
+                    const p1Present = match.p1CheckedIn
                     const isMid = match._isMidBracket
+                    const calls = match.callTimes ?? []
+                    const callErr = callError?.matchId === match.id ? callError : null
                     return (
                       <div key={match.id} className="rounded-xl border overflow-hidden"
                         style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
@@ -620,9 +652,29 @@ export default function TatamePage() {
                             {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
                           </span>
                         </div>
+                        {/* Chamadas */}
+                        <div className="px-3 pt-2 pb-1 flex gap-1.5">
+                          {[1, 2, 3].map(n => {
+                            const done = calls.some((c: CallTime) => c.call === n)
+                            const isLoading = callLoading === `${match.id}-${n}`
+                            const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
+                            return (
+                              <button
+                                key={n}
+                                onClick={() => canCall && registrarChamada(match.id, match._bracketId, n)}
+                                disabled={!canCall || !!callLoading}
+                                className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
+                                style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                              >
+                                {isLoading ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {callErr && <p className="text-[#f87171] text-xs px-3 pb-1">{callErr.msg}</p>}
                         <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
                           <button
-                            onClick={() => p1?.id && togglePresent(p1.id)}
+                            onClick={() => togglePresent(match.id, match._bracketId, "p1", p1Present)}
                             disabled={actionLoading}
                             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
                             style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
@@ -686,9 +738,11 @@ export default function TatamePage() {
                         const isDone = !!match.endedAt
                         const winnerIsP1 = match.winnerId === match.position1Id
                         const winnerIsP2 = match.winnerId === match.position2Id
-                        const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
-                        const p2Present = !!(p2?.id && presentAthletes.has(p2.id))
+                        const p1Present = match.p1CheckedIn
+                        const p2Present = match.p2CheckedIn
                         const bothPresent = p1Present && p2Present
+                        const calls = match.callTimes ?? []
+                        const callErr = callError?.matchId === match.id ? callError : null
                         return (
                           <div key={match.id} className="rounded-xl border overflow-hidden"
                             style={{
@@ -710,12 +764,35 @@ export default function TatamePage() {
                               )}
                             </div>
 
+                            {/* Chamadas */}
+                            {!isDone && (
+                              <div className="px-3 pt-2 pb-1 flex gap-1.5">
+                                {[1, 2, 3].map(n => {
+                                  const done = calls.some((c: CallTime) => c.call === n)
+                                  const isLoading = callLoading === `${match.id}-${n}`
+                                  const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
+                                  return (
+                                    <button
+                                      key={n}
+                                      onClick={() => canCall && registrarChamada(match.id, match._bracketId, n)}
+                                      disabled={!canCall || !!callLoading}
+                                      className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
+                                      style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                    >
+                                      {isLoading ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
+                            {callErr && <p className="text-[#f87171] text-xs px-3 pb-1">{callErr.msg}</p>}
+
                             {/* Atleta 1 */}
                             <div className="w-full px-4 py-3 flex items-center gap-3"
                               style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid var(--border)" }}>
                               <button
-                                onClick={() => !isDone && p1?.id && p1Name !== "BYE" && togglePresent(p1.id)}
-                                disabled={isDone || !p1?.id || p1Name === "BYE"}
+                                onClick={() => !isDone && p1Name !== "BYE" && togglePresent(match.id, match._bracketId, "p1", p1Present)}
+                                disabled={isDone || p1Name === "BYE"}
                                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
                                 style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
                                 title={p1Present ? "Marcar como ausente" : "Marcar como presente"}
@@ -749,8 +826,8 @@ export default function TatamePage() {
                             <div className="w-full px-4 py-3 flex items-center gap-3"
                               style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}>
                               <button
-                                onClick={() => !isDone && p2?.id && p2Name !== "BYE" && togglePresent(p2.id)}
-                                disabled={isDone || !p2?.id || p2Name === "BYE"}
+                                onClick={() => !isDone && p2Name !== "BYE" && togglePresent(match.id, match._bracketId, "p2", p2Present)}
+                                disabled={isDone || p2Name === "BYE"}
                                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
                                 style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : p2Present ? "#15803d" : "#222", color: "var(--foreground)" }}
                                 title={p2Present ? "Marcar como ausente" : "Marcar como presente"}
