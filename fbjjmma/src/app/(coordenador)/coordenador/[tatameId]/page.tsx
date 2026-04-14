@@ -187,7 +187,7 @@ export default function TatamePage() {
     return () => clearInterval(interval)
   }, [load])
 
-  // Heartbeat a cada 30s: mantém a sessão vinculada a este dispositivo
+  // Heartbeat a cada 30s + imediatamente ao retornar ao tab (Chrome pode congelar tabs em segundo plano)
   useEffect(() => {
     const pin = getPin()
     if (!pin) return
@@ -199,7 +199,13 @@ export default function TatamePage() {
     }
     sendHeartbeat()
     const interval = setInterval(sendHeartbeat, 30000)
-    return () => clearInterval(interval)
+    // Ao retornar ao tab, reconecta imediatamente mesmo que o intervalo esteja suspenso
+    const onVisible = () => { if (document.visibilityState === "visible") sendHeartbeat() }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener("visibilitychange", onVisible)
+    }
   }, [tatameId, getPin])
 
   const togglePresent = useCallback(async (matchId: string, bracketId: string, position: "p1" | "p2", current: boolean) => {
