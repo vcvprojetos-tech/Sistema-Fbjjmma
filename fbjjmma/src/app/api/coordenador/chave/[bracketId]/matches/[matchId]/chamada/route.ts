@@ -34,16 +34,20 @@ export async function PATCH(
     }
 
     const now = new Date()
-    const existing = (match.callTimes as { call: number; at: string }[] | null) ?? []
+    const existing = (match.callTimes as { call: number; at: string; pos?: string | null }[] | null) ?? []
 
-    // Verifica se essa chamada já foi registrada
-    if (existing.some(c => c.call === callNumber)) {
+    // Filtra chamadas da mesma posição (atleta ausente)
+    const pos: string | null = body.position ?? null
+    const posCalls = pos ? existing.filter(c => c.pos === pos) : existing.filter(c => !c.pos)
+
+    // Verifica se essa chamada já foi registrada para esta posição
+    if (posCalls.some(c => c.call === callNumber)) {
       return NextResponse.json({ error: "Chamada já registrada." }, { status: 400 })
     }
 
     // Verifica intervalo mínimo de 10 min em relação à chamada anterior
     if (callNumber > 1) {
-      const prev = existing.find(c => c.call === callNumber - 1)
+      const prev = posCalls.find(c => c.call === callNumber - 1)
       if (!prev) {
         return NextResponse.json({ error: `Registre a ${callNumber - 1}ª chamada primeiro.` }, { status: 400 })
       }
@@ -57,7 +61,7 @@ export async function PATCH(
       }
     }
 
-    const newCalls = [...existing, { call: callNumber, at: now.toISOString() }]
+    const newCalls = [...existing, { call: callNumber, at: now.toISOString(), pos }]
 
     await prisma.match.update({
       where: { id: matchId },
@@ -73,7 +77,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Posição inválida." }, { status: 400 })
     }
 
-    await prisma.match.update({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma.match as any).update({
       where: { id: matchId },
       data: {
         p1CheckedIn: position === "p1" ? Boolean(checked) : match.p1CheckedIn,

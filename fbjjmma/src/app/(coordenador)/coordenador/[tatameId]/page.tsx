@@ -37,7 +37,7 @@ interface BracketPositionData {
   } | null
 }
 
-interface CallTime { call: number; at: string }
+interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
 
 interface MatchData {
   id: string
@@ -127,7 +127,7 @@ export default function TatamePage() {
   const [pesoInput, setPesoInput] = useState("")
   const [callLoading, setCallLoading] = useState<string | null>(null)
   const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
-  const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string } | null>(null)
+  const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -220,14 +220,14 @@ export default function TatamePage() {
     } catch { /* silencioso */ }
   }, [getPin, load])
 
-  const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number, autoWinnerId?: string) => {
+  const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number, autoWinnerId?: string, absentPosition?: "p1" | "p2" | null) => {
     setCallLoading(`${matchId}-${callNumber}`)
     setCallError(null)
     try {
       const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}/chamada`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
-        body: JSON.stringify({ action: "call", callNumber }),
+        body: JSON.stringify({ action: "call", callNumber, position: absentPosition ?? null }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -701,7 +701,7 @@ export default function TatamePage() {
                           </button>
                           {callMenu?.matchId !== match.id && (
                             <button
-                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name })}
+                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
                               disabled={actionLoading}
                               className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
                             >
@@ -714,13 +714,14 @@ export default function TatamePage() {
                             <p className="text-xs text-[#f87171] font-semibold pt-2">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
                             <div className="flex gap-1.5">
                               {[1, 2, 3].map(n => {
-                                const done = calls.some((c: CallTime) => c.call === n)
+                                const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos)
+                                const done = posCalls.some((c: CallTime) => c.call === n)
                                 const isLoadingCall = callLoading === `${match.id}-${n}`
-                                const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
+                                const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
                                 return (
                                   <button
                                     key={n}
-                                    onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId)}
+                                    onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
                                     disabled={!canCall || !!callLoading || actionLoading}
                                     className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
                                     style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
@@ -869,11 +870,11 @@ export default function TatamePage() {
                                 {callMenu?.matchId !== match.id ? (
                                   <>
                                     <div className="flex gap-2">
-                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p2.id, absenteeName: p1Name })} disabled={actionLoading}
+                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p2.id, absenteeName: p1Name, absentPosition: "p1" })} disabled={actionLoading}
                                         className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
                                         W.O. — {p1Name.split(" ")[0]}
                                       </button>
-                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p1.id, absenteeName: p2Name })} disabled={actionLoading}
+                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p1.id, absenteeName: p2Name, absentPosition: "p2" })} disabled={actionLoading}
                                         className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
                                         W.O. — {p2Name.split(" ")[0]}
                                       </button>
@@ -889,13 +890,14 @@ export default function TatamePage() {
                                     <p className="text-xs text-[#f87171] font-semibold">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
                                     <div className="flex gap-1.5">
                                       {[1, 2, 3].map(n => {
-                                        const done = calls.some((c: CallTime) => c.call === n)
+                                        const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos)
+                                        const done = posCalls.some((c: CallTime) => c.call === n)
                                         const isLoadingCall = callLoading === `${match.id}-${n}`
-                                        const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
+                                        const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
                                         return (
                                           <button
                                             key={n}
-                                            onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId)}
+                                            onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
                                             disabled={!canCall || !!callLoading || actionLoading}
                                             className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
                                             style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}

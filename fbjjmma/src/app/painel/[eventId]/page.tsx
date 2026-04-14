@@ -18,7 +18,7 @@ const BELT_LABELS: Record<string, string> = {
 // Cor diferente por coluna de tatame (igual ao IBJJF)
 const COL_COLORS = ["#0d9488","#f97316","#eab308","#7c3aed","#0891b2","#be185d","#15803d","#dc2626"]
 
-interface CallTime { call: number; at: string }
+interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
 interface MatchInfo {
   id: string; round: number; matchNumber: number
   callTimes: CallTime[] | null
@@ -111,7 +111,9 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
 function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
-  const calls = match.callTimes as CallTime[] | null
+  const allCalls = match.callTimes as CallTime[] | null
+  const p1Calls = allCalls ? allCalls.filter(c => c.pos === "p1" || !c.pos) : null
+  const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
     <div style={{ border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden" }}>
@@ -120,7 +122,7 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
         <span style={{ color: "#94a3b8", fontSize: "0.68rem", fontWeight: 600 }}>{bracketLabel}</span>
       </div>
       {/* Atleta 1 */}
-      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={calls} seed={1} isWO={isWOFinal} />
+      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
       {/* Divisor VS */}
       {!isSolo && (
         <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
@@ -131,7 +133,7 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
       )}
       {/* Atleta 2 */}
       {!isSolo && (
-        <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={calls} seed={2} isWO={isWOFinal} />
+        <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />
       )}
       {/* Placeholder quando solo para manter altura uniforme */}
       {isSolo && (
