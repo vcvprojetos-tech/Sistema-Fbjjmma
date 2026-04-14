@@ -69,5 +69,9 @@ export async function GET(
     orderBy: { name: "asc" },
   })
 
+  // Ordenar pelo número do tatame (ex: "Dudu Muniz - Tatame 3" → 3)
+  const getTatameNum = (name: string) => parseInt(name.match(/Tatame\s+(\d+)/i)?.[1] ?? "999")
+  tatames.sort((a: { name: string }, b: { name: string }) => getTatameNum(a.name) - getTatameNum(b.name))
+
   return NextResponse.json({ event, tatames })
 }
