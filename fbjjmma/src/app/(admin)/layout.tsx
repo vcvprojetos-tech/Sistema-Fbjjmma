@@ -72,7 +72,7 @@ export default function AdminLayout({
           className="flex items-center gap-3 px-6 py-5 border-b"
           style={{ borderColor: "var(--border)" }}
         >
-          <img src="/logo.png" alt="FBJJMMA" className="w-10 h-10 object-contain flex-shrink-0" />
+          <img src="/logo2.png" alt="FBJJMMA" className="w-10 h-10 object-contain flex-shrink-0" />
           <div>
             <p className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
             <p className="text-xs leading-tight" style={{ color: "var(--muted)" }}>Sistema de Gestão</p>

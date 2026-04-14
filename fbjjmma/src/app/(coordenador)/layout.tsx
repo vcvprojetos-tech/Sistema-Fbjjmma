@@ -14,7 +14,7 @@ export default function CoordenadorLayout({ children }: { children: React.ReactN
         style={{ backgroundColor: "var(--background)", borderColor: "var(--border)" }}
       >
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="FBJJMMA" className="w-8 h-8 object-contain flex-shrink-0" />
+          <img src="/logo2.png" alt="FBJJMMA" className="w-8 h-8 object-contain flex-shrink-0" />
           <div>
             <p className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
             <p className="text-xs leading-tight" style={{ color: "var(--muted)" }}>Controle de Chaves</p>

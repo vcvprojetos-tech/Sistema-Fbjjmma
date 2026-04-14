@@ -154,7 +154,7 @@ export default function EventosPage() {
                     className="w-full h-44 flex items-center justify-center"
                     style={{ background: "linear-gradient(135deg, #1a0000 0%, var(--card) 100%)" }}
                   >
-                    <img src="/logo.png" alt="FBJJMMA" className="w-14 h-14 object-contain opacity-30" />
+                    <img src="/logo2.png" alt="FBJJMMA" className="w-14 h-14 object-contain opacity-30" />
                   </div>
                 )}
 
