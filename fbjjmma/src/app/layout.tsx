@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { auth } from "@/lib/auth"
@@ -12,6 +12,17 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "FBJJMMA - Federação Baiana de Jiu-Jitsu e MMA",
   description: "Sistema de gestão da Federação Baiana de Jiu-Jitsu e MMA",
+  openGraph: {
+    siteName: "FBJJMMA",
+    title: "FBJJMMA - Federação Baiana de Jiu-Jitsu e MMA",
+    description: "Sistema de gestão da Federação Baiana de Jiu-Jitsu e MMA",
+    type: "website",
+  },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 }
 
 export default async function RootLayout({
