@@ -251,7 +251,7 @@ export default function PainelPage() {
             const op = tatame.operations[0]?.user.name ?? ""
             return (
               <div key={tatame.id} style={{ textAlign: "center", paddingBottom: "10px", borderBottom: `3px solid ${color}` }}>
-                <div style={{ color, fontWeight: 900, fontSize: "1.35rem", letterSpacing: "0.04em" }}>
+                <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.35rem", letterSpacing: "0.04em" }}>
                   Tatame {num}
                 </div>
                 {op && <div style={{ color: "#64748b", fontSize: "0.7rem", marginTop: "2px" }}>{op}</div>}
