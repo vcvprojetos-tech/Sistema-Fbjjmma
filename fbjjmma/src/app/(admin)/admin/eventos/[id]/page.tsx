@@ -1816,6 +1816,24 @@ export default function EventoDetailPage() {
       {tab === "tatames" && (
         <div className="space-y-6">
 
+          {/* Painel TV */}
+          <div className="rounded-lg border p-4 flex items-center justify-between"
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div>
+              <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
+              <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas</p>
+            </div>
+            <a
+              href={`/painel/${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+              style={{ backgroundColor: "#dc2626" }}
+            >
+              Abrir Painel
+            </a>
+          </div>
+
           {/* Painel de stats das chaves por tatame */}
           {brackets.length > 0 && (
             <div className="flex gap-3 flex-wrap">
@@ -1837,24 +1855,6 @@ export default function EventoDetailPage() {
               ))}
             </div>
           )}
-
-          {/* Painel TV */}
-          <div className="rounded-lg border p-4 flex items-center justify-between"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div>
-              <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
-              <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas</p>
-            </div>
-            <a
-              href={`/painel/${id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-              style={{ backgroundColor: "#dc2626" }}
-            >
-              Abrir Painel
-            </a>
-          </div>
 
           {/* Tatame cards */}
           <div className="space-y-3">
