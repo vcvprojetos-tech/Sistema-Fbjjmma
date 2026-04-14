@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
@@ -46,6 +46,8 @@ interface MatchData {
   winnerId: string | null
   isWO: boolean
   woType: string | null
+  woWeight1: number | null
+  woWeight2: number | null
   startedAt: string | null
   endedAt: string | null
   position1: BracketPositionData | null
@@ -115,13 +117,29 @@ export default function TatamePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState("")
-  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string } | null>(null)
+  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string } | null>(null)
+  const [pesoStep, setPesoStep] = useState(false)
+  const [pesoInput, setPesoInput] = useState("")
+  const [presentAthletes, setPresentAthletes] = useState<Set<string>>(new Set())
+
+  const togglePresent = useCallback((posId: string) => {
+    setPresentAthletes(prev => {
+      const next = new Set(prev)
+      if (next.has(posId)) next.delete(posId)
+      else next.add(posId)
+      return next
+    })
+  }, [])
+
+  const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     else setRefreshing(true)
     try {
-      const res = await fetch(`/api/coordenador/tatame/${tatameId}`)
+      const res = await fetch(`/api/coordenador/tatame/${tatameId}`, {
+        headers: { "x-tatame-pin": getPin() },
+      })
       const data = await res.json()
       if (data.id) setTatame(data)
     } catch {
@@ -130,23 +148,62 @@ export default function TatamePage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [tatameId])
+  }, [tatameId, getPin])
 
   useEffect(() => { load() }, [load])
 
+  // Desconectar ao sair da página
+  useEffect(() => {
+    const disconnect = () => {
+      const pin = getPin()
+      if (!pin) return
+      navigator.sendBeacon(
+        `/api/coordenador/tatame/${tatameId}`,
+        new Blob([JSON.stringify({})], { type: "application/json" })
+      )
+      // sendBeacon não suporta headers customizados, usamos fetch com keepalive
+      fetch(`/api/coordenador/tatame/${tatameId}`, {
+        method: "PATCH",
+        headers: { "x-tatame-pin": pin },
+        keepalive: true,
+      }).catch(() => {})
+    }
+    window.addEventListener("beforeunload", disconnect)
+    return () => {
+      window.removeEventListener("beforeunload", disconnect)
+      disconnect()
+    }
+  }, [tatameId, getPin])
+
   // SSE: server pushes "refresh" instantly when brackets change
   useEffect(() => {
-    const es = new EventSource(`/api/coordenador/tatame/${tatameId}/stream`)
+    const pin = getPin()
+    const es = new EventSource(`/api/coordenador/tatame/${tatameId}/stream?pin=${encodeURIComponent(pin)}`)
     es.onmessage = () => load(true)
-    es.onerror = () => es.close() // fall back to polling on error
+    es.onerror = () => es.close()
     return () => es.close()
-  }, [tatameId, load])
+  }, [tatameId, load, getPin])
 
   // Fallback polling every 10s (covers SSE reconnect gaps)
   useEffect(() => {
     const interval = setInterval(() => load(true), 10000)
     return () => clearInterval(interval)
   }, [load])
+
+  // Heartbeat a cada 30s: mantém a sessão vinculada a este dispositivo
+  useEffect(() => {
+    const pin = getPin()
+    if (!pin) return
+    const sendHeartbeat = () => {
+      fetch(`/api/coordenador/tatame/${tatameId}/heartbeat`, {
+        method: "POST",
+        headers: { "x-tatame-pin": pin },
+      }).catch(() => {})
+    }
+    sendHeartbeat()
+    const interval = setInterval(sendHeartbeat, 30000)
+    return () => clearInterval(interval)
+  }, [tatameId, getPin])
 
   // Auto-seleciona a primeira em andamento ou pendente
   useEffect(() => {
@@ -161,7 +218,10 @@ export default function TatamePage() {
     setActionLoading(true)
     setError("")
     try {
-      const res = await fetch(`/api/coordenador/chave/${bracketId}/iniciar`, { method: "POST" })
+      const res = await fetch(`/api/coordenador/chave/${bracketId}/iniciar`, {
+        method: "POST",
+        headers: { "x-tatame-pin": getPin() },
+      })
       const data = await res.json()
       if (!res.ok) setError(data.error || "Erro ao iniciar chave.")
       else await load(true)
@@ -170,16 +230,16 @@ export default function TatamePage() {
     } finally {
       setActionLoading(false)
     }
-  }, [load])
+  }, [load, getPin])
 
-  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string) => {
+  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string) => {
     setActionLoading(true)
     setError("")
     try {
       const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ winnerId, isWO, woType: woType || null }),
+        headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
+        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error || "Erro ao registrar resultado.")
@@ -189,8 +249,10 @@ export default function TatamePage() {
     } finally {
       setActionLoading(false)
       setWoModal(null)
+      setPesoStep(false)
+      setPesoInput("")
     }
-  }, [load])
+  }, [load, getPin])
 
   if (loading) {
     return (
@@ -209,50 +271,118 @@ export default function TatamePage() {
     )
   }
 
-  const emAndamento = sortBrackets(tatame.brackets.filter(b => b.status === "EM_ANDAMENTO"))
-  const pendentes = sortBrackets(tatame.brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA"))
-  const finalizadas = sortBrackets(tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA"))
+  // Grupos: só vão para "Finalizadas" quando a Grande Final do grupo está FINALIZADA/PREMIADA
+  const groupDone = new Set<string>()
+  for (const b of tatame.brackets) {
+    if (b.bracketGroupId && b.isGrandFinal && (b.status === "FINALIZADA" || b.status === "PREMIADA"))
+      groupDone.add(b.bracketGroupId)
+  }
+  const groupEmAndamento = new Set<string>()
+  for (const b of tatame.brackets) {
+    if (b.bracketGroupId && !groupDone.has(b.bracketGroupId) && b.status === "EM_ANDAMENTO")
+      groupEmAndamento.add(b.bracketGroupId)
+  }
+
+  const emAndamento = sortBrackets(tatame.brackets.filter(b => {
+    if (!b.bracketGroupId) return b.status === "EM_ANDAMENTO"
+    return !groupDone.has(b.bracketGroupId) && groupEmAndamento.has(b.bracketGroupId)
+  }))
+  const pendentes = sortBrackets(tatame.brackets.filter(b => {
+    if (!b.bracketGroupId) return b.status === "PENDENTE" || b.status === "DESIGNADA"
+    return !groupDone.has(b.bracketGroupId) && !groupEmAndamento.has(b.bracketGroupId)
+  }))
+  const finalizadas = sortBrackets(tatame.brackets.filter(b => {
+    if (!b.bracketGroupId) return b.status === "FINALIZADA" || b.status === "PREMIADA"
+    return groupDone.has(b.bracketGroupId)
+  }))
   const selectedBracket = tatame.brackets.find(b => b.id === selectedId) ?? null
   const operador = tatame.operations[0]
 
-  // Computed values for selected bracket
+  // Se o bracket selecionado faz parte de um grupo, agrega todos do grupo
   const bracket = selectedBracket
-  const pendingMatches = bracket?.matches.filter(m => !m.winnerId) ?? []
-  const currentRound = pendingMatches.length > 0
-    ? Math.min(...pendingMatches.map(m => m.round))
+  const groupBrackets = bracket?.bracketGroupId
+    ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId).sort((a, b) => {
+        if (a.isGrandFinal !== b.isGrandFinal) return a.isGrandFinal ? 1 : -1
+        return a.bracketNumber - b.bracketNumber
+      })
+    : bracket ? [bracket] : []
+  const isGroup = groupBrackets.length > 1
+
+  // Confrontos: todos os brackets ativos no grupo
+  const currentMatches = groupBrackets.flatMap(b =>
+    b.matches
+      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id !== null)
+      .map(m => ({ ...m, _bracketId: b.id }))
+  ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
+
+  // Partidas solo (1 atleta): pesagem individual
+  const soloMatches = groupBrackets.flatMap(b =>
+    b.matches
+      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
+      .map(m => ({ ...m, _bracketId: b.id, _isMidBracket: b.positions.length > 1 }))
+  )
+
+  // Para exibir progresso: total de partidas no grupo
+  const allGroupMatches = groupBrackets.flatMap(b => b.matches)
+  const maxRound = allGroupMatches.length > 0 ? Math.max(...allGroupMatches.map(m => m.round)) : 0
+
+  // Pódio: sempre calculado a partir da Grande Final (se grupo) ou do bracket simples
+  const podiumBracket = isGroup
+    ? (groupBrackets.find(b => b.isGrandFinal) ?? null)
+    : bracket
+  const podiumRealMatches = podiumBracket?.matches.filter(m => m.position1Id !== null && m.position2Id !== null) ?? []
+  const podiumLastMatch = podiumRealMatches.length > 0
+    ? [...podiumRealMatches].sort((a, b) => b.round - a.round || b.matchNumber - a.matchNumber)[0] ?? null
     : null
-  // Exibe todas as partidas prontas (ambos atletas definidos e sem vencedor),
-  // independente da rodada — permite adiantar lutas que já têm os dois atletas confirmados
-  const currentMatches = bracket?.matches.filter(
-    m => !m.winnerId && m.position1Id !== null && m.position2Id !== null
-  ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber) ?? []
-  // Partida final = última com dois atletas reais (exclui W.O. fantasma com position2Id null)
-  const realMatches = bracket?.matches.filter(m => m.position1Id !== null && m.position2Id !== null) ?? []
-  const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
-  const maxRound = bracket?.matches.length ? Math.max(...bracket.matches.map(m => m.round)) : 0
-  const lastMatch = realMatches.length > 0
-    ? [...realMatches].sort((a, b) => b.round - a.round || b.matchNumber - a.matchNumber)[0] ?? null
+  // Chave de 1 atleta: a "partida final" é a partida solo (sem position2Id)
+  const soloFinalMatch = podiumBracket?.matches.find(m => m.position1Id !== null && m.position2Id === null && m.endedAt) ?? null
+  const champion = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA")
+    ? (podiumLastMatch?.winnerId
+        ? podiumBracket!.positions.find(p => p.id === podiumLastMatch.winnerId) ?? null
+        : soloFinalMatch?.winnerId
+          ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
+          : null)
     : null
-  const champion = (bracket?.status === "FINALIZADA" || bracket?.status === "PREMIADA") && lastMatch?.winnerId
-    ? bracket.positions.find(p => p.id === lastMatch.winnerId) ?? null
-    : null
-  const runnerUp = (bracket?.status === "FINALIZADA" || bracket?.status === "PREMIADA") && lastMatch
-    ? bracket.positions.find(p =>
-        p.id === (lastMatch.winnerId === lastMatch.position1Id ? lastMatch.position2Id : lastMatch.position1Id)
+  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch
+    ? podiumBracket.positions.find(p =>
+        p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
     : null
+  // 3° lugar: perdedor da final da sub-chave do campeão geral
   const thirdPlace: BracketPositionData | null = (() => {
-    if (!bracket || (bracket.status !== "FINALIZADA" && bracket.status !== "PREMIADA") || !lastMatch?.winnerId) return null
-    if (bracket.positions.length === 3) {
-      const firstId = lastMatch.winnerId
-      const secondId = lastMatch.winnerId === lastMatch.position1Id ? lastMatch.position2Id : lastMatch.position1Id
-      return bracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+    if (!podiumBracket || (podiumBracket.status !== "FINALIZADA" && podiumBracket.status !== "PREMIADA") || !podiumLastMatch?.winnerId) return null
+    if (!isGroup) {
+      // Chave simples: 3° = perdedor da semi do campeão
+      const podiumMaxRound = podiumRealMatches.length > 0 ? Math.max(...podiumRealMatches.map(m => m.round)) : 0
+      if (podiumBracket.positions.length === 3) {
+        const firstId = podiumLastMatch.winnerId
+        const secondId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
+        return podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+      }
+      if (podiumMaxRound < 2) return null
+      const semi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
+      if (!semi) return null
+      // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
+      if (semi.isWO) return null
+      const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
+      return loserId ? podiumBracket.positions.find(p => p.id === loserId) ?? null : null
     }
-    if (!champion || maxRealRound < 2) return null
-    const semi = realMatches.find(m => m.round === maxRealRound - 1 && m.winnerId === champion.id)
-    if (!semi) return null
-    const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
-    return loserId ? bracket.positions.find(p => p.id === loserId) ?? null : null
+    // Grupo: 3° = perdedor da final da sub-chave do campeão geral
+    const champRegId = champion?.registration?.id
+    if (!champRegId) return null
+    const subBrackets = groupBrackets.filter(b => !b.isGrandFinal)
+    for (const sub of subBrackets) {
+      const subReal = sub.matches.filter(m => m.position1Id && m.position2Id)
+      const subMax = subReal.length > 0 ? Math.max(...subReal.map(m => m.round)) : 0
+      const subFinal = subReal.find(m => m.round === subMax && m.matchNumber === 1)
+      if (!subFinal?.winnerId) continue
+      const subChamp = sub.positions.find(p => p.id === subFinal.winnerId)
+      if (subChamp?.registration?.id !== champRegId) continue
+      // Esta é a sub-chave do campeão — o 3° é o perdedor da final desta sub-chave
+      const loserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
+      return loserId ? sub.positions.find(p => p.id === loserId) ?? null : null
+    }
+    return null
   })()
 
   function SideColumn({
@@ -266,8 +396,8 @@ export default function TatamePage() {
   }) {
     const allBrackets = items.flatMap(i => i.brackets)
     return (
-      <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "#1a1a1a" }}>
-        <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "#1a1a1a", backgroundColor: "#0a0a0a" }}>
+      <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
+        <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
           <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color }}>
             <span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: dot === "pulse" ? color : color }} />
             {title}
@@ -284,33 +414,67 @@ export default function TatamePage() {
                 {section && (
                   <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[#4b5563]">{section}</p>
                 )}
-                {brackets.map(b => {
-                  const isSelected = b.id === selectedId
-                  const isActive = b.status === "EM_ANDAMENTO"
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => setSelectedId(b.id)}
-                      className="w-full text-left px-3 py-3 border-b transition-colors"
-                      style={{
-                        borderColor: "#1a1a1a",
-                        backgroundColor: isSelected ? (isActive ? "#1a0d00" : "#0d0d1a") : "transparent",
-                        borderLeft: isSelected
-                          ? `3px solid ${isActive ? "#fbbf24" : color}`
-                          : "3px solid transparent",
-                      }}
-                    >
-                      <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                      <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
-                        style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb" }}>
-                        {catLabel(b)}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
-                        {b.positions.length} atleta(s) · {b.matches.filter(m => m.winnerId).length}/{b.matches.length} partidas
-                      </p>
-                    </button>
-                  )
-                })}
+                {(() => {
+                  const rendered: React.ReactNode[] = []
+                  const seenGroups = new Set<string>()
+                  for (const b of brackets) {
+                    if (b.bracketGroupId && !b.isGrandFinal) {
+                      if (seenGroups.has(b.bracketGroupId)) continue
+                      seenGroups.add(b.bracketGroupId)
+                      const group = brackets.filter(x => x.bracketGroupId === b.bracketGroupId && !x.isGrandFinal)
+                      const grandFinal = brackets.find(x => x.bracketGroupId === b.bracketGroupId && x.isGrandFinal)
+                      const allInGroup = grandFinal ? [...group, grandFinal] : group
+                      const groupIsSelected = allInGroup.some(x => x.id === selectedId)
+                      const groupIsActive = group.some(x => x.status === "EM_ANDAMENTO")
+                      rendered.push(
+                        <button
+                          key={b.bracketGroupId}
+                          onClick={() => setSelectedId(group[0].id)}
+                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          style={{
+                            borderColor: "var(--border)",
+                            backgroundColor: groupIsSelected ? (groupIsActive ? "#1a0d00" : "#0d0d1a") : "transparent",
+                            borderLeft: groupIsSelected ? `3px solid ${groupIsActive ? "#fbbf24" : color}` : "3px solid transparent",
+                          }}
+                        >
+                          <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {group.length} sub-chaves</p>
+                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
+                            style={{ color: groupIsActive ? "#fbbf24" : "#e5e7eb" }}>
+                            {catLabel(b).replace(" (Sub-chave)", "")}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
+                            {group.reduce((s, x) => s + x.positions.length, 0)} atleta(s) no total
+                          </p>
+                        </button>
+                      )
+                    } else if (!b.bracketGroupId) {
+                      const isSelected = b.id === selectedId
+                      const isActive = b.status === "EM_ANDAMENTO"
+                      rendered.push(
+                        <button
+                          key={b.id}
+                          onClick={() => setSelectedId(b.id)}
+                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          style={{
+                            borderColor: "var(--border)",
+                            backgroundColor: isSelected ? (isActive ? "#1a0d00" : "#0d0d1a") : "transparent",
+                            borderLeft: isSelected ? `3px solid ${isActive ? "#fbbf24" : color}` : "3px solid transparent",
+                          }}
+                        >
+                          <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
+                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
+                            style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb" }}>
+                            {catLabel(b)}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
+                            {b.positions.length} atleta(s) · {b.matches.filter(m => m.winnerId).length}/{b.matches.length} partidas
+                          </p>
+                        </button>
+                      )
+                    }
+                  }
+                  return rendered
+                })()}
               </div>
             ))}
           </div>
@@ -322,7 +486,7 @@ export default function TatamePage() {
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "#1a1a1a" }}>
+      <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-3">
           <Link href="/coordenador" className="text-[#6b7280] hover:text-white">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -330,7 +494,7 @@ export default function TatamePage() {
             </svg>
           </Link>
           <div>
-            <h1 className="text-base font-bold text-white leading-tight">{tatame.name}</h1>
+            <h1 className="text-base font-bold leading-tight" style={{ color: "var(--foreground)" }}>{tatame.name}</h1>
             <p className="text-[#6b7280] text-xs">{tatame.event.name}</p>
           </div>
           {operador && (
@@ -382,9 +546,9 @@ export default function TatamePage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Controles */}
-                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "#1a1a1a" }}>
+                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho da chave */}
-                  <div className="rounded-xl border p-4" style={{ backgroundColor: "#111", borderColor: "#222" }}>
+                  <div className="rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
@@ -423,22 +587,77 @@ export default function TatamePage() {
                   )}
 
                   {/* PENDENTE / DESIGNADA — botão iniciar */}
-                  {(bracket.status === "PENDENTE" || bracket.status === "DESIGNADA") && (
+                  {groupBrackets.some(b => b.status === "PENDENTE" || b.status === "DESIGNADA") && (
                     <div className="space-y-3 py-4 text-center">
-                      <p className="text-[#9ca3af] text-sm">{bracket.positions.length} atleta(s) nesta chave</p>
-                      <button
-                        onClick={() => iniciarChave(bracket.id)}
-                        disabled={actionLoading}
-                        className="w-full h-14 rounded-xl text-white font-bold text-base transition-opacity disabled:opacity-40"
-                        style={{ backgroundColor: "#16a34a" }}
-                      >
-                        {actionLoading ? "Iniciando..." : "▶ INICIAR CHAVE"}
-                      </button>
+                      {groupBrackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").map(b => (
+                        <div key={b.id}>
+                          {isGroup && <p className="text-[#6b7280] text-xs mb-1">{b.isGrandFinal ? "🏆 Grande Final" : `Sub-chave #${b.bracketNumber}`} — {b.positions.length} atleta(s)</p>}
+                          {!isGroup && <p className="text-[#9ca3af] text-sm">{b.positions.length} atleta(s) nesta chave</p>}
+                          <button
+                            onClick={() => iniciarChave(b.id)}
+                            disabled={actionLoading}
+                            className="w-full h-14 rounded-xl text-white font-bold text-base transition-opacity disabled:opacity-40"
+                            style={{ backgroundColor: "#16a34a" }}
+                          >
+                            {actionLoading ? "Iniciando..." : `▶ INICIAR${isGroup ? ` #${b.bracketNumber}` : ""}`}
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
+                  {/* Partidas solo: 1 atleta aguardando pesagem */}
+                  {soloMatches.map(match => {
+                    const p1 = match.position1
+                    const p1Name = getAthleteName(p1)
+                    const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
+                    const isMid = match._isMidBracket
+                    return (
+                      <div key={match.id} className="rounded-xl border overflow-hidden"
+                        style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
+                        <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <span className="text-xs font-semibold" style={{ color: isMid ? "#60a5fa" : "#fbbf24" }}>
+                            {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
+                          </span>
+                        </div>
+                        <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <button
+                            onClick={() => p1?.id && togglePresent(p1.id)}
+                            disabled={actionLoading}
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
+                            style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                          >
+                            {p1Present ? "✓" : "1"}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-white text-sm truncate">{p1Name}</p>
+                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
+                          </div>
+                          <span className="text-xs text-[#6b7280]">TAP</span>
+                        </div>
+                        <div className="flex gap-2 p-3">
+                          <button
+                            onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
+                            disabled={actionLoading || (isMid && !p1Present)}
+                            className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
+                            style={{ backgroundColor: "#15803d" }}
+                          >
+                            {isMid ? "▶ Avançar" : "✓ Campeão"}
+                          </button>
+                          <button
+                            onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId })}
+                            disabled={actionLoading}
+                            className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
+                          >
+                            W.O.
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+
                   {/* EM_ANDAMENTO — todas as partidas prontas (ambos atletas definidos) */}
-                  {bracket.status === "EM_ANDAMENTO" && (
+                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && (
                     <div className="space-y-3">
                       {/* Indicador de progresso por rodada */}
                       {maxRound > 1 && (
@@ -448,8 +667,8 @@ export default function TatamePage() {
                           </h2>
                           <div className="flex gap-1">
                             {Array.from({ length: maxRound }, (_, i) => i + 1).map(r => {
-                              const done = bracket.matches.filter(m => m.round === r).every(m => m.winnerId)
-                              const active = r === currentRound
+                              const done = allGroupMatches.filter(m => m.round === r).every(m => m.endedAt)
+                              const active = currentMatches.length > 0 && r === Math.min(...currentMatches.map(m => m.round))
                               return (
                                 <div key={r} className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: active ? "#fbbf24" : done ? "#4ade80" : "#333" }} />
@@ -464,68 +683,112 @@ export default function TatamePage() {
                         const p2 = match.position2
                         const p1Name = getAthleteName(p1)
                         const p2Name = getAthleteName(p2)
-                        const isDone = !!match.winnerId
+                        const isDone = !!match.endedAt
                         const winnerIsP1 = match.winnerId === match.position1Id
                         const winnerIsP2 = match.winnerId === match.position2Id
+                        const p1Present = !!(p1?.id && presentAthletes.has(p1.id))
+                        const p2Present = !!(p2?.id && presentAthletes.has(p2.id))
+                        const bothPresent = p1Present && p2Present
                         return (
                           <div key={match.id} className="rounded-xl border overflow-hidden"
-                            style={{ borderColor: isDone ? "#14532d40" : "#333", backgroundColor: "#111" }}>
-                            <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid #1a1a1a" }}>
+                            style={{
+                              borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "#333",
+                              backgroundColor: "var(--card)",
+                            }}>
+                            <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
                               <span className="text-xs text-[#6b7280]">
                                 R{match.round} · Partida {match.matchNumber}
                               </span>
-                              {isDone && (
+                              {isDone ? (
                                 <span className="text-xs text-[#4ade80] font-semibold">
                                   {match.isWO ? `W.O. (${match.woType === "PESO" ? "Peso" : "Ausência"})` : "Finalizada"}
                                 </span>
+                              ) : bothPresent ? (
+                                <span className="text-xs text-[#4ade80] font-semibold">● Prontos para lutar</span>
+                              ) : (
+                                <span className="text-xs text-[#6b7280]">Confirme a presença</span>
                               )}
                             </div>
-                            <button
-                              onClick={() => !isDone && !actionLoading && p1?.id && p1Name !== "BYE" && declararVencedor(bracket.id, match.id, p1.id)}
-                              disabled={isDone || actionLoading || !p1?.id || p1Name === "BYE"}
-                              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:cursor-default"
-                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid #1a1a1a" }}
-                            >
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : "#222", color: "#fff" }}>
-                                {isDone && winnerIsP1 ? "✓" : "1"}
-                              </div>
+
+                            {/* Atleta 1 */}
+                            <div className="w-full px-4 py-3 flex items-center gap-3"
+                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid var(--border)" }}>
+                              <button
+                                onClick={() => !isDone && p1?.id && p1Name !== "BYE" && togglePresent(p1.id)}
+                                disabled={isDone || !p1?.id || p1Name === "BYE"}
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
+                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                                title={p1Present ? "Marcar como ausente" : "Marcar como presente"}
+                              >
+                                {(isDone && winnerIsP1) || p1Present ? "✓" : "1"}
+                              </button>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-white text-sm truncate">{p1Name}</p>
                                 {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                               </div>
-                              {!isDone && p1Name !== "BYE" && <span className="text-xs text-[#dc2626] font-bold shrink-0">TAP</span>}
-                            </button>
-                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "#0d0d0d" }}>
-                              <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
-                              <span className="text-xs text-[#444] font-bold py-1">VS</span>
-                              <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
+                              {!isDone && p1Name !== "BYE" && (
+                                <button
+                                  onClick={() => bothPresent && !actionLoading && p1?.id && declararVencedor(match._bracketId, match.id, p1.id)}
+                                  disabled={!bothPresent || actionLoading}
+                                  className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
+                                  style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                >
+                                  TAP
+                                </button>
+                              )}
                             </div>
-                            <button
-                              onClick={() => !isDone && !actionLoading && p2?.id && p2Name !== "BYE" && declararVencedor(bracket.id, match.id, p2.id)}
-                              disabled={isDone || actionLoading || !p2?.id || p2Name === "BYE"}
-                              className="w-full px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:cursor-default"
-                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}
-                            >
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : "#222", color: "#fff" }}>
-                                {isDone && winnerIsP2 ? "✓" : "2"}
-                              </div>
+
+                            {/* VS */}
+                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "#222" }} />
+                              <span className="text-xs font-bold py-1" style={{ color: bothPresent && !isDone ? "#4ade80" : "#444" }}>VS</span>
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "#222" }} />
+                            </div>
+
+                            {/* Atleta 2 */}
+                            <div className="w-full px-4 py-3 flex items-center gap-3"
+                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}>
+                              <button
+                                onClick={() => !isDone && p2?.id && p2Name !== "BYE" && togglePresent(p2.id)}
+                                disabled={isDone || !p2?.id || p2Name === "BYE"}
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
+                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : p2Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                                title={p2Present ? "Marcar como ausente" : "Marcar como presente"}
+                              >
+                                {(isDone && winnerIsP2) || p2Present ? "✓" : "2"}
+                              </button>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-white text-sm truncate">{p2Name !== "BYE" ? p2Name : "— BYE —"}</p>
                                 {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p2)}</p>}
                               </div>
-                              {!isDone && p2Name !== "BYE" && <span className="text-xs text-[#dc2626] font-bold shrink-0">TAP</span>}
-                            </button>
-                            {!isDone && p1?.id && p2?.id && (
-                              <div className="flex gap-2 p-3" style={{ borderTop: "1px solid #1a1a1a" }}>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id })} disabled={actionLoading}
-                                  className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                  W.O. — {p1Name.split(" ")[0]}
+                              {!isDone && p2Name !== "BYE" && (
+                                <button
+                                  onClick={() => bothPresent && !actionLoading && p2?.id && declararVencedor(match._bracketId, match.id, p2.id)}
+                                  disabled={!bothPresent || actionLoading}
+                                  className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
+                                  style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                >
+                                  TAP
                                 </button>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id })} disabled={actionLoading}
-                                  className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                  W.O. — {p2Name.split(" ")[0]}
+                              )}
+                            </div>
+
+                            {!isDone && p1?.id && p2?.id && (
+                              <div className="flex flex-col gap-1.5 p-3" style={{ borderTop: "1px solid var(--border)" }}>
+                                <div className="flex gap-2">
+                                  <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
+                                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                    W.O. — {p1Name.split(" ")[0]}
+                                  </button>
+                                  <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
+                                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                    W.O. — {p2Name.split(" ")[0]}
+                                  </button>
+                                </div>
+                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
+                                  className="w-full py-2 rounded-lg text-xs font-semibold border transition-colors"
+                                  style={{ color: "#f97316", borderColor: "#7c2d1240", backgroundColor: "#7c2d1210" }}>
+                                  W.O. — Ambos Ausentes
                                 </button>
                               </div>
                             )}
@@ -534,7 +797,7 @@ export default function TatamePage() {
                       })}
 
                       {/* Partidas aguardando definição de atletas (ex: próxima rodada ainda não confirmada) */}
-                      {bracket.matches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length > 0 && (
+                      {allGroupMatches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length > 0 && (
                         <p className="text-xs text-[#4b5563] text-center py-1">
                           + {bracket.matches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length} luta(s) aguardando definição de atletas
                         </p>
@@ -558,70 +821,159 @@ export default function TatamePage() {
                     </div>
                   )}
 
-                  {/* FINALIZADA / PREMIADA — pódio */}
-                  {(bracket.status === "FINALIZADA" || bracket.status === "PREMIADA") && (
+                  {/* FINALIZADA / PREMIADA — pódio (só quando a GF finalizou, ou chave simples finalizada) */}
+                  {(isGroup
+                    ? groupBrackets.some(b => b.isGrandFinal && (b.status === "FINALIZADA" || b.status === "PREMIADA"))
+                      || (groupBrackets.every(b => !b.isGrandFinal) && groupBrackets.some(b => b.status === "FINALIZADA" || b.status === "PREMIADA"))
+                    : bracket?.status === "FINALIZADA" || bracket?.status === "PREMIADA"
+                  ) && (
                     <div className="space-y-3 py-4">
-                      <div className="flex flex-col items-center gap-3 text-center">
-                        <Trophy className="h-10 w-10 text-[#fbbf24]" />
-                        {champion && (
-                          <div>
-                            <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
-                            <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
-                            {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
+                      {(() => {
+                        const grandFinal = groupBrackets.find(b => b.isGrandFinal)
+                        const isSubOnly = isGroup && !grandFinal
+                        // Sub-chaves sem grande final ainda: mostrar apenas campeões de cada sub-chave
+                        if (isSubOnly) {
+                          const doneSubs = groupBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
+                          return (
+                            <div className="flex flex-col items-center gap-4 text-center">
+                              {doneSubs.map(b => {
+                                const bRealMatches = b.matches.filter(m => m.position1Id && m.position2Id)
+                                const bMaxRound = bRealMatches.length > 0 ? Math.max(...bRealMatches.map(m => m.round)) : 0
+                                const bFinal = bRealMatches.find(m => m.round === bMaxRound && m.matchNumber === 1)
+                                const bChamp = bFinal?.winnerId ? b.positions.find(p => p.id === bFinal.winnerId) : null
+                                return (
+                                  <div key={b.id}>
+                                    <p className="text-[#6b7280] text-xs font-semibold uppercase tracking-wider mb-1">Sub-chave #{b.bracketNumber}</p>
+                                    {bChamp ? (
+                                      <div>
+                                        <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🏅 Campeão</p>
+                                        <p className="text-white text-base font-bold">{getAthleteName(bChamp)}</p>
+                                        {getAthleteTeam(bChamp) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(bChamp)}</p>}
+                                      </div>
+                                    ) : <p className="text-[#6b7280] text-sm">Em andamento</p>}
+                                  </div>
+                                )
+                              })}
+                              <p className="text-[#f59e0b] text-sm font-semibold mt-2">⏳ Aguardando Grande Final</p>
+                              <p className="text-[#6b7280] text-xs">O pódio será definido na Grande Final entre os campeões.</p>
+                            </div>
+                          )
+                        }
+                        // Grande Final finalizada: mostrar pódio completo
+                        if (grandFinal && (grandFinal.status === "FINALIZADA" || grandFinal.status === "PREMIADA")) {
+                          return (
+                            <div className="flex flex-col items-center gap-3 text-center">
+                              <Trophy className="h-10 w-10 text-[#fbbf24]" />
+                              {champion && (
+                                <div>
+                                  <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
+                                  <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
+                                  {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
+                                </div>
+                              )}
+                              {runnerUp && (
+                                <div>
+                                  <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
+                                  <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
+                                  {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
+                                </div>
+                              )}
+                              {thirdPlace && (
+                                <div>
+                                  <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
+                                  <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
+                                  {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
+                                </div>
+                              )}
+                              <p className="text-center text-[#4ade80] font-semibold text-sm">
+                                {grandFinal.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
+                              </p>
+                            </div>
+                          )
+                        }
+                        // Chave simples (sem grupo)
+                        return (
+                          <div className="flex flex-col items-center gap-3 text-center">
+                            <Trophy className="h-10 w-10 text-[#fbbf24]" />
+                            {champion && (
+                              <div>
+                                <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
+                                <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
+                                {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
+                              </div>
+                            )}
+                            {runnerUp && (
+                              <div>
+                                <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
+                                <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
+                                {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
+                              </div>
+                            )}
+                            {thirdPlace && (
+                              <div>
+                                <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
+                                <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
+                                {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
+                              </div>
+                            )}
+                            <p className="text-center text-[#4ade80] font-semibold text-sm">
+                              {bracket?.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
+                            </p>
+                            <p className="text-center text-[#6b7280] text-xs">{bracket?.matches.length} partida(s) realizada(s)</p>
                           </div>
-                        )}
-                        {runnerUp && (
-                          <div>
-                            <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
-                            <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
-                            {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
-                          </div>
-                        )}
-                        {thirdPlace && (
-                          <div>
-                            <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
-                            <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
-                            {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-center text-[#4ade80] font-semibold text-sm">
-                        {bracket.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
-                      </p>
-                      <p className="text-center text-[#6b7280] text-xs">{bracket.matches.length} partida(s) realizada(s)</p>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
 
                 {/* Visualização da chave */}
-                <div className="flex-1 overflow-auto p-5">
-                  <BracketView
-                    bracket={{
-                      id: bracket.id,
-                      bracketNumber: bracket.bracketNumber,
-                      isAbsolute: bracket.isAbsolute,
-                      weightCategory: {
-                        id: bracket.weightCategory.id ?? bracket.id,
-                        name: bracket.weightCategory.name,
-                        ageGroup: bracket.weightCategory.ageGroup,
-                        sex: bracket.weightCategory.sex,
-                        maxWeight: bracket.weightCategory.maxWeight,
-                      },
-                      positions: bracket.positions.map(p => ({
-                        id: p.id,
-                        position: p.position,
-                        registration: p.registration
-                          ? {
-                              id: p.registration.id,
-                              guestName: p.registration.guestName,
-                              athlete: p.registration.athlete,
-                              team: p.registration.team,
-                            }
-                          : null,
-                      })),
-                      matches: bracket.matches,
-                    }}
-                  />
+                <div className="flex-1 overflow-auto p-5 space-y-6">
+                  {(() => {
+                    const bracketsToShow = bracket.bracketGroupId && !bracket.isGrandFinal
+                      ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId)
+                          .sort((a, b) => {
+                            if (a.isGrandFinal !== b.isGrandFinal) return a.isGrandFinal ? 1 : -1
+                            return a.bracketNumber - b.bracketNumber
+                          })
+                      : [bracket]
+                    return bracketsToShow.map(b => (
+                      <div key={b.id}>
+                        {bracketsToShow.length > 1 && (
+                          <p className="text-xs font-semibold mb-2" style={{ color: b.isGrandFinal ? "#fbbf24" : "#6b7280" }}>
+                            {b.isGrandFinal ? "🏆 Grande Final" : `Sub-chave #${b.bracketNumber}`}
+                          </p>
+                        )}
+                        <BracketView
+                          bracket={{
+                            id: b.id,
+                            bracketNumber: b.bracketNumber,
+                            isAbsolute: b.isAbsolute,
+                            weightCategory: {
+                              id: b.weightCategory.id ?? b.id,
+                              name: b.weightCategory.name,
+                              ageGroup: b.weightCategory.ageGroup,
+                              sex: b.weightCategory.sex,
+                              maxWeight: b.weightCategory.maxWeight,
+                            },
+                            positions: b.positions.map(p => ({
+                              id: p.id,
+                              position: p.position,
+                              registration: p.registration
+                                ? {
+                                    id: p.registration.id,
+                                    guestName: p.registration.guestName,
+                                    athlete: p.registration.athlete,
+                                    team: p.registration.team,
+                                  }
+                                : null,
+                            })),
+                            matches: b.matches,
+                          }}
+                        />
+                      </div>
+                    ))
+                  })()}
                 </div>
 
               </div>
@@ -640,28 +992,96 @@ export default function TatamePage() {
         </div>
       )}
 
-      {/* W.O. modal */}
+      {/* W.O. / Desclassificação modal */}
       {woModal && bracket && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "#1a1a1a" }}>
-            <p className="text-white font-bold text-center text-lg">Tipo de W.O.</p>
-            <p className="text-[#9ca3af] text-sm text-center">Selecione o motivo do W.O.</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => declararVencedor(bracket.id, woModal.matchId, woModal.winnerId, true, "PESO")}
-                disabled={actionLoading}
-                className="py-4 rounded-xl font-semibold text-white text-sm" style={{ backgroundColor: "#78350f" }}>
-                Por Peso
-              </button>
-              <button onClick={() => declararVencedor(bracket.id, woModal.matchId, woModal.winnerId, true, "AUSENCIA")}
-                disabled={actionLoading}
-                className="py-4 rounded-xl font-semibold text-white text-sm" style={{ backgroundColor: "#1e3a5f" }}>
-                Por Ausência
-              </button>
-            </div>
-            <button onClick={() => setWoModal(null)}
-              className="w-full py-3 rounded-xl text-[#6b7280] text-sm" style={{ backgroundColor: "#111" }}>
-              Cancelar
-            </button>
+          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
+            {/* W.O. Duplo — confirmação */}
+            {woModal.winnerId === "" && !pesoStep ? (
+              <>
+                <p className="text-white font-bold text-center text-lg">W.O. — Ambos Ausentes</p>
+                <p className="text-[#9ca3af] text-sm text-center">
+                  {woModal.p1Name?.split(" ")[0]} e {woModal.p2Name?.split(" ")[0]} não compareceram.<br />
+                  Nenhum atleta avança nesta partida.
+                </p>
+                <button
+                  onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, "", true, "AUSENCIA")}
+                  disabled={actionLoading}
+                  className="w-full py-4 rounded-xl font-bold text-white text-sm"
+                  style={{ backgroundColor: "#f97316" }}
+                >
+                  {actionLoading ? "Confirmando..." : "Confirmar Dupla Ausência"}
+                </button>
+                <button
+                  onClick={() => setWoModal(null)}
+                  className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+                  style={{ backgroundColor: "var(--card)" }}
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : !pesoStep ? (
+              <>
+                <p className="text-white font-bold text-center text-lg">Motivo</p>
+                <p className="text-[#9ca3af] text-sm text-center">Selecione o motivo</p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "AUSENCIA")}
+                    disabled={actionLoading}
+                    className="py-4 rounded-xl font-semibold text-white text-sm"
+                    style={{ backgroundColor: "#1e3a5f" }}
+                  >
+                    W.O. por Ausência
+                  </button>
+                  <button
+                    onClick={() => setPesoStep(true)}
+                    disabled={actionLoading}
+                    className="py-4 rounded-xl font-semibold text-white text-sm"
+                    style={{ backgroundColor: "#78350f" }}
+                  >
+                    Desclassificação por Peso
+                  </button>
+                </div>
+                <button
+                  onClick={() => setWoModal(null)}
+                  className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+                  style={{ backgroundColor: "var(--card)" }}
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-white font-bold text-center text-lg">Peso do Atleta</p>
+                <p className="text-[#9ca3af] text-sm text-center">Informe o peso aferido (kg)</p>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="Ex: 77.3"
+                  value={pesoInput}
+                  onChange={e => setPesoInput(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
+                  style={{ backgroundColor: "var(--card)", borderColor: pesoInput ? "#dc2626" : "#333" }}
+                  autoFocus
+                />
+                <button
+                  onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO", pesoInput)}
+                  disabled={actionLoading || !pesoInput}
+                  className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
+                  style={{ backgroundColor: "#dc2626" }}
+                >
+                  {actionLoading ? "Confirmando..." : "Confirmar Desclassificação"}
+                </button>
+                <button
+                  onClick={() => setPesoStep(false)}
+                  className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+                  style={{ backgroundColor: "var(--card)" }}
+                >
+                  Voltar
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

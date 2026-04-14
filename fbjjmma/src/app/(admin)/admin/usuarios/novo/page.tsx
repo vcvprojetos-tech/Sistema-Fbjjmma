@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -48,11 +48,18 @@ export default function NovoUsuarioPage() {
     return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
   }
 
+  const isCoordenadorTatame = form.role === "COORDENADOR_TATAME"
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
 
-    if (!form.name.trim() || !form.cpf || !form.email || !form.password) {
+    if (!form.name.trim() || !form.cpf) {
+      setError("Nome e CPF são obrigatórios.")
+      return
+    }
+
+    if (!isCoordenadorTatame && (!form.email || !form.password)) {
       setError("Nome, CPF, e-mail e senha são obrigatórios.")
       return
     }
@@ -98,7 +105,7 @@ export default function NovoUsuarioPage() {
       <form
         onSubmit={handleSubmit}
         className="rounded-lg border p-6 space-y-4"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="space-y-2">
           <Label htmlFor="name">Nome Completo *</Label>
@@ -122,40 +129,52 @@ export default function NovoUsuarioPage() {
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Celular</Label>
-            <Input
-              id="phone"
-              value={form.phone}
-              onChange={(e) => set("phone", formatPhone(e.target.value))}
-              placeholder="(00) 00000-0000"
-            />
-          </div>
+          {!isCoordenadorTatame && (
+            <div className="space-y-2">
+              <Label htmlFor="phone">Celular</Label>
+              <Input
+                id="phone"
+                value={form.phone}
+                onChange={(e) => set("phone", formatPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">E-mail *</Label>
-          <Input
-            id="email"
-            type="email"
-            value={form.email}
-            onChange={(e) => set("email", e.target.value)}
-            placeholder="usuario@email.com"
-            required
-          />
-        </div>
+        {!isCoordenadorTatame && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => set("email", e.target.value)}
+                placeholder="usuario@email.com"
+                required
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Senha *</Label>
-          <Input
-            id="password"
-            type="password"
-            value={form.password}
-            onChange={(e) => set("password", e.target.value)}
-            placeholder="Mínimo 6 caracteres"
-            required
-          />
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={form.password}
+                onChange={(e) => set("password", e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                required
+              />
+            </div>
+          </>
+        )}
+
+        {isCoordenadorTatame && (
+          <p className="text-xs text-[#6b7280]">
+            Coordenadores de tatame acessam o sistema pelo CPF. Não é necessário criar senha.
+          </p>
+        )}
 
         <div className="space-y-2">
           <Label>Perfil *</Label>

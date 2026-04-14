@@ -286,6 +286,7 @@ model Registration {
   medal            String?
   teamPoints       Boolean            @default(true)
   awarded          Boolean            @default(false)
+  prizePix         String?
   affiliated       Boolean            @default(false)
   pointDiff        Boolean            @default(false)
   registeredAt     DateTime           @default(now())
@@ -329,13 +330,14 @@ model EventCoordinator {
 }
 
 model TatameOperation {
-  id        String    @id @default(cuid())
-  tatameId  String
-  tatame    Tatame    @relation(fields: [tatameId], references: [id])
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  startedAt DateTime  @default(now())
-  endedAt   DateTime?
+  id             String    @id @default(cuid())
+  tatameId       String
+  tatame         Tatame    @relation(fields: [tatameId], references: [id])
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  lastHeartbeat  DateTime?
 
   @@map("tatame_operations")
 }

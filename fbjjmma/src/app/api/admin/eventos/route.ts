@@ -83,20 +83,36 @@ export async function POST(req: NextRequest) {
       data = await req.json()
     }
 
+    const toDate = (v: unknown) => (v && String(v).trim() ? new Date(String(v)) : new Date("2000-01-01"))
+
+    // Se typeId não foi informado, usa o primeiro tipo cadastrado
+    let typeId = (data.typeId as string) || ""
+    if (!typeId) {
+      const firstType = await prisma.eventType.findFirst()
+      if (firstType) typeId = firstType.id
+    }
+
+    // Se weightTableId não foi informado, usa a primeira tabela cadastrada
+    let weightTableId = (data.weightTableId as string) || ""
+    if (!weightTableId) {
+      const firstTable = await prisma.weightTable.findFirst()
+      if (firstTable) weightTableId = firstTable.id
+    }
+
     const event = await prisma.event.create({
       data: {
-        name: data.name as string,
-        typeId: data.typeId as string,
-        state: data.state as string,
-        city: data.city as string,
-        location: data.location as string,
-        date: new Date(data.date as string),
-        registrationDeadline: new Date(data.registrationDeadline as string),
-        correctionDeadline: new Date(data.correctionDeadline as string),
-        paymentDeadline: new Date(data.paymentDeadline as string),
-        checkinRelease: new Date(data.checkinRelease as string),
-        bracketRelease: new Date(data.bracketRelease as string),
-        weightTableId: data.weightTableId as string,
+        name: (data.name as string) || "Sem nome",
+        typeId,
+        state: (data.state as string) || "",
+        city: (data.city as string) || "",
+        location: (data.location as string) || "",
+        date: toDate(data.date),
+        registrationDeadline: toDate(data.registrationDeadline),
+        correctionDeadline: toDate(data.correctionDeadline),
+        paymentDeadline: toDate(data.paymentDeadline),
+        checkinRelease: toDate(data.checkinRelease),
+        bracketRelease: toDate(data.bracketRelease),
+        weightTableId,
         value: parseFloat(data.value as string) || 0,
         hasAbsolute: data.hasAbsolute === "true" || data.hasAbsolute === true,
         absoluteValue: data.absoluteValue

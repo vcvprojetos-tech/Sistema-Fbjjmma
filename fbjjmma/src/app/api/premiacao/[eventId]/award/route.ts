@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
-  const session = await auth()
-  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
 
   const { eventId } = await params
 
   try {
-    const { registrationId, bracketId, medal } = await req.json()
+    const { registrationId, bracketId, medal, prizePix } = await req.json()
 
     if (!registrationId) {
       return NextResponse.json({ error: "registrationId obrigatório." }, { status: 400 })
@@ -31,6 +28,7 @@ export async function PUT(
       data: {
         awarded: true,
         ...(medal ? { medal } : {}),
+        ...(prizePix !== undefined ? { prizePix: prizePix || null } : {}),
       },
     })
 
@@ -55,6 +53,15 @@ export async function PUT(
         const realMatches = matches.filter((m) => m.position1Id !== null && m.position2Id !== null)
         const maxRound = realMatches.length > 0 ? Math.max(...realMatches.map((m) => m.round)) : 0
         const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+
+        // Chave de 1 atleta: partida solo (position2Id = null)
+        const soloMatch = matches.find((m) => m.position1Id !== null && m.position2Id === null && m.winnerId !== null)
+        if (soloMatch?.winnerId && !finalMatch) {
+          await prisma.bracket.update({
+            where: { id: bracketId },
+            data: { status: "PREMIADA" },
+          })
+        }
 
         if (finalMatch?.winnerId) {
           const placementIds: string[] = []

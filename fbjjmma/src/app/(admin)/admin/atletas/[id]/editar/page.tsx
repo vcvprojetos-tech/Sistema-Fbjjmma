@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -163,7 +163,7 @@ export default function EditarAtletaPage() {
         {/* Dados Pessoais */}
         <section
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
             Dados Pessoais
@@ -243,7 +243,7 @@ export default function EditarAtletaPage() {
         {/* Dados Esportivos */}
         <section
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
             Dados Esportivos
@@ -318,7 +318,7 @@ export default function EditarAtletaPage() {
         {/* Endereço */}
         <section
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
             Endereço

@@ -42,6 +42,11 @@ function computeNextRoundPairs(n: number): [number, number][] {
  * da árvore de chaves — posições do mesmo lado da chave só se encontram
  * na semifinal, nunca em rodadas anteriores.
  */
+// Uma partida está resolvida se tem vencedor OU se é W.O. duplo (isWO=true, winnerId=null, endedAt preenchido)
+function isMatchResolved(m: { winnerId: string | null; isWO: boolean; endedAt: Date | null }): boolean {
+  return m.winnerId !== null || (m.isWO && m.endedAt !== null)
+}
+
 export async function propagateBracket(bracketId: string): Promise<boolean> {
   const allMatches = await prisma.match.findMany({
     where: { bracketId },
@@ -82,19 +87,57 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
 
       const m1 = sorted[i]
       const m2 = sorted[j]
-      if (!m1 || !m2) continue // partida ainda não existe (resultado pendente)
-      if (!m1.winnerId || !m2.winnerId) continue // ainda sem vencedor
+      if (!m1 || !m2) continue // partida ainda não existe
+      if (!isMatchResolved(m1) || !isMatchResolved(m2)) continue // ainda pendente
 
-      const created = await prisma.match.create({
-        data: { bracketId, round: nextRound, matchNumber: nextMN, position1Id: m1.winnerId, position2Id: m2.winnerId },
-      })
+      const adv1 = m1.winnerId // null se W.O. duplo
+      const adv2 = m2.winnerId // null se W.O. duplo
+
+      let created
+      if (adv1 === null && adv2 === null) {
+        // Ambos os lados sem vencedor → propaga W.O. duplo para cima (auto-resolvido)
+        created = await prisma.match.create({
+          data: {
+            bracketId, round: nextRound, matchNumber: nextMN,
+            position1Id: null, position2Id: null,
+            isWO: true, woType: "AUSENCIA", winnerId: null, endedAt: new Date(),
+          },
+        })
+      } else if (adv1 === null) {
+        // Lado esquerdo sem vencedor → criar partida solo PENDENTE para adv2
+        // O coordenador confirma presença ou aplica W.O. ao atleta restante
+        created = await prisma.match.create({
+          data: {
+            bracketId, round: nextRound, matchNumber: nextMN,
+            position1Id: adv2, position2Id: null,
+            // sem winnerId nem endedAt → coordenador decide
+          },
+        })
+      } else if (adv2 === null) {
+        // Lado direito sem vencedor → criar partida solo PENDENTE para adv1
+        created = await prisma.match.create({
+          data: {
+            bracketId, round: nextRound, matchNumber: nextMN,
+            position1Id: adv1, position2Id: null,
+          },
+        })
+      } else {
+        // Partida normal com dois atletas
+        created = await prisma.match.create({
+          data: { bracketId, round: nextRound, matchNumber: nextMN, position1Id: adv1, position2Id: adv2 },
+        })
+      }
+
       // Atualiza rastreamento em memória para permitir propagação na mesma chamada
       if (!byRound.has(nextRound)) byRound.set(nextRound, [])
       byRound.get(nextRound)!.push(created)
     }
   }
 
-  const pending = await prisma.match.count({ where: { bracketId, winnerId: null } })
+  // Bracket finalizado = todas as partidas resolvidas (com vencedor ou W.O. duplo)
+  const pending = await prisma.match.count({
+    where: { bracketId, winnerId: null, OR: [{ isWO: false }, { endedAt: null }] },
+  })
   return pending === 0
 }
 
@@ -124,7 +167,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
     where: { id: bracketId },
     select: {
       id: true, eventId: true, weightCategoryId: true, belt: true,
-      isAbsolute: true, bracketGroupId: true, isGrandFinal: true, status: true,
+      isAbsolute: true, bracketGroupId: true, isGrandFinal: true, status: true, tatameId: true,
       positions: { select: { id: true, registrationId: true } },
       matches: { select: { round: true, matchNumber: true, position1Id: true, position2Id: true, winnerId: true } },
     },
@@ -140,7 +183,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
       isGrandFinal: false,
     },
     select: {
-      id: true, status: true,
+      id: true, status: true, tatameId: true,
       positions: { select: { id: true, registrationId: true } },
       matches: { select: { round: true, matchNumber: true, position1Id: true, position2Id: true, winnerId: true } },
     },
@@ -163,6 +206,9 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
   const champBPos = partner.positions.find((p: { id: string; registrationId: string | null }) => p.id === finalB.winnerId)
   if (!champAPos?.registrationId || !champBPos?.registrationId) return
 
+  // Herda o tatameId da sub-chave para que apareça no coordenador de tatame
+  const tatameId = bracket.tatameId ?? partner.tatameId ?? null
+
   // Obtém o próximo bracketNumber do evento
   const agg = await prisma.bracket.aggregate({
     where: { eventId: bracket.eventId },
@@ -170,7 +216,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
   })
   const nextNumber = (agg._max.bracketNumber ?? 0) + 1
 
-  // Cria a grande final como bracket EM_ANDAMENTO com 2 posições e 1 partida
+  // Cria a grande final como PENDENTE — coordenador inicia manualmente
   const grandFinal = await prismaAny.bracket.create({
     data: {
       eventId: bracket.eventId,
@@ -180,7 +226,8 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
       bracketNumber: nextNumber,
       bracketGroupId: bracket.bracketGroupId,
       isGrandFinal: true,
-      status: "EM_ANDAMENTO",
+      status: "PENDENTE",
+      ...(tatameId ? { tatameId } : {}),
     },
   })
 
@@ -191,6 +238,7 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
     data: { bracketId: grandFinal.id, position: 2, registrationId: champBPos.registrationId },
   })
 
+  // Cria a partida da grande final (ainda sem resultado)
   await prisma.match.create({
     data: {
       bracketId: grandFinal.id,

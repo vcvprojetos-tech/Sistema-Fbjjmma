@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -296,9 +296,9 @@ export default function ChaveControlePage() {
               <div
                 key={match.id}
                 className="rounded-xl border overflow-hidden"
-                style={{ borderColor: isDone ? "#14532d40" : "#333", backgroundColor: "#111" }}
+                style={{ borderColor: isDone ? "#14532d40" : "#333", backgroundColor: "var(--card)" }}
               >
-                <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid #1a1a1a" }}>
+                <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
                   <span className="text-xs text-[#6b7280]">R{match.round} · Partida {match.matchNumber}</span>
                   {isDone && (
                     <span className="text-xs text-[#4ade80] font-semibold">
@@ -316,12 +316,12 @@ export default function ChaveControlePage() {
                     backgroundColor: isDone
                       ? (winnerIsP1 ? "#14532d30" : "transparent")
                       : "#111",
-                    borderBottom: "1px solid #1a1a1a",
+                    borderBottom: "1px solid var(--border)",
                   }}
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                    style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : "#222", color: "#fff" }}
+                    style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : "#222", color: "var(--foreground)" }}
                   >
                     {isDone && winnerIsP1 ? "✓" : "1"}
                   </div>
@@ -335,7 +335,7 @@ export default function ChaveControlePage() {
                 </button>
 
                 {/* VS divider */}
-                <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "#0d0d0d" }}>
+                <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
                   <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
                   <span className="text-xs text-[#444] font-bold py-1">VS</span>
                   <div className="flex-1 h-px" style={{ backgroundColor: "#222" }} />
@@ -350,12 +350,12 @@ export default function ChaveControlePage() {
                     backgroundColor: isDone
                       ? (winnerIsP2 ? "#14532d30" : "transparent")
                       : "#111",
-                    borderTop: "1px solid #1a1a1a",
+                    borderTop: "1px solid var(--border)",
                   }}
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm"
-                    style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : "#222", color: "#fff" }}
+                    style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : "#222", color: "var(--foreground)" }}
                   >
                     {isDone && winnerIsP2 ? "✓" : "2"}
                   </div>
@@ -370,7 +370,7 @@ export default function ChaveControlePage() {
 
                 {/* W.O. button */}
                 {!isDone && p1?.id && p2?.id && (
-                  <div className="flex gap-2 p-3" style={{ borderTop: "1px solid #1a1a1a" }}>
+                  <div className="flex gap-2 p-3" style={{ borderTop: "1px solid var(--border)" }}>
                     <button
                       onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id })}
                       disabled={actionLoading}
@@ -468,7 +468,7 @@ export default function ChaveControlePage() {
           <button
             onClick={() => router.push(`/coordenador/${tatameId}`)}
             className="mt-4 w-full h-12 rounded-xl text-white font-semibold"
-            style={{ backgroundColor: "#1a1a1a" }}
+            style={{ backgroundColor: "var(--card-alt)" }}
           >
             Voltar ao Tatame
           </button>
@@ -480,7 +480,7 @@ export default function ChaveControlePage() {
         <div className="fixed bottom-6 left-0 right-0 flex justify-center px-4">
           <div
             className="flex gap-1.5 px-4 py-2 rounded-full"
-            style={{ backgroundColor: "#111", border: "1px solid #333" }}
+            style={{ backgroundColor: "var(--card)", border: "1px solid var(--border-alt)" }}
           >
             {Array.from({ length: maxRound }, (_, i) => i + 1).map((r) => {
               const roundDone = bracket.matches
@@ -507,7 +507,7 @@ export default function ChaveControlePage() {
       {/* W.O. type modal */}
       {woModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "#1a1a1a" }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
             <p className="text-white font-bold text-center text-lg">Tipo de W.O.</p>
             <p className="text-[#9ca3af] text-sm text-center">Selecione o motivo do W.O.</p>
             <div className="grid grid-cols-2 gap-3">
@@ -531,7 +531,7 @@ export default function ChaveControlePage() {
             <button
               onClick={() => setWoModal(null)}
               className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
-              style={{ backgroundColor: "#111" }}
+              style={{ backgroundColor: "var(--card)" }}
             >
               Cancelar
             </button>

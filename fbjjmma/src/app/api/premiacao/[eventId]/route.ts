@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
-  const session = await auth()
-  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
 
   const { eventId } = await params
 
@@ -31,6 +28,7 @@ export async function GET(
             select: {
               id: true,
               awarded: true,
+              prizePix: true,
               guestName: true,
               athlete: {
                 include: { user: { select: { id: true, name: true } } },
@@ -47,6 +45,21 @@ export async function GET(
     },
     orderBy: { bracketNumber: "asc" },
   })
+
+  // Auto-promover brackets FINALIZADA onde todos os colocados já foram premiados
+  const travados = brackets.filter((b: { id: string; status: string; positions: { id: string; registration: { awarded: boolean } | null }[]; matches: { position1Id: string | null; position2Id: string | null; winnerId: string | null; isWO: boolean }[] }) => {
+    if (b.status !== "FINALIZADA") return false
+    const regs = b.positions.map((p: { registration: { awarded: boolean } | null }) => p.registration).filter(Boolean)
+    if (regs.length === 0) return false
+    return regs.every((r: { awarded: boolean } | null) => r?.awarded)
+  })
+  if (travados.length > 0) {
+    await prisma.bracket.updateMany({
+      where: { id: { in: travados.map((b: { id: string }) => b.id) } },
+      data: { status: "PREMIADA" },
+    })
+    for (const b of travados) b.status = "PREMIADA"
+  }
 
   return NextResponse.json({ event, brackets })
 }

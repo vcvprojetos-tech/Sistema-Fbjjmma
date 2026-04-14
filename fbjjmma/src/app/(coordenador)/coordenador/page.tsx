@@ -2,30 +2,38 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 
 export default function CoordenadorEntradaPage() {
   const router = useRouter()
-  const { data: session } = useSession()
-  const [pin, setPin] = useState("")
+  const [cpf, setCpf] = useState("")
+  const [tatameNum, setTatameNum] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
+  function formatCPF(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 11)
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (pin.length < 4) return
+    if (!cpf || !tatameNum) return
     setLoading(true)
     setError("")
     try {
-      const res = await fetch("/api/coordenador/pin", {
+      const res = await fetch("/api/coordenador/entrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ cpf: cpf.replace(/\D/g, ""), tatameNum }),
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "PIN inválido.")
+        setError(data.error || "Erro ao entrar.")
       } else {
+        sessionStorage.setItem(`tatame_pin_${data.tatameId}`, data.pin)
         router.push(`/coordenador/${data.tatameId}`)
       }
     } catch {
@@ -35,51 +43,75 @@ export default function CoordenadorEntradaPage() {
     }
   }
 
-  function handlePinInput(val: string) {
-    const digits = val.replace(/\D/g, "").slice(0, 4)
-    setPin(digits)
-    setError("")
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
+    <div className="flex flex-col items-center justify-center min-h-screen px-4"
+      style={{ backgroundColor: "var(--background)" }}
+    >
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-white">Controle de Tatame</h1>
-          {session?.user && (
-            <p className="text-[#9ca3af] text-sm">Olá, {session.user.name?.split(" ")[0]}</p>
-          )}
-          <p className="text-[#6b7280] text-sm mt-2">
-            Digite o PIN do tatame para iniciar o controle
+          <img src="/logo.png" alt="FBJJMMA" className="w-16 h-16 object-contain mx-auto mb-4" />
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+            Controle de Tatame
+          </h1>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            Informe seu CPF e o número do tatame
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-xl border p-6 space-y-4"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        >
           <div className="space-y-2">
+            <label className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+              CPF
+            </label>
             <input
-              type="number"
+              type="text"
               inputMode="numeric"
-              placeholder="PIN do tatame"
-              value={pin}
-              onChange={(e) => handlePinInput(e.target.value)}
-              className="w-full text-center text-4xl font-mono tracking-[1rem] h-20 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#dc2626]"
+              value={cpf}
+              onChange={(e) => { setCpf(formatCPF(e.target.value)); setError("") }}
+              placeholder="000.000.000-00"
+              className="w-full h-12 rounded-lg border px-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#dc2626]"
               style={{
-                backgroundColor: "#111",
-                borderColor: error ? "#dc2626" : "#333",
-                color: "#fbbf24",
+                backgroundColor: "var(--input)",
+                borderColor: error ? "#dc2626" : "var(--border-alt)",
+                color: "var(--foreground)",
               }}
-              maxLength={4}
             />
-            {error && <p className="text-[#dc2626] text-sm text-center">{error}</p>}
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+              Tatame
+            </label>
+            <select
+              value={tatameNum}
+              onChange={(e) => { setTatameNum(e.target.value); setError("") }}
+              className="w-full h-12 rounded-lg border px-4 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-[#dc2626]"
+              style={{
+                backgroundColor: "var(--input)",
+                borderColor: error ? "#dc2626" : "var(--border-alt)",
+                color: tatameNum ? "#fbbf24" : "var(--muted)",
+              }}
+            >
+              <option value="">Selecione o tatame</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <option key={n} value={String(n)}>Tatame {n}</option>
+              ))}
+            </select>
+          </div>
+
+          {error && <p className="text-[#dc2626] text-sm text-center">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading || pin.length < 4}
+            disabled={loading || !cpf || !tatameNum}
             className="w-full h-14 rounded-xl font-bold text-lg text-white transition-opacity disabled:opacity-40"
             style={{ backgroundColor: "#dc2626" }}
           >
-            {loading ? "Verificando..." : "Entrar"}
+            {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
       </div>

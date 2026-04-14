@@ -17,19 +17,29 @@ export async function GET(
   const sexo = searchParams.get("sexo") || ""
   const categoria = searchParams.get("categoria") || ""
   const faixa = searchParams.get("faixa") || ""
-  const pesoId = searchParams.get("pesoId") || ""
+  const pesoNome = searchParams.get("pesoNome") || ""
   const equipeId = searchParams.get("equipeId") || ""
+  const absoluto = searchParams.get("absoluto") === "1"
+  const nome = searchParams.get("nome") || ""
 
   const where: Record<string, unknown> = {
     eventId: id,
-    status: "APROVADO",
+    // Inclui todos os não-cancelados (aprovados + pendentes como convidados)
+    status: { not: "CANCELADO" },
   }
 
   if (sexo) where.sex = sexo
   if (faixa) where.belt = faixa
-  if (pesoId) where.weightCategoryId = pesoId
+  if (pesoNome) where.weightCategory = { name: { equals: pesoNome, mode: "insensitive" } }
+  if (absoluto) where.isAbsolute = true
   if (equipeId) where.teamId = equipeId
   if (categoria) where.ageGroup = categoria
+  if (nome) {
+    where.OR = [
+      { athlete: { user: { name: { contains: nome, mode: "insensitive" } } } },
+      { guestName: { contains: nome, mode: "insensitive" } },
+    ]
+  }
 
   const registrations = await prisma.registration.findMany({
     where,

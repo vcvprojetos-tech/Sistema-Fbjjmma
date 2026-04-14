@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
@@ -207,7 +207,7 @@ export default function TabelaPesoDetailPage() {
       {/* Edit name */}
       <div
         className="rounded-lg border p-4 space-y-3"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
           Nome da Tabela
@@ -236,7 +236,7 @@ export default function TabelaPesoDetailPage() {
       {sortedGroups.length === 0 ? (
         <div
           className="rounded-lg border p-8 text-center text-[#6b7280]"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           Nenhuma categoria cadastrada nesta tabela.
         </div>
@@ -252,7 +252,7 @@ export default function TabelaPesoDetailPage() {
               <div
                 key={key}
                 className="rounded-lg border overflow-hidden"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               >
                 <button
                   className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1a1a1a] transition-colors"
@@ -274,10 +274,10 @@ export default function TabelaPesoDetailPage() {
                 </button>
 
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid #222222" }}>
+                  <div style={{ borderTop: "1px solid var(--border)" }}>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">
                             Nome
                           </th>
@@ -295,7 +295,7 @@ export default function TabelaPesoDetailPage() {
                           return (
                             <tr
                               key={cat.id}
-                              style={{ borderBottom: "1px solid #1a1a1a" }}
+                              style={{ borderBottom: "1px solid var(--border)" }}
                             >
                               <td className="px-4 py-2">
                                 <Input

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
@@ -208,7 +208,7 @@ export default function EventoPublicPage() {
                 <div
                   key={item.label}
                   className="flex items-center gap-3 p-3 rounded-lg border"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <item.icon className="h-4 w-4 text-[#dc2626] flex-shrink-0" />
                   <div>
@@ -223,7 +223,7 @@ export default function EventoPublicPage() {
           {/* Registration card */}
           <div
             className="rounded-xl border p-6 space-y-4 lg:w-72 flex-shrink-0"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             <div>
               <p className="text-xs text-[#6b7280] uppercase tracking-wider">Valor da inscrição</p>
@@ -267,7 +267,7 @@ export default function EventoPublicPage() {
             ) : (
               <div
                 className="w-full py-3 text-center text-sm rounded-lg"
-                style={{ backgroundColor: "#1a1a1a", color: "#6b7280" }}
+                style={{ backgroundColor: "var(--card-alt)", color: "var(--muted)" }}
               >
                 {event.status === "ENCERRADO"
                   ? "Evento encerrado"
@@ -283,7 +283,7 @@ export default function EventoPublicPage() {
         <div>
           <div
             className="flex gap-1 border-b"
-            style={{ borderColor: "#222222" }}
+            style={{ borderColor: "var(--border)" }}
           >
             {tabs.map((t) => (
               <button
@@ -306,7 +306,7 @@ export default function EventoPublicPage() {
                 {event.about && (
                   <div
                     className="rounded-xl border p-6"
-                    style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   >
                     <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider mb-3">
                       Sobre o Evento
@@ -319,7 +319,7 @@ export default function EventoPublicPage() {
                 )}
                 <div
                   className="rounded-xl border p-6"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider mb-3">
                     Local
@@ -330,7 +330,7 @@ export default function EventoPublicPage() {
                 {event.weighInInfo && (
                   <div
                     className="rounded-xl border p-6"
-                    style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   >
                     <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider mb-3">
                       Pesagem
@@ -352,11 +352,11 @@ export default function EventoPublicPage() {
                     <div
                       key={key}
                       className="rounded-xl border overflow-hidden"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <div
                         className="px-4 py-3 flex items-center justify-between"
-                        style={{ borderBottom: "1px solid #222222" }}
+                        style={{ borderBottom: "1px solid var(--border)" }}
                       >
                         <h4 className="text-sm font-semibold text-white">
                           {AGE_GROUP_LABELS[ageGroup] || ageGroup}
@@ -371,12 +371,12 @@ export default function EventoPublicPage() {
                           {sex === "MASCULINO" ? "Masculino" : "Feminino"}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px" style={{ backgroundColor: "#1a1a1a" }}>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px" style={{ backgroundColor: "var(--card-alt)" }}>
                         {cats.map((cat) => (
                           <div
                             key={cat.id}
                             className="px-3 py-2"
-                            style={{ backgroundColor: "#111111" }}
+                            style={{ backgroundColor: "var(--card)" }}
                           >
                             <p className="text-white text-xs font-medium">{cat.name}</p>
                             <p className="text-[#6b7280] text-xs">
@@ -394,7 +394,7 @@ export default function EventoPublicPage() {
             {activeTab === "premiacao" && event.prize && (
               <div
                 className="rounded-xl border p-6"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               >
                 <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider mb-3">
                   Premiação
@@ -409,7 +409,7 @@ export default function EventoPublicPage() {
             {activeTab === "programacao" && event.schedule && (
               <div
                 className="rounded-xl border p-6"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               >
                 <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider mb-3">
                   Programação
@@ -429,7 +429,7 @@ export default function EventoPublicPage() {
             {activeTab === "pagamento" && event.paymentInfo && (
               <div
                 className="rounded-xl border p-6"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               >
                 <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider mb-3">
                   Informações de Pagamento

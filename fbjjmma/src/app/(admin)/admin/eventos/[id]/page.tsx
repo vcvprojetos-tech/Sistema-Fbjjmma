@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Search, Plus, Download, Pencil, Trash2 } from "lucide-react"
+import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -142,6 +142,8 @@ interface Bracket {
   belt: string
   status: string
   tatameId: string | null
+  bracketGroupId?: string | null
+  isGrandFinal?: boolean
   weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: {
     id: string
@@ -160,6 +162,10 @@ interface Bracket {
     winnerId: string | null
     position1Id: string | null
     position2Id: string | null
+    isWO: boolean
+    woType: string | null
+    woWeight1: number | null
+    woWeight2: number | null
   }[]
 }
 
@@ -201,6 +207,110 @@ function toDateLocal(iso: string) {
   return new Date(iso).toISOString().slice(0, 10)
 }
 
+// ── FiltersBar ─────────────────────────────────────────────────────────────────
+// Componente separado com estado próprio para evitar re-render do componente pai
+// a cada mudança de filtro. O pai lê os valores via `filtersRef` apenas no Pesquisar.
+
+interface FilterValues {
+  nome: string; sexo: string; categoria: string; faixa: string; pesoId: string; equipeId: string; qtdAtletas: string
+}
+
+const FiltersBar = React.memo(function FiltersBar({
+  weightCategories, teams, filtersRef, resetKey, atletasCounts = [],
+}: {
+  weightCategories: { name: string }[]
+  teams: { id: string; name: string }[]
+  filtersRef: React.MutableRefObject<FilterValues>
+  resetKey: number
+  atletasCounts?: number[]
+}) {
+  const [nome, setNome] = useState("")
+  const [sexo, setSexo] = useState("")
+  const [categoria, setCategoria] = useState("")
+  const [faixa, setFaixa] = useState("")
+  const [pesoId, setPesoId] = useState("")
+  const [equipeId, setEquipeId] = useState("")
+  const [qtdAtletas, setQtdAtletas] = useState("")
+
+  // Reseta quando o pai muda de aba
+  useEffect(() => {
+    setNome(""); setSexo(""); setCategoria(""); setFaixa(""); setPesoId(""); setEquipeId(""); setQtdAtletas("")
+    filtersRef.current = { nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey])
+
+  // Mantém a ref sincronizada para leitura síncrona pelo pai
+  const sync = (field: keyof FilterValues, value: string) => {
+    filtersRef.current = { ...filtersRef.current, [field]: value }
+  }
+
+  const uniqueWeights = Array.from(new Map(weightCategories.map((c) => [c.name, c])).values())
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-4">
+      <Input
+        placeholder="Nome"
+        value={nome}
+        onChange={(e) => { setNome(e.target.value); sync("nome", e.target.value) }}
+      />
+      <Select value={sexo} onValueChange={(v) => { setSexo(v); sync("sexo", v) }}>
+        <SelectTrigger><SelectValue placeholder="Sexo" /></SelectTrigger>
+        <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="MASCULINO">Masculino</SelectItem>
+          <SelectItem value="FEMININO">Feminino</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={categoria} onValueChange={(v) => { setCategoria(v); sync("categoria", v) }}>
+        <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
+        <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectItem value="all">Todas</SelectItem>
+          {Object.entries(AGE_GROUP_LABELS).map(([v, l]) => (
+            <SelectItem key={v} value={v}>{l}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={faixa} onValueChange={(v) => { setFaixa(v); sync("faixa", v) }}>
+        <SelectTrigger><SelectValue placeholder="Faixa" /></SelectTrigger>
+        <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectItem value="all">Todas</SelectItem>
+          {Object.entries(BELT_LABELS).map(([v, l]) => (
+            <SelectItem key={v} value={v}>{l}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={pesoId} onValueChange={(v) => { setPesoId(v); sync("pesoId", v) }}>
+        <SelectTrigger><SelectValue placeholder="Peso" /></SelectTrigger>
+        <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="__absoluto__">Absoluto</SelectItem>
+          {uniqueWeights.map((c) => (
+            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={equipeId} onValueChange={(v) => { setEquipeId(v); sync("equipeId", v) }}>
+        <SelectTrigger><SelectValue placeholder="Equipe" /></SelectTrigger>
+        <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectItem value="all">Todas</SelectItem>
+          {teams.map((t) => (
+            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={qtdAtletas} onValueChange={(v) => { setQtdAtletas(v); sync("qtdAtletas", v) }}>
+        <SelectTrigger><SelectValue placeholder="Atletas" /></SelectTrigger>
+        <SelectContent className="max-h-60 overflow-y-auto">
+          <SelectItem value="all">Todos</SelectItem>
+          {atletasCounts.map((n) => (
+            <SelectItem key={n} value={String(n)}>{n} atleta{n !== 1 ? "s" : ""}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+})
+
 export default function EventoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [tab, setTab] = useState<Tab>("evento")
@@ -224,16 +334,13 @@ export default function EventoDetailPage() {
   const [teams, setTeams] = useState<Team[]>([])
   const [weightCategories, setWeightCategories] = useState<WeightCategory[]>([])
 
-  // Filters shared across tabs
-  const [filterNome, setFilterNome] = useState("")
-  const [filterSexo, setFilterSexo] = useState("")
-  const [filterCategoria, setFilterCategoria] = useState("")
-  const [filterFaixa, setFilterFaixa] = useState("")
-  const [filterPesoId, setFilterPesoId] = useState("")
-  const [filterEquipeId, setFilterEquipeId] = useState("")
+  // Ref lida pelo pai apenas no clique de Pesquisar — sem estado no pai, sem re-render
+  const filtersRef = useRef<FilterValues>({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
+  // Incrementado ao trocar de aba para resetar os filtros no FiltersBar
+  const [filterResetKey, setFilterResetKey] = useState(0)
 
   // Committed filters for atletas (only update on "Pesquisar" click)
-  const [atletasApplied, setAtletasApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
+  const [atletasApplied, setAtletasApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
 
   // Checagem
   const [checagemData, setChecagemData] = useState<Registration[]>([])
@@ -250,7 +357,10 @@ export default function EventoDetailPage() {
   const [novoTatameNome, setNovoTatameNome] = useState("")
   const [novoTatameSaving, setNovoTatameSaving] = useState(false)
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
-  const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
+  const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedBrackets, setSelectedBrackets] = useState<Set<string>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
 
   // Resultado
   const [resultadoData, setResultadoData] = useState<Registration[]>([])
@@ -322,18 +432,20 @@ export default function EventoDetailPage() {
   }, [id])
 
   const buildAtletasParams = useCallback(() => {
+    const f = filtersRef.current
     const params = new URLSearchParams()
-    if (filterNome) params.set("nome", filterNome)
-    if (filterSexo && filterSexo !== "all") params.set("sexo", filterSexo)
-    if (filterCategoria && filterCategoria !== "all") params.set("categoria", filterCategoria)
-    if (filterFaixa && filterFaixa !== "all") params.set("faixa", filterFaixa)
-    if (filterPesoId && filterPesoId !== "all") {
-      if (filterPesoId === "__absoluto__") params.set("absoluto", "1")
-      else params.set("pesoNome", filterPesoId)
+    if (f.nome) params.set("nome", f.nome)
+    if (f.sexo && f.sexo !== "all") params.set("sexo", f.sexo)
+    if (f.categoria && f.categoria !== "all") params.set("categoria", f.categoria)
+    if (f.faixa && f.faixa !== "all") params.set("faixa", f.faixa)
+    if (f.pesoId && f.pesoId !== "all") {
+      if (f.pesoId === "__absoluto__") params.set("absoluto", "1")
+      else params.set("pesoNome", f.pesoId)
     }
-    if (filterEquipeId && filterEquipeId !== "all") params.set("equipeId", filterEquipeId)
+    if (f.equipeId && f.equipeId !== "all") params.set("equipeId", f.equipeId)
     return params
-  }, [filterNome, filterSexo, filterCategoria, filterFaixa, filterPesoId, filterEquipeId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Builds params from committed (applied) atletas filters only
   const buildAtletasAppliedParams = useCallback(() => {
@@ -489,6 +601,25 @@ export default function EventoDetailPage() {
     } catch { /* silencioso */ }
   }, [id])
 
+  const excluirChave = useCallback(async (bracketId: string) => {
+    if (!confirm("Excluir esta chave? Esta ação não pode ser desfeita.")) return
+    setBrackets(prev => prev.filter(b => b.id !== bracketId))
+    await fetch(`/api/admin/eventos/${id}/chaves/${bracketId}`, { method: "DELETE" })
+  }, [id])
+
+  const reiniciarChave = useCallback(async (bracketId: string) => {
+    if (!confirm("Reiniciar esta chave? Todos os resultados serão apagados e ela voltará para as pendentes.")) return
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/chaves/${bracketId}`, { method: "PATCH" })
+      if (!res.ok) { alert("Erro ao reiniciar chave."); return }
+      setBrackets(prev => prev.map(b => b.id !== bracketId ? b : {
+        ...b,
+        status: b.tatameId ? "DESIGNADA" : "PENDENTE",
+        matches: [],
+      }))
+    } catch { alert("Erro ao reiniciar chave.") }
+  }, [id])
+
   const gerarChaves = useCallback(async () => {
     setChavesGenerating(true)
     try {
@@ -506,8 +637,8 @@ export default function EventoDetailPage() {
     }
   }, [id, loadAllChaves])
 
-  const loadResultado = useCallback(async () => {
-    setResultadoLoading(true)
+  const loadResultado = useCallback(async (silent = false) => {
+    if (!silent) setResultadoLoading(true)
     try {
       const params = buildAtletasParams()
       const res = await fetch(`/api/admin/eventos/${id}/resultado?${params}`)
@@ -516,7 +647,7 @@ export default function EventoDetailPage() {
     } catch {
       console.error("Erro ao carregar resultado")
     } finally {
-      setResultadoLoading(false)
+      if (!silent) setResultadoLoading(false)
     }
   }, [id, buildAtletasParams])
 
@@ -538,11 +669,24 @@ export default function EventoDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
+  // Atualiza silenciosamente a aba de resultados a cada 10s enquanto está ativa,
+  // desde que o usuário não tenha edições pendentes (para não sobrescrever)
   useEffect(() => {
-    // Limpa todos os filtros compartilhados sempre que muda de aba
-    setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
-    setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
-    setTatamesApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
+    if (tab !== "resultado") return
+    const interval = setInterval(() => {
+      if (Object.keys(resultadoEdits).length === 0) {
+        loadResultado(true)
+      }
+    }, 10000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, loadResultado])
+
+  useEffect(() => {
+    // Reseta filtros do FiltersBar e os aplicados sempre que muda de aba
+    setFilterResetKey(k => k + 1)
+    setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
+    setTatamesApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
     if (tab === "tatames") {
       loadTatames()
       loadAllChaves()
@@ -596,6 +740,9 @@ export default function EventoDetailPage() {
           return name.toLowerCase().includes(nome)
         })) return false
       }
+      if (tatamesApplied.qtdAtletas && tatamesApplied.qtdAtletas !== "all") {
+        if (bracket.positions.length !== Number(tatamesApplied.qtdAtletas)) return false
+      }
       return true
     }).sort((a, b) => {
       const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
@@ -605,6 +752,47 @@ export default function EventoDetailPage() {
       return a.weightCategory.maxWeight - b.weightCategory.maxWeight
     })
   }, [brackets, tatamesApplied, teams])
+
+  // Contagens únicas de atletas por chave (para filtro)
+  const atletasCounts = useMemo(() => {
+    const counts = new Set(brackets.map(b => b.positions.length))
+    return Array.from(counts).sort((a, b) => a - b)
+  }, [brackets])
+
+  const toggleBracketSelection = (bracketId: string) => {
+    setSelectedBrackets(prev => {
+      const next = new Set(prev)
+      if (next.has(bracketId)) next.delete(bracketId)
+      else next.add(bracketId)
+      return next
+    })
+  }
+
+  const bulkAtribuir = async (tatameId: string | null) => {
+    setBulkLoading(true)
+    await Promise.all(Array.from(selectedBrackets).map(bid => atribuirTatame(bid, tatameId)))
+    setBulkLoading(false)
+    setSelectedBrackets(new Set())
+    setSelectionMode(false)
+  }
+
+  const bulkReiniciar = async () => {
+    if (!confirm(`Reiniciar ${selectedBrackets.size} chave(s)?`)) return
+    setBulkLoading(true)
+    await Promise.all(Array.from(selectedBrackets).map(bid => reiniciarChave(bid)))
+    setBulkLoading(false)
+    setSelectedBrackets(new Set())
+    setSelectionMode(false)
+  }
+
+  const bulkExcluir = async () => {
+    if (!confirm(`Excluir ${selectedBrackets.size} chave(s)?`)) return
+    setBulkLoading(true)
+    await Promise.all(Array.from(selectedBrackets).map(bid => excluirChave(bid)))
+    setBulkLoading(false)
+    setSelectedBrackets(new Set())
+    setSelectionMode(false)
+  }
 
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
     PENDENTE: { bg: "#92400e30", text: "#fbbf24" },
@@ -623,70 +811,6 @@ export default function EventoDetailPage() {
     { key: "tatames", label: "TATAMES" },
   ]
 
-  const sharedFilters = (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-      <Input
-        placeholder="Nome"
-        value={filterNome}
-        onChange={(e) => setFilterNome(e.target.value)}
-      />
-      <Select value={filterSexo} onValueChange={setFilterSexo}>
-        <SelectTrigger>
-          <SelectValue placeholder="Sexo" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="MASCULINO">Masculino</SelectItem>
-          <SelectItem value="FEMININO">Feminino</SelectItem>
-        </SelectContent>
-      </Select>
-      <Select value={filterCategoria} onValueChange={setFilterCategoria}>
-        <SelectTrigger>
-          <SelectValue placeholder="Categoria" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {Object.entries(AGE_GROUP_LABELS).map(([v, l]) => (
-            <SelectItem key={v} value={v}>{l}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={filterFaixa} onValueChange={setFilterFaixa}>
-        <SelectTrigger>
-          <SelectValue placeholder="Faixa" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {Object.entries(BELT_LABELS).map(([v, l]) => (
-            <SelectItem key={v} value={v}>{l}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={filterPesoId} onValueChange={setFilterPesoId}>
-        <SelectTrigger>
-          <SelectValue placeholder="Peso" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="__absoluto__">Absoluto</SelectItem>
-          {Array.from(new Map(weightCategories.map((c) => [c.name, c])).values()).map((c) => (
-            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={filterEquipeId} onValueChange={setFilterEquipeId}>
-        <SelectTrigger>
-          <SelectValue placeholder="Equipe" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {teams.map((t) => (
-            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  )
 
   const eventFormInitialData = event
     ? {
@@ -728,7 +852,7 @@ export default function EventoDetailPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             {eventLoading ? "Carregando..." : event?.name || "Evento"}
           </h1>
           <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
@@ -736,7 +860,7 @@ export default function EventoDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-lg overflow-x-auto" style={{ backgroundColor: "#1a1a1a" }}>
+      <div className="flex gap-1 p-1 rounded-lg overflow-x-auto" style={{ backgroundColor: "var(--card-alt)" }}>
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -765,7 +889,7 @@ export default function EventoDetailPage() {
         <div className="space-y-4">
           <div
             className="rounded-lg border overflow-hidden"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             {valoresLoading ? (
               <div className="p-8 text-center text-[#6b7280]">Carregando...</div>
@@ -773,7 +897,7 @@ export default function EventoDetailPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ borderBottom: "1px solid #222222" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase w-8">#</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase">Sexo</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase">Categoria</th>
@@ -784,12 +908,12 @@ export default function EventoDetailPage() {
                   </thead>
                   <tbody>
                     {valoresData.map((v, i) => (
-                      <tr key={`${v.sex}-${v.ageGroup}`} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <tr key={`${v.sex}-${v.ageGroup}`} style={{ borderBottom: "1px solid var(--border)" }}>
                         <td className="px-4 py-2 text-[#6b7280]">{i + 1}</td>
                         <td className="px-4 py-2 text-[#9ca3af]">
                           {v.sex === "MASCULINO" ? "Masculino" : "Feminino"}
                         </td>
-                        <td className="px-4 py-2 text-white">
+                        <td className="px-4 py-2" style={{ color: "var(--foreground)" }}>
                           {AGE_GROUP_LABELS[v.ageGroup] || v.ageGroup}
                         </td>
                         <td className="px-4 py-2">
@@ -881,7 +1005,7 @@ export default function EventoDetailPage() {
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: "Total", value: finData.inscricoes.total, color: "#ffffff" },
+                    { label: "Total", value: finData.inscricoes.total, color: "var(--foreground)" },
                     { label: "Pendente", value: finData.inscricoes.pendente, color: "#fbbf24" },
                     { label: "Aprovado", value: finData.inscricoes.aprovado, color: "#4ade80" },
                     { label: "Cancelado", value: finData.inscricoes.cancelado, color: "#f87171" },
@@ -889,7 +1013,7 @@ export default function EventoDetailPage() {
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
                       <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -904,15 +1028,15 @@ export default function EventoDetailPage() {
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: "Total", value: finData.medalhas.total, color: "#ffffff" },
+                    { label: "Total", value: finData.medalhas.total, color: "var(--foreground)" },
                     { label: "Ouro", value: finData.medalhas.ouro, color: "#fbbf24" },
-                    { label: "Prata", value: finData.medalhas.prata, color: "#9ca3af" },
+                    { label: "Prata", value: finData.medalhas.prata, color: "var(--muted-foreground)" },
                     { label: "Bronze", value: finData.medalhas.bronze, color: "#d97706" },
                   ].map((s) => (
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
                       <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -927,14 +1051,14 @@ export default function EventoDetailPage() {
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { label: "Total", value: finData.chaves.total, color: "#ffffff" },
+                    { label: "Total", value: finData.chaves.total, color: "var(--foreground)" },
                     { label: "Normal", value: finData.chaves.normal, color: "#60a5fa" },
                     { label: "Absoluto", value: finData.chaves.absoluto, color: "#c084fc" },
                   ].map((s) => (
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
                       <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -961,10 +1085,10 @@ export default function EventoDetailPage() {
                     <div
                       key={s.label}
                       className="rounded-lg border p-4"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">{s.label}</p>
-                      <p className="text-xl font-bold text-white">
+                      <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
                         {s.currency ? formatCurrency(s.value as number) : s.value}
                       </p>
                     </div>
@@ -984,7 +1108,7 @@ export default function EventoDetailPage() {
           {/* Stats bar */}
           <div className="flex gap-3 flex-wrap">
             {[
-              { label: "Total", value: totalAtletas, color: "#ffffff", filter: "" },
+              { label: "Total", value: totalAtletas, color: "var(--foreground)", filter: "" },
               { label: "Pendente", value: pendenteAtletas, color: "#fbbf24", filter: "pendente" },
               { label: "Aprovado", value: aprovadoAtletas, color: "#4ade80", filter: "aprovado" },
               { label: "Cancelado", value: canceladoAtletas, color: "#f87171", filter: "cancelado" },
@@ -992,7 +1116,7 @@ export default function EventoDetailPage() {
               <div
                 key={s.label}
                 className="rounded-lg border px-4 py-2 cursor-pointer hover:border-[#444444] transition-colors"
-                style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
               >
                 <p className="text-xs text-[#6b7280]">{s.label}</p>
                 <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -1000,17 +1124,17 @@ export default function EventoDetailPage() {
             ))}
           </div>
 
-          {sharedFilters}
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
 
           <div className="flex flex-wrap items-center gap-2 justify-between">
             <div className="flex gap-2">
-              <Button onClick={() => setAtletasApplied({ nome: filterNome, sexo: filterSexo, categoria: filterCategoria, faixa: filterFaixa, pesoId: filterPesoId, equipeId: filterEquipeId })}>
+              <Button onClick={() => setAtletasApplied({ ...filtersRef.current })}>
                 <Search className="h-4 w-4 mr-2" />
                 Pesquisar
               </Button>
               <Button variant="outline" onClick={() => {
-                setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
-                setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
+                setFilterResetKey(k => k + 1)
+                setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
               }}>
                 Limpar Filtros
               </Button>
@@ -1037,8 +1161,8 @@ export default function EventoDetailPage() {
                   const data = await res.json()
                   if (!res.ok) alert(data.error || "Erro ao excluir atletas.")
                   else {
-                    setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
-                    setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
+                    setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
+                    setFilterResetKey(k => k + 1)
                   }
                 } catch {
                   alert("Erro ao excluir atletas.")
@@ -1057,8 +1181,8 @@ export default function EventoDetailPage() {
             {/* Modal Importar Excel */}
             {importOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }} onClick={() => !importLoading && setImportOpen(false)}>
-                <div className="rounded-lg border w-full max-w-lg" style={{ backgroundColor: "#111", borderColor: "#333" }} onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "#222" }}>
+                <div className="rounded-lg border w-full max-w-lg" style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)" }} onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
                     <span className="text-sm font-semibold text-white">Importar Inscritos via Excel</span>
                     {!importLoading && (
                       <button className="text-[#6b7280] hover:text-white text-lg leading-none" onClick={() => setImportOpen(false)}>✕</button>
@@ -1068,7 +1192,7 @@ export default function EventoDetailPage() {
                     {!importResult ? (
                       <>
                         <p className="text-sm text-[#6b7280]">Selecione o arquivo <strong className="text-white">.xlsx</strong> gerado pelo site da federação. Somente inscritos com status <strong className="text-white">Aprovado</strong> serão importados.</p>
-                        <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${importLoading ? "opacity-50 cursor-not-allowed" : "hover:border-red-500"}`} style={{ borderColor: "#333" }}>
+                        <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${importLoading ? "opacity-50 cursor-not-allowed" : "hover:border-red-500"}`} style={{ borderColor: "var(--border-alt)" }}>
                           <Download className="h-8 w-8 text-[#6b7280] mb-2" />
                           <span className="text-sm text-[#6b7280]">{importLoading ? "Importando, aguarde..." : "Clique para selecionar o arquivo"}</span>
                           <input
@@ -1083,9 +1207,9 @@ export default function EventoDetailPage() {
                     ) : (
                       <div className="space-y-3">
                         <div className="grid grid-cols-3 gap-3 text-center">
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#1a1a1a" }}>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "var(--card-alt)" }}>
                             <p className="text-xs text-[#6b7280]">Total na planilha</p>
-                            <p className="text-xl font-bold text-white">{importResult.total}</p>
+                            <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>{importResult.total}</p>
                           </div>
                           <div className="rounded-lg p-3" style={{ backgroundColor: "#14532d30" }}>
                             <p className="text-xs text-[#4ade80]">Importados</p>
@@ -1097,7 +1221,7 @@ export default function EventoDetailPage() {
                           </div>
                         </div>
                         {importResult.erros.length > 0 && (
-                          <div className="rounded-lg border p-3 space-y-1 max-h-48 overflow-y-auto" style={{ borderColor: "#333", backgroundColor: "#0d0d0d" }}>
+                          <div className="rounded-lg border p-3 space-y-1 max-h-48 overflow-y-auto" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--background)" }}>
                             <p className="text-xs font-semibold text-[#f87171] mb-2">Registros com erro:</p>
                             {importResult.erros.map((e, i) => (
                               <p key={i} className="text-xs text-[#6b7280]"><span className="text-white">{e.nome}</span> — {e.motivo}</p>
@@ -1119,12 +1243,12 @@ export default function EventoDetailPage() {
           {/* Table */}
           <div
             className="rounded-lg border overflow-hidden"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid #222222" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase w-8">#</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase">Atleta</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase hidden sm:table-cell">Sexo</th>
@@ -1152,7 +1276,7 @@ export default function EventoDetailPage() {
                       return (
                         <tr
                           key={reg.id}
-                          style={{ borderBottom: "1px solid #1a1a1a" }}
+                          style={{ borderBottom: "1px solid var(--border)" }}
                           className="hover:bg-[#1a1a1a] transition-colors"
                         >
                           <td className="px-4 py-3 text-[#6b7280]">{i + 1}</td>
@@ -1232,7 +1356,7 @@ export default function EventoDetailPage() {
           </div>
 
           {/* Sub-tabs ATIVOS / LIXEIRA */}
-          <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ backgroundColor: "#1a1a1a" }}>
+          <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ backgroundColor: "var(--card-alt)" }}>
             {(["ativos", "lixeira"] as const).map((t) => (
               <button
                 key={t}
@@ -1253,7 +1377,7 @@ export default function EventoDetailPage() {
       {/* TAB: CHECAGEM */}
       {tab === "checagem" && (
         <div className="space-y-4">
-          {sharedFilters}
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
           <Button onClick={loadChecagem}>
             <Search className="h-4 w-4 mr-2" />
             Pesquisar
@@ -1275,11 +1399,11 @@ export default function EventoDetailPage() {
                   <div
                     key={key}
                     className="rounded-lg border overflow-hidden"
-                    style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   >
                     <div
-                      className="px-4 py-3 font-semibold text-sm text-white"
-                      style={{ borderBottom: "1px solid #222222" }}
+                      className="px-4 py-3 font-semibold text-sm"
+                      style={{ color: "var(--foreground)", borderBottom: "1px solid var(--border)" }}
                     >
                       {sex === "MASCULINO" ? "Masculino" : "Feminino"} |{" "}
                       {AGE_GROUP_LABELS[ageGroup]?.split(" (")[0] || ageGroup} |{" "}
@@ -1287,7 +1411,7 @@ export default function EventoDetailPage() {
                     </div>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Nome</th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Peso</th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Equipe</th>
@@ -1295,8 +1419,8 @@ export default function EventoDetailPage() {
                       </thead>
                       <tbody>
                         {regs.map((r) => (
-                          <tr key={r.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
-                            <td className="px-4 py-2 text-white">{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
+                          <tr key={r.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td className="px-4 py-2" style={{ color: "var(--foreground)" }}>{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
                             <td className="px-4 py-2 text-[#9ca3af] text-xs">
                               {r.weightCategory?.maxWeight
                                 ? `até ${r.weightCategory.maxWeight}kg`
@@ -1325,8 +1449,8 @@ export default function EventoDetailPage() {
           {brackets.length > 0 && (
             <div className="flex gap-3 flex-wrap">
               {[
-                { label: "Total", value: brackets.length, color: "#ffffff" },
-                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "#6b7280" },
+                { label: "Total", value: brackets.length, color: "var(--foreground)" },
+                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "var(--muted)" },
                 { label: "Em Andamento", value: brackets.filter(b => b.status === "EM_ANDAMENTO").length, color: "#fbbf24" },
                 { label: "Finalizada", value: brackets.filter(b => b.status === "FINALIZADA").length, color: "#4ade80" },
                 { label: "Premiada", value: brackets.filter(b => b.status === "PREMIADA").length, color: "#a78bfa" },
@@ -1334,7 +1458,7 @@ export default function EventoDetailPage() {
                 <div
                   key={s.label}
                   className="rounded-lg border px-4 py-2"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <p className="text-xs text-[#6b7280]">{s.label}</p>
                   <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -1343,15 +1467,13 @@ export default function EventoDetailPage() {
             </div>
           )}
 
-          {sharedFilters}
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
           <div className="flex gap-2">
             <Button onClick={loadChaves}>
               <Search className="h-4 w-4 mr-2" />
               Pesquisar
             </Button>
-            <Button variant="outline" onClick={() => {
-              setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
-            }}>
+            <Button variant="outline" onClick={() => setFilterResetKey(k => k + 1)}>
               Limpar Filtros
             </Button>
             <Button onClick={gerarChaves} disabled={chavesGenerating}>
@@ -1384,14 +1506,15 @@ export default function EventoDetailPage() {
             <div className="text-[#6b7280] text-center py-12">Nenhuma chave encontrada. Clique em "Gerar Chaves" para criar as chaves a partir das inscrições aprovadas.</div>
           ) : (
             <div className="space-y-3">
-              {[...brackets].sort((a, b) => {
-                const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
-                const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
-                if (ageA !== ageB) return ageA - ageB
-                if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
-                return a.weightCategory.maxWeight - b.weightCategory.maxWeight
-              }).map((bracket) => {
-                const catLabel = [
+              {(() => {
+                const statusColors: Record<string, { bg: string; text: string }> = {
+                  PENDENTE: { bg: "#7f1d1d30", text: "#dc2626" },
+                  DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
+                  EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
+                  FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
+                  PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
+                }
+                const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
                   AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
                   bracket.isAbsolute ? null : bracket.weightCategory.name,
@@ -1399,40 +1522,94 @@ export default function EventoDetailPage() {
                   bracket.isAbsolute ? "Absoluto" : null,
                 ].filter(Boolean).join(" | ")
 
-                const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#1a1a1a", text: "#6b7280" },
-                  DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
-                  EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                  FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
-                  PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
-                }
-                const sc = statusColors[bracket.status] || statusColors.PENDENTE
+                const sorted = [...brackets].sort((a, b) => {
+                  const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
+                  const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
+                  if (ageA !== ageB) return ageA - ageB
+                  if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
+                  if (a.weightCategory.maxWeight !== b.weightCategory.maxWeight)
+                    return a.weightCategory.maxWeight - b.weightCategory.maxWeight
+                  return a.bracketNumber - b.bracketNumber
+                })
 
-                return (
-                  <div key={bracket.id} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "#111111", borderColor: "#222222" }}>
-                    <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid #1a1a1a" }}>
-                      <span className="text-xs font-bold text-[#6b7280]">#{bracket.bracketNumber}</span>
-                      <span className="text-sm font-medium text-white flex-1 min-w-0 truncate">{catLabel}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
-                        {bracket.status}
-                      </span>
-                      <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
-                      <select
-                        className="text-xs rounded border px-2 py-1 shrink-0"
-                        style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
-                        value={bracket.tatameId || ""}
-                        onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
-                      >
-                        <option value="">Sem tatame</option>
-                        {tatames.map((t) => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <BracketView bracket={bracket} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
-                  </div>
-                )
-              })}
+                // Agrupar: sub-chaves com mesmo bracketGroupId ficam juntas
+                const rendered: React.ReactNode[] = []
+                const seen = new Set<string>()
+                for (const bracket of sorted) {
+                  if (bracket.bracketGroupId && !bracket.isGrandFinal) {
+                    if (seen.has(bracket.bracketGroupId)) continue
+                    seen.add(bracket.bracketGroupId)
+                    const group = sorted.filter(b => b.bracketGroupId === bracket.bracketGroupId && !b.isGrandFinal)
+                    const grandFinal = sorted.find(b => b.bracketGroupId === bracket.bracketGroupId && b.isGrandFinal)
+                    const allInGroup = grandFinal ? [...group, grandFinal] : group
+                    const groupLabel = getBracketLabel(bracket)
+                    const totalAthletes = group.reduce((s, b) => s + b.positions.length, 0)
+                    const groupTatameId = group[0].tatameId || ""
+                    rendered.push(
+                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "#1a1000" }}>
+                          <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
+                          <button
+                            className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
+                            onClick={() => setSelectedBracketId(group[0].id)}
+                          >
+                            {groupLabel}
+                          </button>
+                          <span className="text-xs text-[#6b7280] shrink-0">{totalAthletes} atleta(s)</span>
+                          {allInGroup.map(b => {
+                            const sc = statusColors[b.status] || statusColors.PENDENTE
+                            return <span key={b.id} className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{b.isGrandFinal ? "GF" : `#${b.bracketNumber}`} {b.status}</span>
+                          })}
+                          <select
+                            className="text-xs rounded border px-2 py-1 shrink-0"
+                            style={{ backgroundColor: "var(--card-alt)", borderColor: "#f59e0b60", color: "var(--foreground)" }}
+                            value={groupTatameId}
+                            onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
+                          >
+                            <option value="">Sem tatame</option>
+                            {tatames.map((t) => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )
+                  } else if (!bracket.bracketGroupId) {
+                    const catLabel = getBracketLabel(bracket)
+                    const sc = statusColors[bracket.status] || statusColors.PENDENTE
+                    rendered.push(
+                      <div key={bracket.id} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <span className="text-xs font-bold text-[#6b7280]">#{bracket.bracketNumber}</span>
+                          <button
+                            className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors" style={{ color: "var(--foreground)" }}
+                            onClick={() => setSelectedBracketId(bracket.id)}
+                          >
+                            {catLabel}
+                          </button>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
+                            {bracket.status}
+                          </span>
+                          <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
+                          <select
+                            className="text-xs rounded border px-2 py-1 shrink-0"
+                            style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
+                            value={bracket.tatameId || ""}
+                            onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
+                          >
+                            <option value="">Sem tatame</option>
+                            {tatames.map((t) => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )
+                  }
+                  // isGrandFinal sozinha (sem sub-chaves visíveis) — já tratada no grupo
+                }
+                return rendered
+              })()}
             </div>
           )}
         </div>
@@ -1441,8 +1618,14 @@ export default function EventoDetailPage() {
       {/* TAB: RESULTADO */}
       {tab === "resultado" && (
         <div className="space-y-4">
-          {sharedFilters}
-          <Button onClick={loadResultado}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--muted)" }}>
+              <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80] inline-block animate-pulse" />
+              Sincronizando ao vivo com a premiação
+            </span>
+          </div>
+          <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} />
+          <Button onClick={() => loadResultado()}>
             <Search className="h-4 w-4 mr-2" />
             Pesquisar
           </Button>
@@ -1475,11 +1658,11 @@ export default function EventoDetailPage() {
                       <div
                         key={wcId}
                         className="rounded-lg border overflow-hidden"
-                        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                       >
                         <div
-                          className="px-4 py-3 font-semibold text-sm text-white"
-                          style={{ borderBottom: "1px solid #222222" }}
+                          className="px-4 py-3 font-semibold text-sm"
+                          style={{ color: "var(--foreground)", borderBottom: "1px solid var(--border)" }}
                         >
                           {wc
                             ? `${wc.sex === "MASCULINO" ? "Masculino" : "Feminino"} | ${AGE_GROUP_LABELS[wc.ageGroup]?.split(" (")[0] || wc.ageGroup} | ${wc.name}`
@@ -1487,7 +1670,7 @@ export default function EventoDetailPage() {
                         </div>
                         <table className="w-full text-sm">
                           <thead>
-                            <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+                            <tr style={{ borderBottom: "1px solid var(--border)" }}>
                               <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase w-8">#</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase">Nome</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold text-[#6b7280] uppercase hidden sm:table-cell">Equipe</th>
@@ -1501,9 +1684,9 @@ export default function EventoDetailPage() {
                             {regs.map((r, idx) => {
                               const edit = resultadoEdits[r.id] || {}
                               return (
-                                <tr key={r.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                                <tr key={r.id} style={{ borderBottom: "1px solid var(--border)" }}>
                                   <td className="px-4 py-2 text-[#6b7280]">{idx + 1}</td>
-                                  <td className="px-4 py-2 text-white text-xs">{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
+                                  <td className="px-4 py-2 text-xs" style={{ color: "var(--foreground)" }}>{r.athlete?.user.name ?? r.guestName ?? "—"}</td>
                                   <td className="px-4 py-2 text-[#9ca3af] text-xs hidden sm:table-cell">
                                     {r.team?.name || "—"}
                                   </td>
@@ -1637,8 +1820,8 @@ export default function EventoDetailPage() {
           {brackets.length > 0 && (
             <div className="flex gap-3 flex-wrap">
               {[
-                { label: "Total", value: brackets.length, color: "#ffffff" },
-                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "#6b7280" },
+                { label: "Total", value: brackets.length, color: "var(--foreground)" },
+                { label: "Pendente", value: brackets.filter(b => b.status === "PENDENTE" || b.status === "DESIGNADA").length, color: "var(--muted)" },
                 { label: "Em Andamento", value: brackets.filter(b => b.status === "EM_ANDAMENTO").length, color: "#fbbf24" },
                 { label: "Finalizada", value: brackets.filter(b => b.status === "FINALIZADA").length, color: "#4ade80" },
                 { label: "Premiada", value: brackets.filter(b => b.status === "PREMIADA").length, color: "#a78bfa" },
@@ -1646,7 +1829,7 @@ export default function EventoDetailPage() {
                 <div
                   key={s.label}
                   className="rounded-lg border px-4 py-2"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <p className="text-xs text-[#6b7280]">{s.label}</p>
                   <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -1657,59 +1840,54 @@ export default function EventoDetailPage() {
 
           {/* Tatame cards */}
           <div className="space-y-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-sm font-semibold text-white uppercase tracking-wider flex-1">Tatames</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>Tatames Ativos</h3>
               {tatamesLoading && <span className="text-xs text-[#6b7280]">Carregando...</span>}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nome (ex: Tatame 1)"
-                  value={novoTatameNome}
-                  onChange={(e) => setNovoTatameNome(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") criarTatame() }}
-                  className="w-48"
-                />
-                <Button size="sm" onClick={criarTatame} disabled={novoTatameSaving || !novoTatameNome.trim()}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  {novoTatameSaving ? "Criando..." : "Adicionar"}
-                </Button>
-              </div>
             </div>
 
             {tatames.length === 0 ? (
-              <p className="text-sm text-[#6b7280] py-4">Nenhum tatame criado. Adicione tatames para ativar o controle ao vivo.</p>
+              <p className="text-sm text-[#6b7280] py-4">Nenhum coordenador conectado. Os tatames aparecem aqui quando os coordenadores acessam a tela de controle.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
+                  const emEspera = !operador
                   return (
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
-                      style={{ borderColor: tatame.isActive ? "#16a34a40" : "#333", backgroundColor: tatame.isActive ? "#0d1f0d" : "#111" }}
+                      style={{
+                        borderColor: emEspera ? "#78350f40" : "#16a34a40",
+                        backgroundColor: emEspera ? "#1c1200" : "#0d1f0d",
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-white">{tatame.name}</span>
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: tatame.isActive ? "#14532d40" : "#1a1a1a", color: tatame.isActive ? "#4ade80" : "#6b7280" }}
+                          style={{
+                            backgroundColor: emEspera ? "#78350f40" : "#14532d40",
+                            color: emEspera ? "#fbbf24" : "#4ade80",
+                          }}
                         >
-                          {tatame.isActive ? "ATIVO" : "INATIVO"}
+                          {emEspera ? "AGUARDANDO" : "ATIVO"}
                         </span>
                       </div>
                       <div className="text-xs text-[#6b7280] space-y-1">
-                        <p>PIN: <span className="font-mono text-[#fbbf24] font-bold tracking-widest text-sm">{tatame.pin}</span></p>
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
-                        {operador && (
+                        <p style={{ color: "#60a5fa" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
+                        <p style={{ color: "#fbbf24" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
+                        <p style={{ color: "#4ade80" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
+                        {operador ? (
                           <p className="text-[#4ade80]">
-                            Operando: {operador.user.name.split(" ")[0]} desde{" "}
+                            Operando: {operador.user.name} desde{" "}
                             {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
+                        ) : (
+                          <p className="text-[#fbbf24]">Aguardando reconexão...</p>
                         )}
                       </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => toggleTatameAtivo(tatame.id, !tatame.isActive)}>
-                          {tatame.isActive ? "Desativar" : "Ativar"}
-                        </Button>
+                      <div className="flex justify-end">
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-[#dc2626]" onClick={() => excluirTatame(tatame.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -1722,12 +1900,12 @@ export default function EventoDetailPage() {
           </div>
 
           {/* Link Coordenador de Premiação */}
-          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "#0d0d1a" }}>
+          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
             <div className="flex items-center gap-2">
               <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
             </div>
             <p className="text-xs text-[#6b7280]">Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "#333", backgroundColor: "#111" }}>
+            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--card)" }}>
               <span className="text-xs text-[#9ca3af] flex-1 truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}</span>
               <button
                 className="text-xs text-[#a78bfa] hover:text-white font-semibold shrink-0 transition-colors"
@@ -1748,17 +1926,45 @@ export default function EventoDetailPage() {
 
           {/* Bracket assignment list */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Chaves Geradas</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>Chaves Geradas</h3>
+              <Button size="sm" variant="outline" onClick={() => { setSelectionMode(s => !s); setSelectedBrackets(new Set()) }}>
+                {selectionMode ? "Cancelar" : "Selecionar"}
+              </Button>
+            </div>
+            {/* Barra de ações em lote */}
+            {selectionMode && selectedBrackets.size > 0 && (
+              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#60a5fa40", backgroundColor: "#0d1a2e" }}>
+                <span className="text-xs text-[#60a5fa] font-semibold">{selectedBrackets.size} selecionada(s)</span>
+                <select
+                  className="text-xs rounded border px-2 py-1"
+                  style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
+                  defaultValue=""
+                  onChange={(e) => { if (e.target.value !== "") { bulkAtribuir(e.target.value === "__none__" ? null : e.target.value); e.target.value = "" } }}
+                  disabled={bulkLoading}
+                >
+                  <option value="" disabled>Atribuir tatame...</option>
+                  <option value="__none__">Sem tatame</option>
+                  {tatames.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                <Button size="sm" variant="outline" onClick={bulkReiniciar} disabled={bulkLoading} className="text-[#fbbf24] border-[#fbbf2440] hover:bg-[#fbbf2410]">
+                  <RotateCcw className="h-3 w-3 mr-1" /> Reiniciar
+                </Button>
+                <Button size="sm" variant="outline" onClick={bulkExcluir} disabled={bulkLoading} className="text-[#f87171] border-[#f8717140] hover:bg-[#f8717110]">
+                  <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                </Button>
+              </div>
+            )}
             <div className="space-y-3">
-              {sharedFilters}
+              <FiltersBar weightCategories={weightCategories} teams={teams} filtersRef={filtersRef} resetKey={filterResetKey} atletasCounts={atletasCounts} />
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => setTatamesApplied({ nome: filterNome, sexo: filterSexo, categoria: filterCategoria, faixa: filterFaixa, pesoId: filterPesoId, equipeId: filterEquipeId })}>
+                <Button size="sm" onClick={() => setTatamesApplied({ ...filtersRef.current })}>
                   <Search className="h-3.5 w-3.5 mr-1" />
                   Pesquisar
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => {
-                  setFilterNome(""); setFilterSexo(""); setFilterCategoria(""); setFilterFaixa(""); setFilterPesoId(""); setFilterEquipeId("")
-                  setTatamesApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "" })
+                  setFilterResetKey(k => k + 1)
+                  setTatamesApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
                 }}>
                   Limpar Filtros
                 </Button>
@@ -1775,53 +1981,143 @@ export default function EventoDetailPage() {
               const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#1a1a1a",   text: "#6b7280" },
+                PENDENTE:     { bg: "#7f1d1d30",  text: "#dc2626" },
                 DESIGNADA:    { bg: "#1e3a5f40", text: "#60a5fa" },
                 EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
                 FINALIZADA:   { bg: "#14532d40", text: "#4ade80" },
                 PREMIADA:     { bg: "#4a1d9640", text: "#a78bfa" },
               }
 
-              const renderRow = (bracket: typeof tatamesFilteredBrackets[0], idx: number, list: typeof tatamesFilteredBrackets) => {
-                const catLabel = [
-                  bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
-                  AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
-                  BELT_LABELS[bracket.belt] || bracket.belt,
-                  bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
-                  bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
-                  `Chave: ${bracket.bracketNumber}`,
-                ].filter(Boolean).join(" | ")
-                const sc = statusColors[bracket.status] || statusColors.PENDENTE
-                return (
-                  <div
-                    key={bracket.id}
-                    className="flex items-center gap-3 px-4 py-3 flex-wrap"
-                    style={{ borderBottom: idx < list.length - 1 ? "1px solid #1a1a1a" : "none", backgroundColor: "#111" }}
-                  >
-                    <button
-                      className="text-sm font-medium text-white flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors cursor-pointer"
-                      onClick={() => setSelectedBracketId(bracket.id)}
-                    >
-                      {catLabel}
-                    </button>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
-                      {bracket.status}
-                    </span>
-                    <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
-                    <select
-                      className="text-xs rounded border px-2 py-1 shrink-0"
-                      style={{ backgroundColor: "#1a1a1a", borderColor: "#333", color: "#fff" }}
-                      value={bracket.tatameId || ""}
-                      onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
-                    >
-                      <option value="">Sem tatame</option>
-                      {tatames.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )
+              const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [
+                bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
+                AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
+                BELT_LABELS[bracket.belt] || bracket.belt,
+                bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
+                bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
+              ].filter(Boolean).join(" | ")
+
+              const renderGroupedList = (list: typeof tatamesFilteredBrackets, selectable = false) => {
+                const rows: React.ReactNode[] = []
+                const seenGroups = new Set<string>()
+                list.forEach((bracket, idx) => {
+                  if (bracket.bracketGroupId && !bracket.isGrandFinal) {
+                    if (seenGroups.has(bracket.bracketGroupId)) return
+                    seenGroups.add(bracket.bracketGroupId)
+                    const group = list.filter(b => b.bracketGroupId === bracket.bracketGroupId && !b.isGrandFinal)
+                    const grandFinal = brackets.find(b => b.bracketGroupId === bracket.bracketGroupId && b.isGrandFinal)
+                    const allInGroup = grandFinal ? [...group, grandFinal] : group
+                    const groupTatameId = group[0].tatameId || ""
+                    const groupIds = allInGroup.map(b => b.id)
+                    const allGroupSelected = groupIds.every(bid => selectedBrackets.has(bid))
+                    rows.push(
+                      <div
+                        key={bracket.bracketGroupId}
+                        className="flex items-center gap-3 px-4 py-3 flex-wrap"
+                        style={{ borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: "var(--card)" }}
+                      >
+                        {selectionMode && selectable && (
+                          <input type="checkbox" checked={allGroupSelected}
+                            onChange={() => { setSelectedBrackets(prev => { const next = new Set(prev); groupIds.forEach(bid => allGroupSelected ? next.delete(bid) : next.add(bid)); return next }) }}
+                            className="shrink-0 w-4 h-4 cursor-pointer"
+                          />
+                        )}
+                        <span className="text-xs font-bold text-[#f59e0b] shrink-0">GRUPO</span>
+                        <button
+                          className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
+                          onClick={() => setSelectedBracketId(group[0].id)}
+                        >
+                          {getBracketLabel(bracket)}
+                        </button>
+                        {allInGroup.map(b => {
+                          const sc = statusColors[b.status] || statusColors.PENDENTE
+                          return <span key={b.id} className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{b.isGrandFinal ? "GF" : `#${b.bracketNumber}`} {b.status}</span>
+                        })}
+                        <span className="text-xs text-[#6b7280] shrink-0">{group.reduce((s, b) => s + b.positions.length, 0)} atleta(s)</span>
+                        <select
+                          className="text-xs rounded border px-2 py-1 shrink-0"
+                          style={{ backgroundColor: "var(--card-alt)", borderColor: "#f59e0b60", color: "var(--foreground)" }}
+                          value={groupTatameId}
+                          onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
+                        >
+                          <option value="">Sem tatame</option>
+                          {tatames.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )
+                  } else if (!bracket.bracketGroupId) {
+                    const catLabel = `${getBracketLabel(bracket)} | Chave: ${bracket.bracketNumber}`
+                    const isSoloWO = bracket.positions.length === 1 && bracket.matches.some(m => m.position1Id !== null && m.position2Id === null && m.isWO)
+                    const sc = isSoloWO ? { bg: "#78350f40", text: "#f97316" } : (statusColors[bracket.status] || statusColors.PENDENTE)
+                    const statusLabel = isSoloWO ? "W.O." : bracket.status
+                    rows.push(
+                      <div
+                        key={bracket.id}
+                        className="flex items-center gap-3 px-4 py-3 flex-wrap"
+                        style={{ borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none", backgroundColor: "var(--card)" }}
+                      >
+                        {selectionMode && selectable && (
+                          <input type="checkbox" checked={selectedBrackets.has(bracket.id)}
+                            onChange={() => toggleBracketSelection(bracket.id)}
+                            className="shrink-0 w-4 h-4 cursor-pointer"
+                          />
+                        )}
+                        <button
+                          className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-red-400 transition-colors cursor-pointer" style={{ color: "var(--foreground)" }}
+                          onClick={() => setSelectedBracketId(bracket.id)}
+                        >
+                          {catLabel}
+                        </button>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>
+                          {statusLabel}
+                        </span>
+                        <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
+                        <select
+                          className="text-xs rounded border px-2 py-1 shrink-0"
+                          style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
+                          value={bracket.tatameId || ""}
+                          onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
+                        >
+                          <option value="">Sem tatame</option>
+                          {tatames.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => reiniciarChave(bracket.id)}
+                          className="shrink-0 p-1 rounded hover:text-[#fbbf24] transition-colors"
+                          style={{ color: "#6b7280" }}
+                          title="Reiniciar chave"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => excluirChave(bracket.id)}
+                          className="shrink-0 p-1 rounded hover:text-[#dc2626] transition-colors"
+                          style={{ color: "#6b7280" }}
+                          title="Excluir chave"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )
+                  }
+                })
+                return rows
               }
+
+              // IDs de todas as pendentes selecionáveis
+              const allPendentesIds = pendentes.flatMap(b =>
+                b.bracketGroupId && !b.isGrandFinal ? [] : [b.id]
+              ).concat(
+                pendentes.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
+                  const group = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
+                  const gf = brackets.find(x => x.bracketGroupId === b.bracketGroupId && x.isGrandFinal)
+                  return [...group, ...(gf ? [gf] : [])].map(x => x.id)
+                })
+              )
+              const allPendentesSelected = allPendentesIds.length > 0 && allPendentesIds.every(bid => selectedBrackets.has(bid))
 
               return (
                 <div className="space-y-4">
@@ -1830,9 +2126,21 @@ export default function EventoDetailPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Pendentes</span>
                         <span className="text-xs text-[#6b7280]">({pendentes.length})</span>
+                        {selectionMode && (
+                          <button
+                            className="text-xs text-[#60a5fa] hover:text-white transition-colors ml-1"
+                            onClick={() => setSelectedBrackets(prev => {
+                              const next = new Set(prev)
+                              allPendentesIds.forEach(bid => allPendentesSelected ? next.delete(bid) : next.add(bid))
+                              return next
+                            })}
+                          >
+                            {allPendentesSelected ? "Desmarcar todas" : "Selecionar todas"}
+                          </button>
+                        )}
                       </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "#222" }}>
-                        {pendentes.map((b, i) => renderRow(b, i, pendentes))}
+                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                        {renderGroupedList(pendentes, true)}
                       </div>
                     </div>
                   )}
@@ -1842,8 +2150,8 @@ export default function EventoDetailPage() {
                         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>Finalizadas</span>
                         <span className="text-xs text-[#6b7280]">({finalizadas.length})</span>
                       </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "#222" }}>
-                        {finalizadas.map((b, i) => renderRow(b, i, finalizadas))}
+                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                        {renderGroupedList(finalizadas, false)}
                       </div>
                     </div>
                   )}
@@ -1858,6 +2166,18 @@ export default function EventoDetailPage() {
       {selectedBracketId && (() => {
         const bracket = brackets.find(b => b.id === selectedBracketId)
         if (!bracket) return null
+        const bracketsToShow = bracket.bracketGroupId
+          ? [...brackets]
+              .filter(b => b.bracketGroupId === bracket.bracketGroupId)
+              .sort((a, b) => { if (a.isGrandFinal !== b.isGrandFinal) return a.isGrandFinal ? 1 : -1; return a.bracketNumber - b.bracketNumber })
+          : [bracket]
+        const modalTitle = [
+          bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
+          AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
+          BELT_LABELS[bracket.belt] || bracket.belt,
+          bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
+          bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
+        ].filter(Boolean).join(" | ")
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -1865,21 +2185,12 @@ export default function EventoDetailPage() {
             onClick={() => setSelectedBracketId(null)}
           >
             <div
-              className="relative rounded-lg border w-full max-w-3xl max-h-[85vh] overflow-auto"
-              style={{ backgroundColor: "#111", borderColor: "#333" }}
+              className="relative rounded-lg border w-full max-w-4xl max-h-[90vh] overflow-auto"
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "#222" }}>
-                <span className="text-sm font-semibold text-white">
-                  {[
-                    bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
-                    AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
-                    BELT_LABELS[bracket.belt] || bracket.belt,
-                    bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
-                    bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
-                    `Chave: ${bracket.bracketNumber}`,
-                  ].filter(Boolean).join(" | ")}
-                </span>
+              <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
+                <span className="text-sm font-semibold text-white">{modalTitle}</span>
                 <button
                   className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"
                   onClick={() => setSelectedBracketId(null)}
@@ -1887,10 +2198,17 @@ export default function EventoDetailPage() {
                   ✕
                 </button>
               </div>
-              <div className="p-4 overflow-auto">
-                <BracketView bracket={bracket} onAthleteClick={(registrationId) => {
-                  setGerenciarId(registrationId)
-                }} />
+              <div className="p-4 space-y-6">
+                {bracketsToShow.map(b => (
+                  <div key={b.id}>
+                    {bracketsToShow.length > 1 && (
+                      <p className="text-xs font-semibold mb-2" style={{ color: b.isGrandFinal ? "#fbbf24" : "#6b7280" }}>
+                        {b.isGrandFinal ? `🏆 Grande Final (#${b.bracketNumber})` : `Sub-chave #${b.bracketNumber} — ${b.positions.length} atleta(s)`}
+                      </p>
+                    )}
+                    <BracketView bracket={b} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
+                  </div>
+                ))}
               </div>
             </div>
           </div>

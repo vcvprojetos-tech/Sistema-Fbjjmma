@@ -7,7 +7,12 @@ export async function GET(
   { params }: { params: Promise<{ tatameId: string }> }
 ) {
   const session = await auth()
-  if (!session) return new Response("Não autorizado.", { status: 401 })
+  const pin = req.nextUrl.searchParams.get("pin")
+  if (!session && !pin) return new Response("Não autorizado.", { status: 401 })
+  if (!session && pin) {
+    const tatame = await (await import("@/lib/db")).prisma.tatame.findFirst({ where: { id: (await params).tatameId, pin } })
+    if (!tatame) return new Response("Não autorizado.", { status: 401 })
+  }
 
   const { tatameId } = await params
   const encoder = new TextEncoder()

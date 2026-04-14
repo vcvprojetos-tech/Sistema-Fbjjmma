@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -60,7 +60,7 @@ export default function NovaEquipePage() {
       <form
         onSubmit={handleSubmit}
         className="rounded-lg border p-6 space-y-4"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="space-y-2">
           <Label htmlFor="name">Nome da Equipe *</Label>

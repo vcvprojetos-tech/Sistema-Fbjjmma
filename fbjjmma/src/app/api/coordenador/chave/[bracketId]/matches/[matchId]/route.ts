@@ -10,13 +10,14 @@ export async function PUT(
   { params }: { params: Promise<{ bracketId: string; matchId: string }> }
 ) {
   const session = await auth()
-  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
+  const pin = req.headers.get("x-tatame-pin")
+  if (!session && !pin) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
 
   const { bracketId, matchId } = await params
 
   try {
     const body = await req.json()
-    const { winnerId, isWO, woType } = body
+    const { winnerId, isWO, woType, woWeight } = body
 
     const [match, bracketRecord] = await Promise.all([
       prisma.match.findFirst({ where: { id: matchId, bracketId } }),
@@ -24,6 +25,66 @@ export async function PUT(
     ])
     if (!match) return NextResponse.json({ error: "Partida não encontrada." }, { status: 404 })
     if (match.winnerId) return NextResponse.json({ error: "Partida já finalizada." }, { status: 400 })
+
+    // Chave com 1 atleta: position2Id é null
+    const isSoloMatch = match.position2Id === null
+
+    if (isSoloMatch) {
+      if (isWO) {
+        // Atleta tomou W.O.: atualiza match e propaga (pode ser mid-bracket solo criado por duplo W.O.)
+        await prisma.match.update({
+          where: { id: matchId },
+          data: {
+            winnerId: null,
+            isWO: true,
+            woType: woType ? (woType as WOType) : "AUSENCIA",
+            ...(woWeight != null && woType === "PESO" && { woWeight1: Number(woWeight) }),
+            endedAt: new Date(),
+          },
+        })
+      } else {
+        // Campeão confirmado
+        if (!match.position1Id) return NextResponse.json({ error: "Atleta não encontrado." }, { status: 400 })
+        await prisma.match.update({
+          where: { id: matchId },
+          data: { winnerId: match.position1Id, isWO: false, endedAt: new Date() },
+        })
+      }
+      // Propaga: pode haver rodadas seguintes (ex: solo criado por W.O. duplo no meio da chave)
+      const finished = await propagateBracket(bracketId)
+      if (finished) {
+        await resetBracketAwards(bracketId)
+        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
+        await checkAndCreateGrandFinal(bracketId)
+      }
+      if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+      return NextResponse.json({ message: isWO ? "Atleta desclassificado." : "Campeão declarado." })
+    }
+
+    // W.O. duplo: ambos ausentes, nenhum avança
+    const isDoubleWO = Boolean(isWO) && (!winnerId || winnerId === "") && !isSoloMatch
+    if (isDoubleWO) {
+      await prisma.$transaction([
+        prisma.match.update({
+          where: { id: matchId },
+          data: { winnerId: null, isWO: true, woType: "AUSENCIA", endedAt: new Date() },
+        }),
+        ...(match.position1Id
+          ? [prisma.bracketPosition.update({ where: { id: match.position1Id }, data: { isEliminated: true } })]
+          : []),
+        ...(match.position2Id
+          ? [prisma.bracketPosition.update({ where: { id: match.position2Id }, data: { isEliminated: true } })]
+          : []),
+      ])
+      const finished = await propagateBracket(bracketId)
+      if (finished) {
+        await resetBracketAwards(bracketId)
+        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
+        await checkAndCreateGrandFinal(bracketId)
+      }
+      if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+      return NextResponse.json({ message: "Dupla ausência registrada." })
+    }
 
     if (!winnerId) return NextResponse.json({ error: "Vencedor obrigatório." }, { status: 400 })
     if (winnerId !== match.position1Id && winnerId !== match.position2Id) {
@@ -38,6 +99,10 @@ export async function PUT(
         winnerId,
         isWO: Boolean(isWO),
         woType: woType ? (woType as WOType) : null,
+        // Se desclassificação por peso, salva o peso no campo do perdedor
+        ...(woWeight != null && woType === "PESO" && {
+          [winnerId === match.position1Id ? "woWeight2" : "woWeight1"]: Number(woWeight),
+        }),
         endedAt: new Date(),
       },
     })

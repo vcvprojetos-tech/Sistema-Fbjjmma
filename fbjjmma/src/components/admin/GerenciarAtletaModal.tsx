@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { X, CreditCard, AlertTriangle } from "lucide-react"
@@ -252,12 +252,12 @@ export default function GerenciarAtletaModal({
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
       <div
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl border"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         {/* Header */}
         <div
           className="sticky top-0 flex items-center justify-between px-6 py-4 border-b z-10"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h2 className="text-lg font-bold text-white">Gerenciar Atleta no Evento</h2>
           <div className="flex items-center gap-2">
@@ -313,7 +313,7 @@ export default function GerenciarAtletaModal({
             {/* Informações de cadastro */}
             <div
               className="rounded-lg border p-4 space-y-4"
-              style={{ borderColor: "#222222" }}
+              style={{ borderColor: "var(--border)" }}
             >
               <h3 className={sectionClass}>Informações de Cadastro</h3>
               <div className="grid grid-cols-2 gap-3">
@@ -431,7 +431,7 @@ export default function GerenciarAtletaModal({
             {/* Informações de inscrição */}
             <div
               className="rounded-lg border p-4 space-y-4"
-              style={{ borderColor: "#222222" }}
+              style={{ borderColor: "var(--border)" }}
             >
               <h3 className={sectionClass}>Informações de Inscrição</h3>
               <div className="space-y-1">
@@ -448,7 +448,7 @@ export default function GerenciarAtletaModal({
                   onChange={(e) => handleChange("observation", e.target.value)}
                   rows={3}
                   className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#dc2626] resize-y"
-                  style={{ backgroundColor: "#1a1a1a", borderColor: "#333333" }}
+                  style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)" }}
                   placeholder="Observações sobre a inscrição..."
                 />
               </div>
@@ -492,7 +492,7 @@ export default function GerenciarAtletaModal({
             {/* Premiação */}
             <div
               className="rounded-lg border p-4 space-y-4"
-              style={{ borderColor: "#222222" }}
+              style={{ borderColor: "var(--border)" }}
             >
               <h3 className={sectionClass}>Premiação</h3>
               <div className="space-y-2">

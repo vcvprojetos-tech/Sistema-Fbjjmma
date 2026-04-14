@@ -1,10 +1,11 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { Menu, X, LogOut, User, ChevronDown } from "lucide-react"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -18,26 +19,18 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   ]
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0a0a0a" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--background)" }}>
       {/* Header */}
       <header
         className="sticky top-0 z-50 border-b"
-        style={{ backgroundColor: "#0a0a0aee", borderColor: "#1a1a1a", backdropFilter: "blur(8px)" }}
+        style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", backdropFilter: "blur(8px)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 flex-shrink-0">
-              <div
-                className="w-9 h-9 flex items-center justify-center"
-                style={{
-                  clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-                  backgroundColor: "#dc2626",
-                }}
-              >
-                <span className="text-white font-black text-xs">FBJ</span>
-              </div>
-              <span className="text-white font-bold text-sm leading-tight hidden sm:block">
+              <img src="/logo.png" alt="FBJJMMA" className="w-9 h-9 object-contain" />
+              <span className="font-bold text-sm leading-tight hidden sm:block" style={{ color: "var(--foreground)" }}>
                 FBJJMMA
               </span>
             </Link>
@@ -48,28 +41,27 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`text-sm font-medium transition-colors ${
-                    pathname === l.href
-                      ? "text-white"
-                      : "text-[#9ca3af] hover:text-white"
-                  }`}
+                  className="text-sm font-medium transition-colors"
+                  style={{ color: pathname === l.href ? "var(--foreground)" : "var(--muted-foreground)" }}
                 >
                   {l.label}
                 </Link>
               ))}
             </nav>
 
-            {/* Auth buttons */}
+            {/* Auth buttons + toggle */}
             <div className="hidden md:flex items-center gap-3">
+              <ThemeToggle />
               {session ? (
                 <div className="relative">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-2 text-sm text-[#9ca3af] hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-sm transition-colors"
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                      style={{ backgroundColor: "#dc2626" }}
+                      style={{ backgroundColor: "#dc2626", color: "var(--foreground)" }}
                     >
                       {session.user?.name?.charAt(0).toUpperCase() || "U"}
                     </div>
@@ -79,12 +71,13 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   {userMenuOpen && (
                     <div
                       className="absolute right-0 top-full mt-2 w-48 rounded-lg border shadow-xl py-1 z-50"
-                      style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
                       <Link
                         href="/minha-conta"
                         onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-[#9ca3af] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-[var(--card-alt)]"
+                        style={{ color: "var(--muted-foreground)" }}
                       >
                         <User className="h-4 w-4" />
                         Minha Conta
@@ -95,15 +88,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                         <Link
                           href="/admin"
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-[#9ca3af] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-[var(--card-alt)]"
+                          style={{ color: "var(--muted-foreground)" }}
                         >
                           Painel Admin
                         </Link>
                       )}
-                      <div style={{ borderTop: "1px solid #222222", margin: "4px 0" }} />
+                      <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0" }} />
                       <button
                         onClick={() => { setUserMenuOpen(false); signOut({ callbackUrl: "/" }) }}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-[#9ca3af] hover:text-[#dc2626] hover:bg-[#1a1a1a] transition-colors w-full"
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-[var(--card-alt)] hover:text-[#dc2626] w-full"
+                        style={{ color: "var(--muted-foreground)" }}
                       >
                         <LogOut className="h-4 w-4" />
                         Sair
@@ -115,7 +110,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <>
                   <Link
                     href="/login"
-                    className="text-sm text-[#9ca3af] hover:text-white transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     Entrar
                   </Link>
@@ -130,13 +126,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               )}
             </div>
 
-            {/* Mobile menu button */}
-            <button
-              className="md:hidden text-[#9ca3af] hover:text-white transition-colors"
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {/* Mobile: toggle + menu button */}
+            <div className="md:hidden flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                className="transition-colors"
+                style={{ color: "var(--muted-foreground)" }}
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
+                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -144,31 +144,34 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         {menuOpen && (
           <div
             className="md:hidden border-t px-4 py-4 space-y-3"
-            style={{ backgroundColor: "#0a0a0a", borderColor: "#1a1a1a" }}
+            style={{ backgroundColor: "var(--background)", borderColor: "var(--border)" }}
           >
             {navLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className="block text-sm font-medium text-[#9ca3af] hover:text-white transition-colors py-1"
+                className="block text-sm font-medium transition-colors py-1"
+                style={{ color: "var(--muted-foreground)" }}
               >
                 {l.label}
               </Link>
             ))}
-            <div style={{ borderTop: "1px solid #222222", paddingTop: "12px" }}>
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
               {session ? (
                 <>
                   <Link
                     href="/minha-conta"
                     onClick={() => setMenuOpen(false)}
-                    className="block text-sm text-[#9ca3af] hover:text-white py-1"
+                    className="block text-sm py-1"
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     Minha Conta
                   </Link>
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className="block text-sm text-[#9ca3af] hover:text-[#dc2626] py-1"
+                    className="block text-sm py-1"
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     Sair
                   </button>
@@ -178,7 +181,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                   <Link
                     href="/login"
                     onClick={() => setMenuOpen(false)}
-                    className="text-sm text-[#9ca3af] hover:text-white"
+                    className="text-sm"
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     Entrar
                   </Link>
@@ -203,25 +207,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       {/* Footer */}
       <footer
         className="border-t mt-16 py-8"
-        style={{ backgroundColor: "#0a0a0a", borderColor: "#1a1a1a" }}
+        style={{ backgroundColor: "var(--background)", borderColor: "var(--border)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div
-                className="w-7 h-7 flex items-center justify-center"
-                style={{
-                  clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-                  backgroundColor: "#dc2626",
-                }}
-              >
-                <span className="text-white font-black text-xs">FBJ</span>
-              </div>
-              <span className="text-[#6b7280] text-sm">
+              <img src="/logo.png" alt="FBJJMMA" className="w-7 h-7 object-contain" />
+              <span className="text-sm" style={{ color: "var(--muted)" }}>
                 FBJJMMA — Federação Baiana de Jiu-Jitsu MMA
               </span>
             </div>
-            <p className="text-[#6b7280] text-xs">
+            <p className="text-xs" style={{ color: "var(--muted)" }}>
               © {new Date().getFullYear()} FBJJMMA. Todos os direitos reservados.
             </p>
           </div>

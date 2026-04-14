@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -225,7 +225,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
         {/* Imagens */}
         <div
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className={sectionClass}>Imagens</h3>
           <div className={fieldGroupClass}>
@@ -234,7 +234,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
               <Label>Banner do Evento</Label>
               <div
                 className="relative border-2 border-dashed rounded-lg overflow-hidden cursor-pointer hover:border-[#dc2626] transition-colors"
-                style={{ borderColor: "#333333", minHeight: "120px" }}
+                style={{ borderColor: "var(--border-alt)", minHeight: "120px" }}
                 onClick={() => bannerRef.current?.click()}
               >
                 {bannerPreview ? (
@@ -265,7 +265,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
               <Label>Programação (imagem)</Label>
               <div
                 className="relative border-2 border-dashed rounded-lg overflow-hidden cursor-pointer hover:border-[#dc2626] transition-colors"
-                style={{ borderColor: "#333333", minHeight: "120px" }}
+                style={{ borderColor: "var(--border-alt)", minHeight: "120px" }}
                 onClick={() => scheduleRef.current?.click()}
               >
                 {schedulePreview ? (
@@ -296,7 +296,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
         {/* Informações Gerais */}
         <div
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className={sectionClass}>Informações Gerais</h3>
           <div className="space-y-4">
@@ -307,8 +307,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Ex.: Campeonato Baiano de Jiu-Jitsu 2026"
-                required
-              />
+                              />
             </div>
 
             <div className={fieldGroupClass}>
@@ -378,8 +377,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                   value={form.city}
                   onChange={(e) => handleChange("city", e.target.value)}
                   placeholder="Ex.: Salvador"
-                  required
-                />
+                                  />
               </div>
             </div>
 
@@ -390,8 +388,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 value={form.location}
                 onChange={(e) => handleChange("location", e.target.value)}
                 placeholder="Nome do ginásio / arena"
-                required
-              />
+                              />
             </div>
           </div>
         </div>
@@ -399,7 +396,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
         {/* Datas */}
         <div
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className={sectionClass}>Datas e Prazos</h3>
           <div className={fieldGroupClass}>
@@ -410,8 +407,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 type="datetime-local"
                 value={form.date}
                 onChange={(e) => handleChange("date", e.target.value)}
-                required
-              />
+                              />
             </div>
 
             <div className="space-y-2">
@@ -423,8 +419,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 onChange={(e) =>
                   handleChange("registrationDeadline", e.target.value)
                 }
-                required
-              />
+                              />
             </div>
 
             <div className="space-y-2">
@@ -436,8 +431,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 onChange={(e) =>
                   handleChange("correctionDeadline", e.target.value)
                 }
-                required
-              />
+                              />
             </div>
 
             <div className="space-y-2">
@@ -447,8 +441,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 type="date"
                 value={form.paymentDeadline}
                 onChange={(e) => handleChange("paymentDeadline", e.target.value)}
-                required
-              />
+                              />
             </div>
 
             <div className="space-y-2">
@@ -458,8 +451,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 type="datetime-local"
                 value={form.checkinRelease}
                 onChange={(e) => handleChange("checkinRelease", e.target.value)}
-                required
-              />
+                              />
             </div>
 
             <div className="space-y-2">
@@ -469,8 +461,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 type="datetime-local"
                 value={form.bracketRelease}
                 onChange={(e) => handleChange("bracketRelease", e.target.value)}
-                required
-              />
+                              />
             </div>
           </div>
         </div>
@@ -478,7 +469,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
         {/* Valores */}
         <div
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className={sectionClass}>Valores e Inscrição</h3>
           <div className={fieldGroupClass}>
@@ -492,8 +483,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 value={form.value}
                 onChange={(e) => handleChange("value", e.target.value)}
                 placeholder="0.00"
-                required
-              />
+                              />
             </div>
 
             {form.hasAbsolute && (
@@ -559,7 +549,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
         {/* Textos informativos */}
         <div
           className="rounded-lg border p-6 space-y-4"
-          style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
           <h3 className={sectionClass}>Informações do Evento</h3>
           <div className="space-y-4">
@@ -573,8 +563,8 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 rows={4}
                 className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#dc2626] resize-y"
                 style={{
-                  backgroundColor: "#1a1a1a",
-                  borderColor: "#333333",
+                  backgroundColor: "var(--card-alt)",
+                  borderColor: "var(--border-alt)",
                   minHeight: "100px",
                 }}
               />
@@ -590,8 +580,8 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 rows={3}
                 className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#dc2626] resize-y"
                 style={{
-                  backgroundColor: "#1a1a1a",
-                  borderColor: "#333333",
+                  backgroundColor: "var(--card-alt)",
+                  borderColor: "var(--border-alt)",
                 }}
               />
             </div>
@@ -606,8 +596,8 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 rows={3}
                 className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#dc2626] resize-y"
                 style={{
-                  backgroundColor: "#1a1a1a",
-                  borderColor: "#333333",
+                  backgroundColor: "var(--card-alt)",
+                  borderColor: "var(--border-alt)",
                 }}
               />
             </div>
@@ -621,8 +611,8 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 rows={4}
                 className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#dc2626] resize-y"
                 style={{
-                  backgroundColor: "#1a1a1a",
-                  borderColor: "#333333",
+                  backgroundColor: "var(--card-alt)",
+                  borderColor: "var(--border-alt)",
                 }}
               />
             </div>
@@ -636,8 +626,8 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 rows={3}
                 className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#dc2626] resize-y"
                 style={{
-                  backgroundColor: "#1a1a1a",
-                  borderColor: "#333333",
+                  backgroundColor: "var(--card-alt)",
+                  borderColor: "var(--border-alt)",
                 }}
               />
             </div>
@@ -653,8 +643,8 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                 rows={3}
                 className="w-full rounded-md border px-3 py-2 text-sm text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#dc2626] resize-y"
                 style={{
-                  backgroundColor: "#1a1a1a",
-                  borderColor: "#333333",
+                  backgroundColor: "var(--card-alt)",
+                  borderColor: "var(--border-alt)",
                 }}
               />
             </div>

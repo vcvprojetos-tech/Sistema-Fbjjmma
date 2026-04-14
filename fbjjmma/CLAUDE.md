@@ -99,6 +99,36 @@ Ao finalizar uma chave (`FINALIZADA`), o campo `awarded` de todas as inscriçõe
 - O coordenador de tatame escuta `/api/coordenador/tatame/[tatameId]/stream`
 - Fallback: polling a cada 10 segundos
 
+### W.O. Duplo (Ambos Ausentes)
+- Quando ambos os atletas de uma partida estão ausentes, o coordenador pode registrar "W.O. — Ambos Ausentes"
+- A partida fica com `winnerId: null`, `isWO: true`, `endedAt: preenchido`
+- `isMatchResolved()` em `bracket-utils.ts` trata esse caso: `winnerId !== null || (isWO && endedAt !== null)`
+- `propagateBracket()` ao encontrar um lado sem vencedor cria uma **partida solo pendente** para o atleta do outro lado (coordenador confirma presença ou aplica W.O.)
+- No frontend, `currentMatches` filtra `!(m.isWO && m.endedAt)` para não exibir W.O. duplos já finalizados
+- `isDone` no card de partida: `!!match.winnerId || (match.isWO && !!match.endedAt)`
+
+### Chaves Grandes (> 16 atletas) — Grande Final
+- Chaves com muitos atletas são divididas em sub-chaves via `bracketGroupId`
+- Quando ambas as sub-chaves terminam (`status: FINALIZADA`), `checkAndCreateGrandFinal()` cria automaticamente uma nova chave (`isGrandFinal: true`) com os dois campeões
+- A grande final começa com status `PENDENTE` e é iniciada manualmente pelo coordenador
+
+### PIX do Campeão Absoluto
+- Campo `prizePix String?` no modelo `Registration` (migration: `20260412120000_add_prize_pix_to_registration`)
+- Na tela de premiação, ao premiar o 1° lugar de uma chave absoluta, abre modal para digitar a chave PIX
+- O valor é salvo na inscrição e exibido no `BracketView` abaixo do nome do campeão
+
+### Sessão do Coordenador de Tatame
+- A criação de sessão usa `prisma.$transaction` para evitar sessões perdidas
+- Liveness baseado em heartbeat: sessões sem heartbeat nos últimos 2 minutos são consideradas desconectadas
+- Se o coordenador aparecer como desconectado, fechar e reabrir a página do tatame reconecta
+
+### Reiniciar Chave (Admin)
+- Endpoint `PATCH /api/admin/eventos/[id]/chaves/[bracketId]` reinicia a chave atomicamente:
+  - Apaga todas as partidas (`Match`)
+  - Reseta `isEliminated` nas posições
+  - Reseta `awarded/medal` nas inscrições
+  - Volta status para `PENDENTE` ou `DESIGNADA` (se tem tatame)
+
 ## Padrões de Código
 
 - Todas as rotas de API verificam sessão com `auth()` antes de qualquer operação

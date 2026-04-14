@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -237,7 +237,7 @@ export default function MinhaContaPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b" style={{ borderColor: "#222222" }}>
+      <div className="flex gap-1 border-b" style={{ borderColor: "var(--border)" }}>
         {(
           [
             { key: "inscricoes", label: "Minhas Inscrições", icon: CalendarDays },
@@ -265,9 +265,9 @@ export default function MinhaContaPage() {
           {registrations.length === 0 ? (
             <div
               className="rounded-xl border p-12 text-center"
-              style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
             >
-              <FileText className="h-10 w-10 text-[#333333] mx-auto mb-3" />
+              <FileText className="h-10 w-10 text-[var(--border-alt)] mx-auto mb-3" />
               <p className="text-[#6b7280] mb-4">Você ainda não possui inscrições.</p>
               <Link href="/eventos">
                 <Button>Ver Eventos Disponíveis</Button>
@@ -280,7 +280,7 @@ export default function MinhaContaPage() {
                 <div
                   key={reg.id}
                   className="rounded-xl border p-5 space-y-4"
-                  style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
@@ -334,7 +334,7 @@ export default function MinhaContaPage() {
                   {isPending && (
                     <div
                       className="rounded-lg border p-4"
-                      style={{ borderColor: "#333333", backgroundColor: "#0d0d0d" }}
+                      style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--background)" }}
                     >
                       <p className="text-xs text-[#9ca3af] mb-3">
                         {reg.paymentProof
@@ -353,8 +353,8 @@ export default function MinhaContaPage() {
                           }}
                         />
                         <span
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors hover:bg-[#1a1a1a] cursor-pointer"
-                          style={{ borderColor: "#333333", color: "#9ca3af" }}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors hover:bg-[var(--card-alt)] cursor-pointer"
+                          style={{ borderColor: "var(--border-alt)", color: "var(--muted-foreground)" }}
                         >
                           <Upload className="h-4 w-4" />
                           {uploadingFor === reg.id ? "Enviando..." : "Enviar Comprovante"}
@@ -375,7 +375,7 @@ export default function MinhaContaPage() {
           {/* Read-only info */}
           <div
             className="rounded-xl border p-6 space-y-4"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
               Dados Pessoais (somente leitura)
@@ -406,7 +406,7 @@ export default function MinhaContaPage() {
           <form
             onSubmit={handleSaveProfile}
             className="rounded-xl border p-6 space-y-4"
-            style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
           >
             <h3 className="text-sm font-semibold text-[#dc2626] uppercase tracking-wider">
               Informações Editáveis

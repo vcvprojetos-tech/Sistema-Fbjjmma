@@ -55,31 +55,47 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { name, cpf, email, password, phone, role } = body
 
-    if (!name || !cpf || !email || !password) {
+    const isCoordenadorTatame = role === "COORDENADOR_TATAME"
+
+    if (!name || !cpf) {
+      return NextResponse.json(
+        { error: "Nome e CPF são obrigatórios." },
+        { status: 400 }
+      )
+    }
+
+    if (!isCoordenadorTatame && (!email || !password)) {
       return NextResponse.json(
         { error: "Nome, CPF, e-mail e senha são obrigatórios." },
         { status: 400 }
       )
     }
 
+    const resolvedEmail = isCoordenadorTatame
+      ? `${cpf.replace(/\D/g, "")}@coordenador.fbjjmma`
+      : email
+
     const existing = await prisma.user.findFirst({
-      where: { OR: [{ cpf }, { email }] },
+      where: { OR: [{ cpf: cpf.replace(/\D/g, "") }, { email: resolvedEmail }] },
     })
     if (existing) {
       return NextResponse.json(
-        { error: "CPF ou e-mail já cadastrado." },
+        { error: "CPF já cadastrado." },
         { status: 400 }
       )
     }
 
     const bcrypt = await import("bcryptjs")
-    const hashed = await bcrypt.hash(password, 10)
+    const resolvedPassword = isCoordenadorTatame
+      ? Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+      : password
+    const hashed = await bcrypt.hash(resolvedPassword, 10)
 
     const user = await prisma.user.create({
       data: {
         name,
-        cpf,
-        email,
+        cpf: cpf.replace(/\D/g, ""),
+        email: resolvedEmail,
         password: hashed,
         phone: phone || null,
         role: role || "COORDENADOR_GERAL",

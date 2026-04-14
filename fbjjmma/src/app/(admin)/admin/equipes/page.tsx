@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { Plus, Search, Pencil, Trash2 } from "lucide-react"
@@ -94,12 +94,12 @@ export default function EquipesPage() {
       {/* Table */}
       <div
         className="rounded-lg border overflow-hidden"
-        style={{ backgroundColor: "#111111", borderColor: "#222222" }}
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid #222222" }}>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-10">
                   #
                 </th>
@@ -134,8 +134,8 @@ export default function EquipesPage() {
                 filtered.map((team, index) => (
                   <tr
                     key={team.id}
-                    style={{ borderBottom: "1px solid #1a1a1a" }}
-                    className="hover:bg-[#1a1a1a] transition-colors"
+                    style={{ borderBottom: "1px solid var(--card-alt)" }}
+                    className="hover:bg-[var(--card-alt)] transition-colors"
                   >
                     <td className="px-4 py-3 text-[#6b7280]">{index + 1}</td>
                     <td className="px-4 py-3 text-white font-medium">{team.name}</td>
