@@ -101,8 +101,8 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
       <span style={{ color: s.sub, fontWeight: 800, fontSize: "1rem", width: "18px", textAlign: "center", flexShrink: 0 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Nome numa linha — sem texto de status, a cor já indica o estado (igual ao IBJJF) */}
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.7rem, 1.05vw, 0.9rem)", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "clamp(0.6rem, 0.8vw, 0.72rem)", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div className="painel-athlete-name" style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.7rem, 1.05vw, 0.9rem)", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div className="painel-athlete-team" style={{ color: s.sub, fontSize: "clamp(0.6rem, 0.8vw, 0.72rem)", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
@@ -207,6 +207,32 @@ export default function PainelPage() {
         ))}
       </div>
 
+      <style>{`
+        @media (max-width: 768px) {
+          .painel-grid-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          .painel-grid {
+            grid-template-columns: repeat(${numCols}, 150px) !important;
+            gap: 6px !important;
+          }
+          .painel-athlete-name {
+            font-size: 0.72rem !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            word-break: break-word;
+          }
+          .painel-athlete-team {
+            font-size: 0.62rem !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+          }
+        }
+      `}</style>
+
       {tatames.length === 0 ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: "80px" }}>
           <div style={{ textAlign: "center" }}>
@@ -215,7 +241,8 @@ export default function PainelPage() {
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${numCols}, 1fr)`, gap: "8px" }}>
+        <div className="painel-grid-wrapper">
+        <div className="painel-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${numCols}, 1fr)`, gap: "8px" }}>
 
           {/* ── Linha 1: cabeçalhos dos tatames ── */}
           {columns.map(({ tatame }, colIdx) => {
@@ -244,6 +271,7 @@ export default function PainelPage() {
             })
           )}
 
+        </div>
         </div>
       )}
     </div>
