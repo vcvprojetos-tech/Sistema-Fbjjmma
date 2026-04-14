@@ -44,6 +44,7 @@ export async function GET(
                   registration: {
                     include: {
                       athlete: { include: { user: { select: { name: true } } } },
+                      team: { select: { name: true } },
                     },
                   },
                 },
@@ -53,6 +54,7 @@ export async function GET(
                   registration: {
                     include: {
                       athlete: { include: { user: { select: { name: true } } } },
+                      team: { select: { name: true } },
                     },
                   },
                 },
