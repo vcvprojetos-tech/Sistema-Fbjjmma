@@ -99,13 +99,13 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   )
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", minHeight: "52px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "0.9rem", width: "16px", textAlign: "center", flexShrink: 0 }}>{seed}</span>
+    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "flex-start", gap: "8px", padding: "10px 12px", minHeight: "56px" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: "0.9rem", width: "16px", textAlign: "center", flexShrink: 0, paddingTop: "2px" }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "0.88rem", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "0.68rem", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: "0.92rem", lineHeight: 1.3, wordBreak: "break-word" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: "0.7rem", marginTop: "2px" }}>{team}</div>}
       </div>
-      <span style={{ color: s.sub, fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.05em", flexShrink: 0 }}>{s.label}</span>
+      <span style={{ color: s.sub, fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.04em", flexShrink: 0, paddingTop: "2px", textAlign: "right", minWidth: "64px" }}>{s.label}</span>
     </div>
   )
 }
