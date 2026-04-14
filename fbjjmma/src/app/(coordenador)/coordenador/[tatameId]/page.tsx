@@ -127,6 +127,7 @@ export default function TatamePage() {
   const [pesoInput, setPesoInput] = useState("")
   const [callLoading, setCallLoading] = useState<string | null>(null)
   const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
+  const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string } | null>(null)
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -219,7 +220,7 @@ export default function TatamePage() {
     } catch { /* silencioso */ }
   }, [getPin, load])
 
-  const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number) => {
+  const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number, autoWinnerId?: string) => {
     setCallLoading(`${matchId}-${callNumber}`)
     setCallError(null)
     try {
@@ -231,6 +232,22 @@ export default function TatamePage() {
       const data = await res.json()
       if (!res.ok) {
         setCallError({ matchId, msg: data.error || "Erro ao registrar chamada.", remaining: data.remaining })
+      } else if (callNumber === 3 && autoWinnerId !== undefined) {
+        // 3ª chamada: W.O. automático por ausência
+        setCallMenu(null)
+        setActionLoading(true)
+        const woRes = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
+          body: JSON.stringify({ winnerId: autoWinnerId, isWO: true, woType: "AUSENCIA", woWeight: null }),
+        })
+        if (!woRes.ok) {
+          const woData = await woRes.json()
+          setError(woData.error || "Erro ao registrar W.O.")
+        } else {
+          await load(true)
+        }
+        setActionLoading(false)
       } else {
         await load(true)
       }
@@ -658,26 +675,6 @@ export default function TatamePage() {
                             {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
                           </span>
                         </div>
-                        {/* Chamadas */}
-                        <div className="px-3 pt-2 pb-1 flex gap-1.5">
-                          {[1, 2, 3].map(n => {
-                            const done = calls.some((c: CallTime) => c.call === n)
-                            const isLoading = callLoading === `${match.id}-${n}`
-                            const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
-                            return (
-                              <button
-                                key={n}
-                                onClick={() => canCall && registrarChamada(match.id, match._bracketId, n)}
-                                disabled={!canCall || !!callLoading}
-                                className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
-                              >
-                                {isLoading ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
-                              </button>
-                            )
-                          })}
-                        </div>
-                        {callErr && <p className="text-[#f87171] text-xs px-3 pb-1">{callErr.msg}</p>}
                         <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
                           <button
                             onClick={() => togglePresent(match.id, match._bracketId, "p1", p1Present)}
@@ -702,14 +699,47 @@ export default function TatamePage() {
                           >
                             {isMid ? "▶ Avançar" : "✓ Campeão"}
                           </button>
-                          <button
-                            onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId })}
-                            disabled={actionLoading}
-                            className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
-                          >
-                            W.O.
-                          </button>
+                          {callMenu?.matchId !== match.id && (
+                            <button
+                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name })}
+                              disabled={actionLoading}
+                              className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
+                            >
+                              W.O.
+                            </button>
+                          )}
                         </div>
+                        {callMenu?.matchId === match.id && (
+                          <div className="px-3 pb-3 flex flex-col gap-2" style={{ borderTop: "1px solid var(--border)" }}>
+                            <p className="text-xs text-[#f87171] font-semibold pt-2">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
+                            <div className="flex gap-1.5">
+                              {[1, 2, 3].map(n => {
+                                const done = calls.some((c: CallTime) => c.call === n)
+                                const isLoadingCall = callLoading === `${match.id}-${n}`
+                                const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
+                                return (
+                                  <button
+                                    key={n}
+                                    onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId)}
+                                    disabled={!canCall || !!callLoading || actionLoading}
+                                    className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
+                                    style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                  >
+                                    {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                            {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                            <button
+                              onClick={() => setCallMenu(null)}
+                              className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
+                              style={{ backgroundColor: "var(--card)" }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -770,28 +800,6 @@ export default function TatamePage() {
                               )}
                             </div>
 
-                            {/* Chamadas */}
-                            {!isDone && (
-                              <div className="px-3 pt-2 pb-1 flex gap-1.5">
-                                {[1, 2, 3].map(n => {
-                                  const done = calls.some((c: CallTime) => c.call === n)
-                                  const isLoading = callLoading === `${match.id}-${n}`
-                                  const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
-                                  return (
-                                    <button
-                                      key={n}
-                                      onClick={() => canCall && registrarChamada(match.id, match._bracketId, n)}
-                                      disabled={!canCall || !!callLoading}
-                                      className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                      style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
-                                    >
-                                      {isLoading ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
-                                    </button>
-                                  )
-                                })}
-                              </div>
-                            )}
-                            {callErr && <p className="text-[#f87171] text-xs px-3 pb-1">{callErr.msg}</p>}
 
                             {/* Atleta 1 */}
                             <div className="w-full px-4 py-3 flex items-center gap-3"
@@ -858,21 +866,63 @@ export default function TatamePage() {
 
                             {!isDone && p1?.id && p2?.id && (
                               <div className="flex flex-col gap-1.5 p-3" style={{ borderTop: "1px solid var(--border)" }}>
-                                <div className="flex gap-2">
-                                  <button onClick={() => setWoModal({ matchId: match.id, winnerId: p2.id, bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
-                                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                    W.O. — {p1Name.split(" ")[0]}
-                                  </button>
-                                  <button onClick={() => setWoModal({ matchId: match.id, winnerId: p1.id, bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
-                                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                    W.O. — {p2Name.split(" ")[0]}
-                                  </button>
-                                </div>
-                                <button onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
-                                  className="w-full py-2 rounded-lg text-xs font-semibold border transition-colors"
-                                  style={{ color: "#f97316", borderColor: "#7c2d1240", backgroundColor: "#7c2d1210" }}>
-                                  W.O. — Ambos Ausentes
-                                </button>
+                                {callMenu?.matchId !== match.id ? (
+                                  <>
+                                    <div className="flex gap-2">
+                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p2.id, absenteeName: p1Name })} disabled={actionLoading}
+                                        className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                        W.O. — {p1Name.split(" ")[0]}
+                                      </button>
+                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p1.id, absenteeName: p2Name })} disabled={actionLoading}
+                                        className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                        W.O. — {p2Name.split(" ")[0]}
+                                      </button>
+                                    </div>
+                                    <button onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
+                                      className="w-full py-2 rounded-lg text-xs font-semibold border transition-colors"
+                                      style={{ color: "#f97316", borderColor: "#7c2d1240", backgroundColor: "#7c2d1210" }}>
+                                      W.O. — Ambos Ausentes
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="flex flex-col gap-2">
+                                    <p className="text-xs text-[#f87171] font-semibold">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
+                                    <div className="flex gap-1.5">
+                                      {[1, 2, 3].map(n => {
+                                        const done = calls.some((c: CallTime) => c.call === n)
+                                        const isLoadingCall = callLoading === `${match.id}-${n}`
+                                        const canCall = n === 1 ? !done : (calls.some((c: CallTime) => c.call === n - 1) && !done)
+                                        return (
+                                          <button
+                                            key={n}
+                                            onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId)}
+                                            disabled={!canCall || !!callLoading || actionLoading}
+                                            className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
+                                            style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                          >
+                                            {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                    {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                                    <button
+                                      onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
+                                      disabled={actionLoading}
+                                      className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                                      style={{ backgroundColor: "#78350f" }}
+                                    >
+                                      Desclassificação por Peso
+                                    </button>
+                                    <button
+                                      onClick={() => setCallMenu(null)}
+                                      className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
+                                      style={{ backgroundColor: "var(--card)" }}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
