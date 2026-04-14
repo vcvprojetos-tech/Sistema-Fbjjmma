@@ -168,7 +168,7 @@ export default function TatamePage() {
     window.addEventListener("beforeunload", disconnect)
     return () => {
       window.removeEventListener("beforeunload", disconnect)
-      disconnect()
+      // Não chama disconnect() aqui para evitar encerrar sessão em remontagens do React
     }
   }, [tatameId, getPin])
 

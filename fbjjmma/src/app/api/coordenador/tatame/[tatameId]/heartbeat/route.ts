@@ -13,10 +13,29 @@ export async function POST(
   const tatame = await prisma.tatame.findFirst({ where: { id: tatameId, pin } })
   if (!tatame) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
 
-  await prisma.tatameOperation.updateMany({
+  const now = new Date()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updated = await (prisma.tatameOperation as any).updateMany({
     where: { tatameId, endedAt: null },
-    data: { lastHeartbeat: new Date() },
+    data: { lastHeartbeat: now },
   })
+
+  // Se não há operação ativa, reabre a mais recente (coordenador ainda tem a página aberta)
+  if (updated.count === 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastOp = await (prisma.tatameOperation as any).findFirst({
+      where: { tatameId },
+      orderBy: { startedAt: "desc" },
+    })
+    if (lastOp) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma.tatameOperation as any).update({
+        where: { id: lastOp.id },
+        data: { endedAt: null, lastHeartbeat: now },
+      })
+    }
+  }
 
   return NextResponse.json({ ok: true })
 }
