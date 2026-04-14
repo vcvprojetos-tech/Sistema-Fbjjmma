@@ -208,7 +208,7 @@ export default function PainelPage() {
       </div>
 
       <style>{`
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
           .painel-grid-wrapper {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
