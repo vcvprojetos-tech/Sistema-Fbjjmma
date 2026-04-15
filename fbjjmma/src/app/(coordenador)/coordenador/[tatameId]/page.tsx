@@ -87,6 +87,12 @@ function getAthleteName(pos: BracketPositionData | null): string {
   return pos.registration.athlete?.user.name ?? pos.registration.guestName ?? "—"
 }
 
+function shortAthlName(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length <= 2) return name
+  return `${parts[0]} ${parts[parts.length - 1]}`
+}
+
 function getAthleteTeam(pos: BracketPositionData | null): string | null {
   return pos?.registration?.team?.name ?? null
 }
@@ -601,19 +607,11 @@ export default function TatamePage() {
                 {/* Controles */}
                 <div className="w-64 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho da chave */}
-                  <div className="rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
-                        <p className="text-white font-bold text-xs leading-tight mt-0.5 whitespace-nowrap overflow-hidden">{catLabel(bracket)}</p>
-                        {!bracket.isAbsolute && (
-                          <p className="text-[#4b5563] text-sm mt-0.5">
-                            até {bracket.weightCategory.maxWeight === 999 ? "∞" : `${bracket.weightCategory.maxWeight}kg`}
-                          </p>
-                        )}
-                      </div>
+                  <div className="rounded-xl border p-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
                       <span
-                        className="text-xs px-2 py-1 rounded-full font-semibold shrink-0"
+                        className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
                         style={{
                           backgroundColor:
                             bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
@@ -630,6 +628,12 @@ export default function TatamePage() {
                          bracket.status === "PREMIADA" ? "Premiada" : "Aguardando"}
                       </span>
                     </div>
+                    <p className="text-white font-bold text-xs leading-tight whitespace-nowrap overflow-hidden">{catLabel(bracket)}</p>
+                    {!bracket.isAbsolute && (
+                      <p className="text-[#4b5563] text-xs mt-0.5">
+                        até {bracket.weightCategory.maxWeight === 999 ? "∞" : `${bracket.weightCategory.maxWeight}kg`}
+                      </p>
+                    )}
                   </div>
 
                   {error && (
@@ -685,7 +689,7 @@ export default function TatamePage() {
                             {p1Present ? "✓" : "1"}
                           </button>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{p1Name}</p>
+                            <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{shortAthlName(p1Name)}</p>
                             {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] whitespace-nowrap overflow-hidden">{getAthleteTeam(p1)}</p>}
                           </div>
                           <span className="text-xs text-[#6b7280]">TAP</span>
@@ -815,7 +819,7 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP1) || p1Present ? "✓" : "1"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{p1Name}</p>
+                                <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{shortAthlName(p1Name)}</p>
                                 {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] whitespace-nowrap overflow-hidden">{getAthleteTeam(p1)}</p>}
                               </div>
                               {!isDone && p1Name !== "BYE" && (
@@ -850,7 +854,7 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP2) || p2Present ? "✓" : "2"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{p2Name !== "BYE" ? p2Name : "— BYE —"}</p>
+                                <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{p2Name !== "BYE" ? shortAthlName(p2Name) : "— BYE —"}</p>
                                 {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] whitespace-nowrap overflow-hidden">{getAthleteTeam(p2)}</p>}
                               </div>
                               {!isDone && p2Name !== "BYE" && (
