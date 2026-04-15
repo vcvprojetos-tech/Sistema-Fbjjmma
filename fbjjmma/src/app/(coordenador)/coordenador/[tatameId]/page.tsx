@@ -449,7 +449,7 @@ export default function TatamePage() {
   }) {
     const allBrackets = items.flatMap(i => i.brackets)
     return (
-      <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
+      <div className="w-60 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
         <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
           <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color }}>
             <span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: dot === "pulse" ? color : color }} />
@@ -491,8 +491,8 @@ export default function TatamePage() {
                           }}
                         >
                           <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {group.length} sub-chaves</p>
-                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
-                            style={{ color: groupIsActive ? "#fbbf24" : "#e5e7eb" }}>
+                          <p className="font-medium leading-tight mt-0.5 whitespace-nowrap overflow-hidden"
+                            style={{ color: groupIsActive ? "#fbbf24" : "#e5e7eb", fontSize: "0.72rem" }}>
                             {catLabel(b).replace(" (Sub-chave)", "")}
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
@@ -515,8 +515,8 @@ export default function TatamePage() {
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2"
-                            style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb" }}>
+                          <p className="font-medium leading-tight mt-0.5 whitespace-nowrap overflow-hidden"
+                            style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb", fontSize: "0.72rem" }}>
                             {catLabel(b)}
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
