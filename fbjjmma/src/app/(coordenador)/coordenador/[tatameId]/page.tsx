@@ -438,7 +438,7 @@ export default function TatamePage() {
     return null
   })()
 
-  function SideColumn({
+  function renderSideColumn({
     title, color, dot, items, emptyText,
   }: {
     title: string
@@ -577,16 +577,16 @@ export default function TatamePage() {
         <div className="flex flex-1 overflow-hidden">
 
           {/* Coluna esquerda — Em andamento + Aguardando */}
-          <SideColumn
-            title={`Ativas (${emAndamento.length + pendentes.length})`}
-            color="#fbbf24"
-            dot="pulse"
-            items={[
+          {renderSideColumn({
+            title: `Ativas (${emAndamento.length + pendentes.length})`,
+            color: "#fbbf24",
+            dot: "pulse",
+            items: [
               { section: emAndamento.length > 0 ? "Em Andamento" : undefined, brackets: emAndamento },
               { section: pendentes.length > 0 ? "Aguardando" : undefined, brackets: pendentes },
-            ].filter(i => i.brackets.length > 0)}
-            emptyText="Nenhuma chave ativa."
-          />
+            ].filter(i => i.brackets.length > 0),
+            emptyText: "Nenhuma chave ativa.",
+          })}
 
           {/* Centro */}
           <div className="flex-1 overflow-hidden flex flex-col">
@@ -599,7 +599,7 @@ export default function TatamePage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Controles */}
-                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div className="w-64 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho da chave */}
                   <div className="rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-start justify-between gap-2">
@@ -1084,6 +1084,7 @@ export default function TatamePage() {
                             id: b.id,
                             bracketNumber: b.bracketNumber,
                             isAbsolute: b.isAbsolute,
+                            belt: b.belt,
                             weightCategory: {
                               id: b.weightCategory.id ?? b.id,
                               name: b.weightCategory.name,
@@ -1116,13 +1117,13 @@ export default function TatamePage() {
           </div>
 
           {/* Coluna direita — Finalizadas */}
-          <SideColumn
-            title={`Finalizadas (${finalizadas.length})`}
-            color="#4ade80"
-            dot=""
-            items={[{ brackets: finalizadas }]}
-            emptyText="Nenhuma chave finalizada ainda."
-          />
+          {renderSideColumn({
+            title: `Finalizadas (${finalizadas.length})`,
+            color: "#4ade80",
+            dot: "",
+            items: [{ brackets: finalizadas }],
+            emptyText: "Nenhuma chave finalizada ainda.",
+          })}
 
         </div>
       )}

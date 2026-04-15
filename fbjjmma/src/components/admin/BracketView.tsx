@@ -54,10 +54,16 @@ interface BMatch {
   endedAt?: string | null
 }
 
+const BELT_LABELS: Record<string, string> = {
+  BRANCA: "Branca", AMARELA_LARANJA_VERDE: "Amar/Lar/Verde",
+  AZUL: "Azul", ROXA: "Roxa", MARROM: "Marrom", PRETA: "Preta",
+}
+
 interface BracketData {
   id: string
   bracketNumber: number
   isAbsolute: boolean
+  belt?: string
   weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: BPos[]
   matches?: BMatch[]
@@ -231,7 +237,7 @@ function ThreeAthleteBracket({
   bracket: BracketData
   onAthleteClick?: (registrationId: string) => void
 }) {
-  const { positions, weightCategory, bracketNumber, isAbsolute, matches = [] } = bracket
+  const { positions, weightCategory, bracketNumber, isAbsolute, belt, matches = [] } = bracket
 
   const pos1 = positions.find(p => p.position === 1) ?? positions[0] ?? null
   const pos2 = positions.find(p => p.position === 2) ?? positions[1] ?? null
@@ -368,6 +374,7 @@ function ThreeAthleteBracket({
     AGE_GROUP_LABELS[weightCategory.ageGroup] || weightCategory.ageGroup,
     isAbsolute ? null : `${weightCategory.name} | Até ${weightCategory.maxWeight}kg`,
     isAbsolute ? "Absoluto" : null,
+    belt ? (BELT_LABELS[belt] || belt) : null,
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
 
@@ -469,7 +476,7 @@ function ThreeAthleteBracket({
 // ── End ThreeAthleteBracket ────────────────────────────────────────────────
 
 function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData; onAthleteClick?: (registrationId: string) => void }) {
-  const { positions, weightCategory, bracketNumber, isAbsolute, matches = [] } = bracket
+  const { positions, weightCategory, bracketNumber, isAbsolute, belt, matches = [] } = bracket
 
   const posMap = useMemo(() => {
     const m = new Map<number, BPos>()
@@ -896,6 +903,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     AGE_GROUP_LABELS[weightCategory.ageGroup] || weightCategory.ageGroup,
     isAbsolute ? null : `${weightCategory.name} | Até ${weightCategory.maxWeight}kg`,
     isAbsolute ? "Absoluto" : null,
+    belt ? (BELT_LABELS[belt] || belt) : null,
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
 
@@ -904,7 +912,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
       </div>
-      <div style={{ overflow: "hidden", height: Math.round(Math.max(80, totalHeight) * SCALE) }}>
+      <div style={{ overflow: "auto", height: Math.round(Math.max(80, totalHeight) * SCALE), width: Math.round(totalWidth * SCALE) }}>
         <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${SCALE})`, transformOrigin: "top left" }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
             {lines}
