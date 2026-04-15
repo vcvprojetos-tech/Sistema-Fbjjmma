@@ -1,6 +1,29 @@
 ﻿"use client"
 
-import React, { useMemo } from "react"
+import React, { useMemo, useRef, useState, useEffect } from "react"
+
+function useContainerScale(totalWidth: number, totalHeight: number) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      const w = el.clientWidth
+      const h = el.clientHeight
+      if (w > 0 && h > 0) {
+        setScale(Math.min(w / totalWidth, h / totalHeight))
+      } else if (w > 0) {
+        setScale(w / totalWidth)
+      }
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [totalWidth, totalHeight])
+  return { ref, scale }
+}
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
 const ATHLETE_H = 40
@@ -378,14 +401,15 @@ function ThreeAthleteBracket({
   ].filter(Boolean).join(" | ")
 
   const loserLabel = m1LoserPos ? String(m1LoserPos.position) : "?"
+  const { ref: containerRef3, scale: scale3 } = useContainerScale(TOTAL_W, TOTAL_H)
 
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{bracketTitle}</p>
       </div>
-      <div style={{ overflow: "auto" }}>
-        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H }}>
+      <div ref={containerRef3} style={{ overflow: "hidden", width: "100%", height: Math.round(TOTAL_H * scale3) }}>
+        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H, transform: `scale(${scale3})`, transformOrigin: "top left" }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={TOTAL_W} height={TOTAL_H}>
             {/* M1: pos1 & pos3 bracket lines */}
             <line x1={BLX} y1={pos1CY} x2={BLX} y2={pos3CY} stroke={LINE_COLOR} strokeWidth={1} />
@@ -906,13 +930,15 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
 
+  const { ref: containerRef, scale } = useContainerScale(totalWidth, totalHeight)
+
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
       </div>
-      <div style={{ overflow: "auto" }}>
-        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80 }}>
+      <div ref={containerRef} style={{ overflow: "hidden", width: "100%", height: Math.round(totalHeight * scale) }}>
+        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${scale})`, transformOrigin: "top left" }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
             {lines}
           </svg>
