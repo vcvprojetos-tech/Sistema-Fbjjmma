@@ -16,7 +16,6 @@ const GROUP_GAP = 8   // vertical gap between match pairs in athlete column
 const PADDING = 10
 const POS_LABEL_W = 16 // space for position number label beside athlete card
 const LINE_COLOR = "#555"
-const SCALE = 0.82     // fator de redução para caber na tela sem scroll horizontal
 
 const AGE_GROUP_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -385,8 +384,8 @@ function ThreeAthleteBracket({
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{bracketTitle}</p>
       </div>
-      <div style={{ overflow: "hidden", height: Math.round(TOTAL_H * SCALE) }}>
-        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H, transform: `scale(${SCALE})`, transformOrigin: "top left" }}>
+      <div style={{ overflow: "auto" }}>
+        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={TOTAL_W} height={TOTAL_H}>
             {/* M1: pos1 & pos3 bracket lines */}
             <line x1={BLX} y1={pos1CY} x2={BLX} y2={pos3CY} stroke={LINE_COLOR} strokeWidth={1} />
@@ -912,8 +911,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
       </div>
-      <div style={{ overflow: "auto", height: Math.round(Math.max(80, totalHeight) * SCALE), width: Math.round(totalWidth * SCALE) }}>
-        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${SCALE})`, transformOrigin: "top left" }}>
+      <div style={{ overflow: "auto" }}>
+        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80 }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
             {lines}
           </svg>
