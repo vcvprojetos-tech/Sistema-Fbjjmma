@@ -177,7 +177,7 @@ export default function PainelPage() {
   const numCols = tatames.length
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#0a0f1a", padding: "10px 14px", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ minHeight: "100vh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "10px 14px", fontFamily: "system-ui, sans-serif" }}>
 
       {/* Topo: logo + evento + hora */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
@@ -241,8 +241,8 @@ export default function PainelPage() {
           </div>
         </div>
       ) : (
-        <div className="painel-grid-wrapper">
-        <div className="painel-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${numCols}, 1fr)`, gap: "8px" }}>
+        <div className="painel-grid-wrapper" style={{ width: "100%" }}>
+        <div className="painel-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))`, gap: "8px", width: "100%" }}>
 
           {/* ── Linha 1: cabeçalhos dos tatames ── */}
           {columns.map(({ tatame }, colIdx) => {
