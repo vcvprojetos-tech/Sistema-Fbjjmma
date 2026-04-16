@@ -126,6 +126,7 @@ export default function TatamePage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sideTab, setSideTab] = useState<"ativas" | "finalizadas">("ativas")
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState("")
   const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string } | null>(null)
@@ -445,23 +446,15 @@ export default function TatamePage() {
   })()
 
   function renderSideColumn({
-    title, color, dot, items, emptyText,
+    color, items, emptyText,
   }: {
-    title: string
     color: string
-    dot: string
     items: { section?: string; brackets: BracketData[] }[]
     emptyText: string
   }) {
     const allBrackets = items.flatMap(i => i.brackets)
     return (
-      <div className="w-60 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
-        <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-          <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color }}>
-            <span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: dot === "pulse" ? color : color }} />
-            {title}
-          </span>
-        </div>
+      <div className="flex flex-col h-full">
         {allBrackets.length === 0 ? (
           <div className="flex-1 flex items-center justify-center px-4 py-8 text-center">
             <p className="text-[#4b5563] text-xs">{emptyText}</p>
@@ -582,17 +575,52 @@ export default function TatamePage() {
       ) : (
         <div className="flex flex-1 overflow-hidden">
 
-          {/* Coluna esquerda — Em andamento + Aguardando */}
-          {renderSideColumn({
-            title: `Ativas (${emAndamento.length + pendentes.length})`,
-            color: "#fbbf24",
-            dot: "pulse",
-            items: [
-              { section: emAndamento.length > 0 ? "Em Andamento" : undefined, brackets: emAndamento },
-              { section: pendentes.length > 0 ? "Aguardando" : undefined, brackets: pendentes },
-            ].filter(i => i.brackets.length > 0),
-            emptyText: "Nenhuma chave ativa.",
-          })}
+          {/* Coluna esquerda — abas Ativas / Finalizadas */}
+          <div className="w-60 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)" }}>
+            {/* Abas */}
+            <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
+              <button
+                onClick={() => setSideTab("ativas")}
+                className="flex-1 py-2 text-xs font-bold transition-colors"
+                style={{
+                  color: sideTab === "ativas" ? "#fbbf24" : "#6b7280",
+                  borderBottom: sideTab === "ativas" ? "2px solid #fbbf24" : "2px solid transparent",
+                  backgroundColor: "var(--background)",
+                }}
+              >
+                Ativas ({emAndamento.length + pendentes.length})
+              </button>
+              <button
+                onClick={() => setSideTab("finalizadas")}
+                className="flex-1 py-2 text-xs font-bold transition-colors"
+                style={{
+                  color: sideTab === "finalizadas" ? "#4ade80" : "#6b7280",
+                  borderBottom: sideTab === "finalizadas" ? "2px solid #4ade80" : "2px solid transparent",
+                  backgroundColor: "var(--background)",
+                }}
+              >
+                Finalizadas ({finalizadas.length})
+              </button>
+            </div>
+            {/* Conteúdo da aba */}
+            <div className="flex-1 overflow-y-auto">
+              {sideTab === "ativas"
+                ? renderSideColumn({
+                    color: "#fbbf24",
+                    items: [
+                      { section: emAndamento.length > 0 ? "Em Andamento" : undefined, brackets: emAndamento },
+                      { section: pendentes.length > 0 ? "Aguardando" : undefined, brackets: pendentes },
+                    ].filter(i => i.brackets.length > 0),
+                    emptyText: "Nenhuma chave ativa.",
+                  })
+                : renderSideColumn({
+                    color: "#4ade80",
+                    items: [{ brackets: finalizadas }],
+                    emptyText: "Nenhuma chave finalizada ainda.",
+                  })
+              }
+            </div>
+          </div>
 
           {/* Centro */}
           <div className="flex-1 overflow-hidden flex flex-col">
@@ -790,18 +818,18 @@ export default function TatamePage() {
                               borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "#333",
                               backgroundColor: "var(--card)",
                             }}>
-                            <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-                              <span className="text-xs text-[#6b7280]">
-                                R{match.round} · Partida {match.matchNumber}
+                            <div className="px-3 py-2 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                              <span className="text-xs text-[#6b7280] whitespace-nowrap shrink-0">
+                                R{match.round} · P{match.matchNumber}
                               </span>
                               {isDone ? (
-                                <span className="text-xs text-[#4ade80] font-semibold">
+                                <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">
                                   {match.isWO ? `W.O. (${match.woType === "PESO" ? "Peso" : "Ausência"})` : "Finalizada"}
                                 </span>
                               ) : bothPresent ? (
-                                <span className="text-xs text-[#4ade80] font-semibold">● Prontos para lutar</span>
+                                <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">● Prontos</span>
                               ) : (
-                                <span className="text-xs text-[#6b7280]">Confirme a presença</span>
+                                <span className="text-xs text-[#6b7280] whitespace-nowrap">Confirme presença</span>
                               )}
                             </div>
 
@@ -1119,15 +1147,6 @@ export default function TatamePage() {
               </div>
             )}
           </div>
-
-          {/* Coluna direita — Finalizadas */}
-          {renderSideColumn({
-            title: `Finalizadas (${finalizadas.length})`,
-            color: "#4ade80",
-            dot: "",
-            items: [{ brackets: finalizadas }],
-            emptyText: "Nenhuma chave finalizada ainda.",
-          })}
 
         </div>
       )}
