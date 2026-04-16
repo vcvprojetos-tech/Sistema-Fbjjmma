@@ -69,6 +69,7 @@ interface BMatch {
   woWeight1?: number | null
   woWeight2?: number | null
   endedAt?: string | null
+  callTimes?: Array<{ call: number; at: string; pos?: "p1" | "p2" | null }> | null
 }
 
 const BELT_LABELS: Record<string, string> = {
@@ -133,31 +134,40 @@ function woLabel(woType?: string | null, weight?: number | null): string {
   return "Ausência"
 }
 
+function fmtTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Bahia" })
+  } catch { return iso }
+}
+
 function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<string, BPos> }) {
   const woMatches = matches.filter(m => m.isWO)
   if (woMatches.length === 0) return null
 
   // Expande cada partida W.O. em entradas individuais por atleta
-  const entries: { key: string; name: string; label: string }[] = []
+  const entries: { key: string; name: string; label: string; calls: Array<{ call: number; at: string }> }[] = []
   for (const m of woMatches) {
     const isSolo = m.position2Id === null
     const isDoubleWO = !isSolo && m.winnerId === null && !!m.position1Id && !!m.position2Id
+    const allCalls = m.callTimes ?? []
 
     if (isDoubleWO) {
-      // Ambos ausentes — lista os dois
       const reg1 = posIdMap.get(m.position1Id!)?.registration ?? null
       const reg2 = posIdMap.get(m.position2Id!)?.registration ?? null
-      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null) })
-      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null) })
+      const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
+      const p2Calls = allCalls.filter(c => c.pos === "p2" || !c.pos)
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null), calls: p1Calls })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null), calls: p2Calls })
     } else if (m.position1Id) {
-      // Solo com winnerId preenchido = BYE automático (atleta avançou, ninguém tomou W.O.)
       if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
         ? m.position1Id
         : (m.winnerId === m.position1Id ? m.position2Id : m.position1Id)
       const loserReg = loserId ? posIdMap.get(loserId)?.registration ?? null : null
       const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
-      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null) })
+      const loserPos = loserId === m.position1Id ? "p1" : "p2"
+      const loserCalls = allCalls.filter(c => c.pos === loserPos || !c.pos)
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null), calls: loserCalls })
     }
   }
 
@@ -165,12 +175,23 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
   return (
     <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
       <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>W.O.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         {entries.map(e => (
-          <div key={e.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
-            <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
-            <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
+          <div key={e.key}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
+              <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
+              <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
+            </div>
+            {e.calls.length > 0 && (
+              <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
+                {e.calls.sort((a, b) => a.call - b.call).map(c => (
+                  <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
+                    <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
