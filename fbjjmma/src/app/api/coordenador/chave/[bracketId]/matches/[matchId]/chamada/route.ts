@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { notifyTatame } from "@/lib/tatame-events"
 
-const CALL_INTERVAL_MS = 10 * 60 * 1000 // 10 minutos
+const CALL_INTERVAL_MS = 5 * 60 * 1000 // 5 minutos
 
 export async function PATCH(
   req: NextRequest,
@@ -78,11 +78,13 @@ export async function PATCH(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const m = match as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (prisma.match as any).update({
       where: { id: matchId },
       data: {
-        p1CheckedIn: position === "p1" ? Boolean(checked) : match.p1CheckedIn,
-        p2CheckedIn: position === "p2" ? Boolean(checked) : match.p2CheckedIn,
+        p1CheckedIn: position === "p1" ? Boolean(checked) : m.p1CheckedIn,
+        p2CheckedIn: position === "p2" ? Boolean(checked) : m.p2CheckedIn,
       },
     })
 
