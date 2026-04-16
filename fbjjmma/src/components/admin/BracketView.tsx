@@ -11,34 +11,27 @@ function useContainerScale(totalWidth: number, totalHeight: number) {
     const update = () => {
       const w = el.clientWidth
       if (w <= 0) return
-      const scaleW = w / totalWidth
-      // Usa a altura do pai para limitar o scale (evita crescer demais em telas largas)
-      const parentH = el.parentElement?.clientHeight ?? 0
-      if (parentH > 0) {
-        setScale(Math.min(scaleW, parentH / totalHeight))
-      } else {
-        setScale(scaleW)
-      }
+      // Nunca cresce além do tamanho natural — apenas encolhe em telas estreitas
+      setScale(Math.min(1, w / totalWidth))
     }
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
-    if (el.parentElement) ro.observe(el.parentElement)
     return () => ro.disconnect()
   }, [totalWidth, totalHeight])
   return { ref, scale }
 }
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
-const ATHLETE_H = 40
-const ATHLETE_W = 116
+const ATHLETE_H = 44
+const ATHLETE_W = 170
 // Result boxes (inner rounds) — small placeholders
-const RESULT_H = 16
-const RESULT_W = 24
+const RESULT_H = 18
+const RESULT_W = 28
 // Final center boxes
-const CENTER_W = 68
+const CENTER_W = 80
 // Spacing
-const ROUND_GAP = 8   // horizontal gap between any two columns
+const ROUND_GAP = 10  // horizontal gap between any two columns
 const GROUP_GAP = 8   // vertical gap between match pairs in athlete column
 const PADDING = 10
 const POS_LABEL_W = 16 // space for position number label beside athlete card
