@@ -1090,7 +1090,7 @@ export default function TatamePage() {
                 </div>
 
                 {/* Visualização da chave */}
-                <div className="flex-1 overflow-auto p-5 space-y-6">
+                <div className="flex-1 overflow-auto p-5 space-y-6 min-h-0">
                   {(() => {
                     const bracketsToShow = bracket.bracketGroupId && !bracket.isGrandFinal
                       ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId)
