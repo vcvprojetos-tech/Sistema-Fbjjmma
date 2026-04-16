@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState, useEffect } from "react"
 
-function useContainerScale(totalWidth: number, totalHeight: number) {
+function useContainerScale(totalWidth: number, _totalHeight: number) {
   const ref = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
   useEffect(() => {
@@ -10,18 +10,13 @@ function useContainerScale(totalWidth: number, totalHeight: number) {
     if (!el) return
     const update = () => {
       const w = el.clientWidth
-      const h = el.clientHeight
-      if (w > 0 && h > 0) {
-        setScale(Math.min(w / totalWidth, h / totalHeight))
-      } else if (w > 0) {
-        setScale(w / totalWidth)
-      }
+      if (w > 0) setScale(w / totalWidth)
     }
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [totalWidth, totalHeight])
+  }, [totalWidth])
   return { ref, scale }
 }
 
