@@ -87,11 +87,6 @@ function getAthleteName(pos: BracketPositionData | null): string {
   return pos.registration.athlete?.user.name ?? pos.registration.guestName ?? "—"
 }
 
-function shortAthlName(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length <= 2) return name
-  return `${parts[0]} ${parts[1]}`
-}
 
 function getAthleteTeam(pos: BracketPositionData | null): string | null {
   return pos?.registration?.team?.name ?? null
@@ -717,7 +712,7 @@ export default function TatamePage() {
                             {p1Present ? "✓" : "1"}
                           </button>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white text-xs truncate">{shortAthlName(p1Name)}</p>
+                            <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
                             {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                           </div>
                           <span className="text-xs text-[#6b7280]">TAP</span>
@@ -847,7 +842,7 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP1) || p1Present ? "✓" : "1"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs truncate">{shortAthlName(p1Name)}</p>
+                                <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
                                 {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                               </div>
                               {!isDone && p1Name !== "BYE" && (
@@ -882,7 +877,7 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP2) || p2Present ? "✓" : "2"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs truncate">{p2Name !== "BYE" ? shortAthlName(p2Name) : "— BYE —"}</p>
+                                <p className="font-semibold text-white text-xs truncate">{p2Name !== "BYE" ? p2Name : "— BYE —"}</p>
                                 {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p2)}</p>}
                               </div>
                               {!isDone && p2Name !== "BYE" && (
