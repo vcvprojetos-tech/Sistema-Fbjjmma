@@ -633,7 +633,7 @@ export default function TatamePage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Controles */}
-                <div className="w-64 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho da chave */}
                   <div className="rounded-xl border p-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -717,8 +717,8 @@ export default function TatamePage() {
                             {p1Present ? "✓" : "1"}
                           </button>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white text-xs leading-tight">{shortAthlName(p1Name)}</p>
-                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] leading-tight">{getAthleteTeam(p1)}</p>}
+                            <p className="font-semibold text-white text-xs truncate">{shortAthlName(p1Name)}</p>
+                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                           </div>
                           <span className="text-xs text-[#6b7280]">TAP</span>
                         </div>
@@ -847,8 +847,8 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP1) || p1Present ? "✓" : "1"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs leading-tight">{shortAthlName(p1Name)}</p>
-                                {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] leading-tight">{getAthleteTeam(p1)}</p>}
+                                <p className="font-semibold text-white text-xs truncate">{shortAthlName(p1Name)}</p>
+                                {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                               </div>
                               {!isDone && p1Name !== "BYE" && (
                                 <button
@@ -882,8 +882,8 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP2) || p2Present ? "✓" : "2"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs leading-tight">{p2Name !== "BYE" ? shortAthlName(p2Name) : "— BYE —"}</p>
-                                {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] leading-tight">{getAthleteTeam(p2)}</p>}
+                                <p className="font-semibold text-white text-xs truncate">{p2Name !== "BYE" ? shortAthlName(p2Name) : "— BYE —"}</p>
+                                {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p2)}</p>}
                               </div>
                               {!isDone && p2Name !== "BYE" && (
                                 <button
