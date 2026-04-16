@@ -490,7 +490,7 @@ export default function TatamePage() {
                           }}
                         >
                           <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {group.length} sub-chaves</p>
-                          <p className="font-medium leading-tight mt-0.5 whitespace-nowrap overflow-hidden"
+                          <p className="font-medium leading-tight mt-0.5 break-words"
                             style={{ color: groupIsActive ? "#fbbf24" : "#e5e7eb", fontSize: "0.72rem" }}>
                             {catLabel(b).replace(" (Sub-chave)", "")}
                           </p>
@@ -514,7 +514,7 @@ export default function TatamePage() {
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                          <p className="font-medium leading-tight mt-0.5 whitespace-nowrap overflow-hidden"
+                          <p className="font-medium leading-tight mt-0.5 break-words"
                             style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb", fontSize: "0.72rem" }}>
                             {catLabel(b)}
                           </p>
@@ -717,8 +717,8 @@ export default function TatamePage() {
                             {p1Present ? "✓" : "1"}
                           </button>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{shortAthlName(p1Name)}</p>
-                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] whitespace-nowrap overflow-hidden">{getAthleteTeam(p1)}</p>}
+                            <p className="font-semibold text-white text-xs leading-tight">{shortAthlName(p1Name)}</p>
+                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] leading-tight">{getAthleteTeam(p1)}</p>}
                           </div>
                           <span className="text-xs text-[#6b7280]">TAP</span>
                         </div>
@@ -847,8 +847,8 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP1) || p1Present ? "✓" : "1"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{shortAthlName(p1Name)}</p>
-                                {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] whitespace-nowrap overflow-hidden">{getAthleteTeam(p1)}</p>}
+                                <p className="font-semibold text-white text-xs leading-tight">{shortAthlName(p1Name)}</p>
+                                {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] leading-tight">{getAthleteTeam(p1)}</p>}
                               </div>
                               {!isDone && p1Name !== "BYE" && (
                                 <button
@@ -882,8 +882,8 @@ export default function TatamePage() {
                                 {(isDone && winnerIsP2) || p2Present ? "✓" : "2"}
                               </button>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-xs whitespace-nowrap overflow-hidden">{p2Name !== "BYE" ? shortAthlName(p2Name) : "— BYE —"}</p>
-                                {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] whitespace-nowrap overflow-hidden">{getAthleteTeam(p2)}</p>}
+                                <p className="font-semibold text-white text-xs leading-tight">{p2Name !== "BYE" ? shortAthlName(p2Name) : "— BYE —"}</p>
+                                {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] leading-tight">{getAthleteTeam(p2)}</p>}
                               </div>
                               {!isDone && p2Name !== "BYE" && (
                                 <button
