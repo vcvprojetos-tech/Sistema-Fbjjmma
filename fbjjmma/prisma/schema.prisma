@@ -397,6 +397,7 @@ model BracketPosition {
 enum WOType {
   PESO
   AUSENCIA
+  DESCLASSIFICACAO
 }
 
 model Match {
@@ -415,6 +416,7 @@ model Match {
   woType      WOType?
   woWeight1   Float?
   woWeight2   Float?
+  woReason    String?
   callTimes   Json?
   p1CheckedIn Boolean          @default(false)
   p2CheckedIn Boolean          @default(false)

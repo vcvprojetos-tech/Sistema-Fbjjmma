@@ -17,7 +17,7 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const { winnerId, isWO, woType, woWeight } = body
+    const { winnerId, isWO, woType, woWeight, woReason } = body
 
     const [match, bracketRecord] = await Promise.all([
       prisma.match.findFirst({ where: { id: matchId, bracketId } }),
@@ -93,12 +93,14 @@ export async function PUT(
 
     const loserId = winnerId === match.position1Id ? match.position2Id : match.position1Id
 
-    await prisma.match.update({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma.match as any).update({
       where: { id: matchId },
       data: {
         winnerId,
         isWO: Boolean(isWO),
         woType: woType ? (woType as WOType) : null,
+        woReason: woReason ?? null,
         // Se desclassificação por peso, salva o peso no campo do perdedor
         ...(woWeight != null && woType === "PESO" && {
           [winnerId === match.position1Id ? "woWeight2" : "woWeight1"]: Number(woWeight),

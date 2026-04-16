@@ -72,6 +72,7 @@ interface BMatch {
   woWeight2?: number | null
   endedAt?: string | null
   callTimes?: Array<{ call: number; at: string; pos?: "p1" | "p2" | null }> | null
+  woReason?: string | null
 }
 
 const BELT_LABELS: Record<string, string> = {
@@ -131,8 +132,9 @@ function getRegName(reg: Reg | null): string {
   return reg?.athlete?.user.name ?? reg?.guestName ?? "—"
 }
 
-function woLabel(woType?: string | null, weight?: number | null): string {
+function woLabel(woType?: string | null, weight?: number | null, reason?: string | null): string {
   if (woType === "PESO") return weight ? `Peso (${weight}kg)` : "Peso"
+  if (woType === "DESCLASSIFICACAO") return reason ? `Desclassificado: ${reason}` : "Desclassificado"
   return "Ausência"
 }
 
@@ -158,8 +160,8 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const reg2 = posIdMap.get(m.position2Id!)?.registration ?? null
       const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
       const p2Calls = allCalls.filter(c => c.pos === "p2" || !c.pos)
-      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null), calls: p1Calls })
-      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null), calls: p2Calls })
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), calls: p1Calls })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), calls: p2Calls })
     } else if (m.position1Id) {
       if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
@@ -169,7 +171,7 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
       const loserPos = loserId === m.position1Id ? "p1" : "p2"
       const loserCalls = allCalls.filter(c => c.pos === loserPos || !c.pos)
-      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null), calls: loserCalls })
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), calls: loserCalls })
     }
   }
 

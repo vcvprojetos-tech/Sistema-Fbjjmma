@@ -50,6 +50,7 @@ interface MatchData {
   woType: string | null
   woWeight1: number | null
   woWeight2: number | null
+  woReason: string | null
   callTimes: CallTime[] | null
   p1CheckedIn: boolean
   p2CheckedIn: boolean
@@ -130,6 +131,8 @@ export default function TatamePage() {
   const [callLoading, setCallLoading] = useState<string | null>(null)
   const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
   const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
+  const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
+  const [desclReason, setDesclReason] = useState("")
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -287,14 +290,14 @@ export default function TatamePage() {
     }
   }, [load, getPin])
 
-  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string) => {
+  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string, woReason?: string) => {
     setActionLoading(true)
     setError("")
     try {
       const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
-        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null }),
+        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null, woReason: woReason || null }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error || "Erro ao registrar resultado.")
@@ -944,6 +947,14 @@ export default function TatamePage() {
                                       Desclassificação por Peso
                                     </button>
                                     <button
+                                      onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: callMenu.winnerId, loserName: callMenu.absenteeName }); setDesclReason(""); setCallMenu(null) }}
+                                      disabled={actionLoading}
+                                      className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                                      style={{ backgroundColor: "#7c3aed" }}
+                                    >
+                                      Desclassificado
+                                    </button>
+                                    <button
                                       onClick={() => setCallMenu(null)}
                                       className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
                                       style={{ backgroundColor: "var(--card)" }}
@@ -1236,6 +1247,49 @@ export default function TatamePage() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Desclassificação com motivo */}
+      {desclModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
+            <div>
+              <p className="text-white font-bold text-lg">Desclassificação</p>
+              <p className="text-[#a78bfa] text-sm mt-1">{desclModal.loserName}</p>
+            </div>
+            <div>
+              <p className="text-[#9ca3af] text-sm mb-2">Informe o motivo da desclassificação:</p>
+              <textarea
+                value={desclReason}
+                onChange={e => setDesclReason(e.target.value)}
+                placeholder="Ex: falta grave, comportamento antidesportivo..."
+                rows={3}
+                className="w-full rounded-xl px-3 py-2 text-sm text-white resize-none outline-none"
+                style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+              />
+            </div>
+            <button
+              onClick={async () => {
+                if (!desclReason.trim()) return
+                await declararVencedor(desclModal.bracketId, desclModal.matchId, desclModal.winnerId, true, "DESCLASSIFICACAO", undefined, desclReason.trim())
+                setDesclModal(null)
+                setDesclReason("")
+              }}
+              disabled={actionLoading || !desclReason.trim()}
+              className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
+              style={{ backgroundColor: "#7c3aed" }}
+            >
+              {actionLoading ? "Confirmando..." : "Confirmar Desclassificação"}
+            </button>
+            <button
+              onClick={() => { setDesclModal(null); setDesclReason("") }}
+              className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+              style={{ backgroundColor: "var(--card)" }}
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}
