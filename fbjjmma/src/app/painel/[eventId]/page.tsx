@@ -64,7 +64,7 @@ function flatMatches(tatame: TatameInfo): FlatMatch[] {
       if (!m.endedAt && m.position1 !== null) result.push({ bracketLabel: catLabel(b), match: m })
     }
   }
-  return result
+  return result.slice(0, 5)
 }
 
 // Cores de fundo por status
