@@ -93,16 +93,15 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   const name = getName(pos)
   const team = getTeam(pos)
   if (name === "BYE") return (
-    <div style={{ height: "48px", backgroundColor: "#0f172a" }} />
+    <div style={{ flex: 1, backgroundColor: "#0f172a" }} />
   )
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", minHeight: "48px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "1rem", width: "18px", textAlign: "center", flexShrink: 0 }}>{seed}</span>
+    <div style={{ flex: 1, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", minHeight: 0 }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(0.7rem, 1.1vw, 1rem)", width: "18px", textAlign: "center", flexShrink: 0 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Nome numa linha — sem texto de status, a cor já indica o estado (igual ao IBJJF) */}
-        <div className="painel-athlete-name" style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.7rem, 1.05vw, 0.9rem)", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div className="painel-athlete-team" style={{ color: s.sub, fontSize: "clamp(0.6rem, 0.8vw, 0.72rem)", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div className="painel-athlete-name" style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.65rem, 1.1vw, 0.95rem)", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div className="painel-athlete-team" style={{ color: s.sub, fontSize: "clamp(0.55rem, 0.8vw, 0.72rem)", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
@@ -116,18 +115,18 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden" }}>
+    <div style={{ flex: 1, minHeight: 0, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* Categoria */}
-      <div style={{ backgroundColor: "#1e293b", padding: "4px 10px" }}>
-        <span style={{ color: "#94a3b8", fontSize: "0.68rem", fontWeight: 600 }}>{bracketLabel}</span>
+      <div style={{ backgroundColor: "#1e293b", padding: "3px 10px", flexShrink: 0 }}>
+        <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 0.75vw, 0.7rem)", fontWeight: 600 }}>{bracketLabel}</span>
       </div>
       {/* Atleta 1 */}
       <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
       {/* Divisor VS */}
       {!isSolo && (
-        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px", flexShrink: 0 }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#334155", fontSize: "0.58rem", fontWeight: 800, padding: "0 6px", letterSpacing: "0.1em" }}>VS</span>
+          <span style={{ color: "#334155", fontSize: "0.55rem", fontWeight: 800, padding: "0 6px", letterSpacing: "0.1em" }}>VS</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
         </div>
       )}
@@ -135,9 +134,9 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
       {!isSolo && (
         <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />
       )}
-      {/* Placeholder quando solo para manter altura uniforme */}
+      {/* Placeholder quando solo */}
       {isSolo && (
-        <div style={{ height: "48px", backgroundColor: "#0a0f1a" }} />
+        <div style={{ flex: 1, backgroundColor: "#0a0f1a" }} />
       )}
     </div>
   )
@@ -184,15 +183,12 @@ export default function PainelPage() {
 
   const { event, tatames } = data
 
-  // Flatten matches por tatame
   const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
-  const maxRows = columns.reduce((m, c) => Math.max(m, c.matches.length), 0)
-  const numCols = tatames.length
 
   return (
-    <div style={{ minHeight: "100vh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "10px 14px", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ height: "100vh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-      {/* Overlay de entrada — pede clique para ativar fullscreen */}
+      {/* Overlay de entrada */}
       {showOverlay && (
         <div
           onClick={enterFullscreen}
@@ -208,7 +204,7 @@ export default function PainelPage() {
         </div>
       )}
 
-      {/* Botão fixo para alternar fullscreen */}
+      {/* Botão fixo fullscreen */}
       {!showOverlay && (
         <button
           onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
@@ -218,99 +214,68 @@ export default function PainelPage() {
         </button>
       )}
 
-      {/* Topo: logo + evento + hora */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+      {/* Topo */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo2.png" alt="FBJJMMA" style={{ width: "32px", height: "32px", objectFit: "contain" }} />
+          <img src="/logo2.png" alt="FBJJMMA" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
           <div>
-            <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: "1rem" }}>{event.name}</div>
-            <div style={{ color: "#64748b", fontSize: "0.65rem" }}>Painel de Chamadas — Área de Pesagem</div>
+            <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: "0.9rem" }}>{event.name}</div>
+            <div style={{ color: "#64748b", fontSize: "0.6rem" }}>Painel de Chamadas — Área de Pesagem</div>
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: "#475569", fontSize: "0.6rem" }}>Última atualização</div>
-          <div style={{ color: "#64748b", fontSize: "0.75rem", fontFamily: "monospace" }}>
+          <div style={{ color: "#475569", fontSize: "0.55rem" }}>Última atualização</div>
+          <div style={{ color: "#64748b", fontSize: "0.7rem", fontFamily: "monospace" }}>
             {lastUpdate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </div>
         </div>
       </div>
 
       {/* Legenda */}
-      <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", marginBottom: "12px", paddingBottom: "8px", borderBottom: "1px solid #1e293b" }}>
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "8px", paddingBottom: "6px", borderBottom: "1px solid #1e293b", flexShrink: 0 }}>
         {LEGEND.map(l => (
-          <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <div style={{ width: "11px", height: "11px", backgroundColor: l.bg, borderRadius: "2px" }} />
-            <span style={{ color: "#64748b", fontSize: "0.68rem" }}>{l.label}</span>
+          <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <div style={{ width: "10px", height: "10px", backgroundColor: l.bg, borderRadius: "2px" }} />
+            <span style={{ color: "#64748b", fontSize: "0.62rem" }}>{l.label}</span>
           </div>
         ))}
       </div>
 
-      <style>{`
-        @media (max-width: 1024px) {
-          .painel-grid-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-          .painel-grid {
-            grid-template-columns: repeat(${numCols}, 150px) !important;
-            gap: 6px !important;
-          }
-          .painel-athlete-name {
-            font-size: 0.72rem !important;
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-            word-break: break-word;
-          }
-          .painel-athlete-team {
-            font-size: 0.62rem !important;
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-          }
-        }
-      `}</style>
-
       {tatames.length === 0 ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: "80px" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ color: "#1e293b", fontSize: "3rem", marginBottom: "10px" }}>📋</div>
             <div style={{ color: "#475569", fontSize: "1rem" }}>Nenhum tatame ativo no momento</div>
           </div>
         </div>
       ) : (
-        <div className="painel-grid-wrapper" style={{ width: "100%" }}>
-        <div className="painel-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))`, gap: "8px", width: "100%" }}>
-
-          {/* ── Linha 1: cabeçalhos dos tatames ── */}
-          {columns.map(({ tatame }, colIdx) => {
+        /* Grid de colunas — cada coluna é um flex column */
+        <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: "8px" }}>
+          {columns.map(({ tatame, matches }, colIdx) => {
             const color = COL_COLORS[colIdx % COL_COLORS.length]
             const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
             const op = tatame.operations[0]?.user.name ?? ""
             return (
-              <div key={tatame.id} style={{ textAlign: "center", paddingBottom: "10px", borderBottom: `3px solid ${color}` }}>
-                <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.35rem", letterSpacing: "0.04em" }}>
-                  Tatame {num}
+              <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minHeight: 0, gap: "6px" }}>
+                {/* Cabeçalho da coluna */}
+                <div style={{ textAlign: "center", paddingBottom: "8px", borderBottom: `3px solid ${color}`, flexShrink: 0 }}>
+                  <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.04em" }}>Tatame {num}</div>
+                  {op && <div style={{ color: "#64748b", fontSize: "0.65rem", marginTop: "1px" }}>{op}</div>}
                 </div>
-                {op && <div style={{ color: "#64748b", fontSize: "0.7rem", marginTop: "2px" }}>{op}</div>}
+                {/* Partidas — cada uma ocupa espaço igual */}
+                {matches.length === 0 ? (
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
+                  </div>
+                ) : (
+                  matches.map(fm => (
+                    <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
+                  ))
+                )}
               </div>
             )
           })}
-
-          {/* ── Linhas de partidas: alinhadas por índice ── */}
-          {Array.from({ length: maxRows }, (_, rowIdx) =>
-            columns.map(({ tatame, matches }, colIdx) => {
-              const color = COL_COLORS[colIdx % COL_COLORS.length]
-              const fm = matches[rowIdx]
-              if (!fm) return (
-                <div key={`empty-${tatame.id}-${rowIdx}`} style={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", minHeight: "120px" }} />
-              )
-              return <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
-            })
-          )}
-
-        </div>
         </div>
       )}
     </div>
