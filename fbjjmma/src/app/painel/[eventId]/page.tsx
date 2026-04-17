@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 
 const AGE_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -138,6 +138,8 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
 
 export default function PainelPage() {
   const { eventId } = useParams<{ eventId: string }>()
+  const searchParams = useSearchParams()
+  const painelNum = searchParams.get("painel") // "1", "2" ou null (completo)
   const [data, setData] = useState<PainelData | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -175,7 +177,15 @@ export default function PainelPage() {
     </div>
   )
 
-  const { event, tatames } = data
+  const { event, tatames: allTatames } = data
+
+  // Divide tatames pela metade conforme ?painel=1 ou ?painel=2
+  const tatames = (() => {
+    if (!painelNum) return allTatames
+    const mid = Math.ceil(allTatames.length / 2)
+    return painelNum === "1" ? allTatames.slice(0, mid) : allTatames.slice(mid)
+  })()
+
   const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
 
   return (
@@ -189,7 +199,9 @@ export default function PainelPage() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo2.png" alt="FBJJMMA" style={{ width: "80px", height: "80px", objectFit: "contain", marginBottom: "24px" }} />
-          <div style={{ color: "#f1f5f9", fontSize: "1.5rem", fontWeight: 900, marginBottom: "12px" }}>Painel de Chamadas</div>
+          <div style={{ color: "#f1f5f9", fontSize: "1.5rem", fontWeight: 900, marginBottom: "12px" }}>
+            Painel de Chamadas{painelNum ? ` — Painel ${painelNum}` : ""}
+          </div>
           <div style={{ color: "#64748b", fontSize: "1rem", marginBottom: "32px" }}>Área de Pesagem</div>
           <div style={{ backgroundColor: "#1e3a5f", border: "2px solid #3b82f6", borderRadius: "12px", padding: "16px 40px", color: "#93c5fd", fontSize: "1.1rem", fontWeight: 700 }}>
             Pressione OK para abrir em Tela Cheia

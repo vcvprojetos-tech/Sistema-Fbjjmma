@@ -1817,21 +1817,43 @@ export default function EventoDetailPage() {
         <div className="space-y-6">
 
           {/* Painel TV */}
-          <div className="rounded-lg border p-4 flex items-center justify-between"
+          <div className="rounded-lg border p-4"
             style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div>
-              <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
-              <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas</p>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
+              </div>
             </div>
-            <a
-              href={`/painel/${id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-              style={{ backgroundColor: "#dc2626" }}
-            >
-              Abrir Painel
-            </a>
+            <div className="flex gap-3 flex-wrap">
+              <a
+                href={`/painel/${id}?painel=1`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: "#dc2626" }}
+              >
+                Abrir Painel 1 (1ª metade)
+              </a>
+              <a
+                href={`/painel/${id}?painel=2`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: "#b91c1c" }}
+              >
+                Abrir Painel 2 (2ª metade)
+              </a>
+              <a
+                href={`/painel/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}
+              >
+                Painel Completo
+              </a>
+            </div>
           </div>
 
           {/* Painel de stats das chaves por tatame */}
