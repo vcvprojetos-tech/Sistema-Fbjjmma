@@ -107,6 +107,9 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   )
 }
 
+// Cada card ocupa 1/5 do espaço disponível de lutas (gap = 6px, 4 gaps entre 5 itens)
+const CARD_HEIGHT = "calc((100% - 4 * 6px) / 5)"
+
 function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
@@ -115,7 +118,7 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ flex: 1, minHeight: 0, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ flexShrink: 0, height: CARD_HEIGHT, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* Categoria */}
       <div style={{ backgroundColor: "#1e293b", padding: "3px 10px", flexShrink: 0 }}>
         <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 0.75vw, 0.7rem)", fontWeight: 600 }}>{bracketLabel}</span>
@@ -186,7 +189,7 @@ export default function PainelPage() {
   const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
 
   return (
-    <div style={{ height: "100vh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* Overlay de entrada */}
       {showOverlay && (
@@ -257,22 +260,24 @@ export default function PainelPage() {
             const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
             const op = tatame.operations[0]?.user.name ?? ""
             return (
-              <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minHeight: 0, gap: "6px" }}>
+              <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
                 {/* Cabeçalho da coluna */}
                 <div style={{ textAlign: "center", paddingBottom: "8px", borderBottom: `3px solid ${color}`, flexShrink: 0 }}>
                   <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.04em" }}>Tatame {num}</div>
                   {op && <div style={{ color: "#64748b", fontSize: "0.65rem", marginTop: "1px" }}>{op}</div>}
                 </div>
-                {/* Partidas — cada uma ocupa espaço igual */}
-                {matches.length === 0 ? (
-                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
-                  </div>
-                ) : (
-                  matches.map(fm => (
-                    <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
-                  ))
-                )}
+                {/* Container de lutas com altura definida para que % funcione nos cards */}
+                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "6px", paddingTop: "6px", overflow: "hidden" }}>
+                  {matches.length === 0 ? (
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
+                    </div>
+                  ) : (
+                    matches.map(fm => (
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
+                    ))
+                  )}
+                </div>
               </div>
             )
           })}
