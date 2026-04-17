@@ -1,19 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
-
-function useElementHeight() {
-  const ref = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(0)
-  useEffect(() => {
-    if (!ref.current) return
-    const ro = new ResizeObserver(entries => setHeight(entries[0].contentRect.height))
-    ro.observe(ref.current)
-    return () => ro.disconnect()
-  }, [])
-  return { ref, height }
-}
 
 const AGE_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -185,11 +173,7 @@ export default function PainelPage() {
   )
 
   const { event, tatames } = data
-  const { ref: gridRef, height: gridH } = useElementHeight()
   const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
-  // altura real do container medida pelo ResizeObserver
-  // 5 cards + 4 gaps de 6px + paddingTop de 6px + header da coluna ~52px
-  const cardH = gridH > 0 ? Math.floor((gridH - 52 - 6 - 4 * 6) / 5) : 0
 
   return (
     <div style={{ height: "100dvh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -257,7 +241,7 @@ export default function PainelPage() {
         </div>
       ) : (
         /* Grid de colunas — cada coluna é um flex column */
-        <div ref={gridRef} style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: "8px" }}>
+        <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: "8px" }}>
           {columns.map(({ tatame, matches }, colIdx) => {
             const color = COL_COLORS[colIdx % COL_COLORS.length]
             const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
@@ -277,7 +261,7 @@ export default function PainelPage() {
                     </div>
                   ) : (
                     matches.map(fm => (
-                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} cardH={cardH} />
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} cardH={0} />
                     ))
                   )}
                 </div>
