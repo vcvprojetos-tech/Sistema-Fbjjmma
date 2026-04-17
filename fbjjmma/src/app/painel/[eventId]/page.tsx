@@ -1,7 +1,19 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams } from "next/navigation"
+
+function useElementHeight() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState(0)
+  useEffect(() => {
+    if (!ref.current) return
+    const ro = new ResizeObserver(entries => setHeight(entries[0].contentRect.height))
+    ro.observe(ref.current)
+    return () => ro.disconnect()
+  }, [])
+  return { ref, height }
+}
 
 const AGE_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -87,11 +99,6 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// Altura do card calculada para caber exatamente 5 na tela:
-// 100dvh - padding(16) - topbar(44) - legend(30) - col-header(52) - gaps(4×6=24) = 100dvh - 166px
-// dividido por 5 slots
-const CARD_H = "calc((100dvh - 166px) / 5)"
-
 function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null; seed: number; isWO: boolean
 }) {
@@ -112,7 +119,7 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   )
 }
 
-function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
+function MatchCell({ fm, accentColor, cardH }: { fm: FlatMatch; accentColor: string; cardH: number }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
   const allCalls = match.callTimes as CallTime[] | null
@@ -120,14 +127,11 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ flexShrink: 0, height: CARD_H, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* Categoria — altura fixa pequena */}
+    <div style={{ flexShrink: 0, height: cardH > 0 ? cardH : undefined, flex: cardH > 0 ? undefined : 1, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "3px 10px" }}>
         <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 0.75vw, 0.68rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
-      {/* Atleta 1 — ocupa o espaço restante proporcionalmente */}
       <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
-      {/* Divisor VS */}
       {!isSolo && (
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "2px 10px" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
@@ -135,10 +139,7 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
         </div>
       )}
-      {/* Atleta 2 */}
-      {!isSolo && (
-        <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />
-      )}
+      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />}
       {isSolo && <div style={{ flex: 1, backgroundColor: "#0a0f1a" }} />}
     </div>
   )
@@ -184,8 +185,11 @@ export default function PainelPage() {
   )
 
   const { event, tatames } = data
-
+  const { ref: gridRef, height: gridH } = useElementHeight()
   const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
+  // altura real do container medida pelo ResizeObserver
+  // 5 cards + 4 gaps de 6px + paddingTop de 6px + header da coluna ~52px
+  const cardH = gridH > 0 ? Math.floor((gridH - 52 - 6 - 4 * 6) / 5) : 0
 
   return (
     <div style={{ height: "100dvh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -253,7 +257,7 @@ export default function PainelPage() {
         </div>
       ) : (
         /* Grid de colunas — cada coluna é um flex column */
-        <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: "8px" }}>
+        <div ref={gridRef} style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: "8px" }}>
           {columns.map(({ tatame, matches }, colIdx) => {
             const color = COL_COLORS[colIdx % COL_COLORS.length]
             const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
@@ -273,7 +277,7 @@ export default function PainelPage() {
                     </div>
                   ) : (
                     matches.map(fm => (
-                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} cardH={cardH} />
                     ))
                   )}
                 </div>
