@@ -147,6 +147,19 @@ export default function PainelPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const [data, setData] = useState<PainelData | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showOverlay, setShowOverlay] = useState(true)
+
+  const enterFullscreen = useCallback(() => {
+    document.documentElement.requestFullscreen?.().catch(() => {})
+    setShowOverlay(false)
+  }, [])
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener("fullscreenchange", onChange)
+    return () => document.removeEventListener("fullscreenchange", onChange)
+  }, [])
 
   const fetchData = useCallback(async () => {
     try {
@@ -178,6 +191,32 @@ export default function PainelPage() {
 
   return (
     <div style={{ minHeight: "100vh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "10px 14px", fontFamily: "system-ui, sans-serif" }}>
+
+      {/* Overlay de entrada — pede clique para ativar fullscreen */}
+      {showOverlay && (
+        <div
+          onClick={enterFullscreen}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0f1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo2.png" alt="FBJJMMA" style={{ width: "80px", height: "80px", objectFit: "contain", marginBottom: "24px" }} />
+          <div style={{ color: "#f1f5f9", fontSize: "1.5rem", fontWeight: 900, marginBottom: "12px" }}>Painel de Chamadas</div>
+          <div style={{ color: "#64748b", fontSize: "1rem", marginBottom: "32px" }}>Área de Pesagem</div>
+          <div style={{ backgroundColor: "#1e3a5f", border: "2px solid #3b82f6", borderRadius: "12px", padding: "16px 40px", color: "#93c5fd", fontSize: "1.1rem", fontWeight: 700 }}>
+            Pressione OK para abrir em Tela Cheia
+          </div>
+        </div>
+      )}
+
+      {/* Botão fixo para alternar fullscreen */}
+      {!showOverlay && (
+        <button
+          onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
+          style={{ position: "fixed", bottom: "12px", right: "12px", zIndex: 1000, backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "#64748b", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}
+        >
+          {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
+        </button>
+      )}
 
       {/* Topo: logo + evento + hora */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
