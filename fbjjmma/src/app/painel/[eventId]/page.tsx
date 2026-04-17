@@ -107,7 +107,10 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   )
 }
 
-function MatchCell({ fm, accentColor, cardH }: { fm: FlatMatch; accentColor: string; cardH: number }) {
+// padding(16) + topbar(50) + legenda(42) + col-header(52) + paddingTop(6) + gaps(4×6=24) = 190px
+const CARD_CSS_H = "calc((100dvh - 190px) / 5)"
+
+function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
   const allCalls = match.callTimes as CallTime[] | null
@@ -115,7 +118,7 @@ function MatchCell({ fm, accentColor, cardH }: { fm: FlatMatch; accentColor: str
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ flexShrink: 0, height: cardH > 0 ? cardH : undefined, flex: cardH > 0 ? undefined : 1, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ flexShrink: 0, height: CARD_CSS_H, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "3px 10px" }}>
         <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 0.75vw, 0.68rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
@@ -261,7 +264,7 @@ export default function PainelPage() {
                     </div>
                   ) : (
                     matches.map(fm => (
-                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} cardH={0} />
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
                     ))
                   )}
                 </div>
