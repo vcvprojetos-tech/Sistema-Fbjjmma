@@ -117,7 +117,7 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
     // flex: 1 preenche o espaço disponível; overflow: hidden no card (não na row)
-    <div style={{ flex: 1, minHeight: "clamp(110px, 17vh, 240px)", border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+    <div style={{ flex: 1, minHeight: "clamp(110px, 17vh, 240px)", border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* Cabeçalho da categoria */}
       <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "clamp(4px, 0.8vh, 10px) 10px" }}>
         <span style={{ color: "#94a3b8", fontSize: "clamp(0.6rem, 1.4vh, 0.9rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
