@@ -87,22 +87,23 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// AthleteRow: padding-based, nunca corta o texto verticalmente
+// AthleteRow: flex:1 ocupa o espaço disponível, texto centralizado — nunca cortado pelo topo
 function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null; seed: number; isWO: boolean
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
   if (name === "BYE") return (
-    <div style={{ flexShrink: 0, minHeight: "clamp(40px, 6vh, 90px)", backgroundColor: "#0f172a" }} />
+    <div style={{ flex: 1, minHeight: 0, backgroundColor: "#0f172a" }} />
   )
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ flexShrink: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "clamp(8px, 1.8vh, 22px) 10px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(0.9rem, 2.5vh, 1.6rem)", width: "1.6em", textAlign: "center", flexShrink: 0 }}>{seed}</span>
+    // flex:1 + alignItems:center: o texto fica sempre no meio da área disponível
+    <div style={{ flex: 1, minHeight: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "4px 10px", overflow: "hidden" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(0.75rem, 1.8vh, 1.3rem)", width: "1.4em", textAlign: "center", flexShrink: 0, lineHeight: 1 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.9rem, 2.5vh, 1.6rem)", lineHeight: 1.3, wordBreak: "break-word" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "clamp(0.7rem, 1.7vh, 1.1rem)", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.75rem, 1.8vh, 1.3rem)", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: "clamp(0.6rem, 1.4vh, 1rem)", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team}</div>}
       </div>
     </div>
   )
@@ -116,17 +117,16 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    // flex: 1 preenche o espaço disponível; overflow: hidden no card (não na row)
-    <div style={{ flex: 1, minHeight: "clamp(110px, 17vh, 240px)", border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* Cabeçalho da categoria */}
-      <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "clamp(4px, 0.8vh, 10px) 10px" }}>
-        <span style={{ color: "#94a3b8", fontSize: "clamp(0.6rem, 1.4vh, 0.9rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
+    <div style={{ flex: 1, minHeight: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      {/* Cabeçalho da categoria — altura fixa pequena */}
+      <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "3px 10px" }}>
+        <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 1.3vh, 0.85rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
       <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
       {!isSolo && (
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "clamp(3px, 0.6vh, 8px) 10px" }}>
+        <div style={{ flexShrink: 0, height: "16px", display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#334155", fontSize: "clamp(0.5rem, 1vh, 0.7rem)", fontWeight: 800, padding: "0 6px", letterSpacing: "0.1em" }}>VS</span>
+          <span style={{ color: "#334155", fontSize: "0.55rem", fontWeight: 800, padding: "0 6px", letterSpacing: "0.1em" }}>VS</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
         </div>
       )}
