@@ -118,7 +118,7 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ flexShrink: 0, height: CARD_CSS_H, border: `1px solid #1e293b`, borderTop: `2px solid ${accentColor}`, backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ flexShrink: 0, height: CARD_CSS_H, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "3px 10px" }}>
         <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 0.75vw, 0.68rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
