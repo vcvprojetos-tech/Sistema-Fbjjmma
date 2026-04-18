@@ -17,9 +17,10 @@ const BELT_LABELS: Record<string, string> = {
 
 const COL_COLORS = ["#0d9488","#f97316","#eab308","#7c3aed","#0891b2","#be185d","#15803d","#dc2626"]
 
-// Tamanho fixo de design — o conteúdo é renderizado aqui e depois escalado
 const DESIGN_W = 1920
 const DESIGN_H = 1080
+
+const NAMES_PER_COL = 10
 
 interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
 interface MatchInfo {
@@ -44,7 +45,15 @@ interface PainelData {
   event: { id: string; name: string }
   tatames: TatameInfo[]
 }
-interface FlatMatch { bracketLabel: string; match: MatchInfo }
+
+interface AthleteEntry {
+  key: string
+  name: string
+  team: string
+  checkedIn: boolean
+  calls: number
+  isWO: boolean
+}
 
 function catLabel(b: BracketInfo) {
   const sex = b.weightCategory.sex === "MASCULINO" ? "M" : "F"
@@ -53,6 +62,7 @@ function catLabel(b: BracketInfo) {
   const belt = BELT_LABELS[b.belt] || b.belt
   return `${sex} · ${age} · ${peso} · ${belt}`
 }
+
 function getName(pos: MatchInfo["position1"]) {
   if (!pos?.registration) return "BYE"
   return pos.registration.athlete?.user.name ?? pos.registration.guestName ?? "—"
@@ -60,90 +70,86 @@ function getName(pos: MatchInfo["position1"]) {
 function getTeam(pos: MatchInfo["position1"]) {
   return pos?.registration?.team?.name ?? ""
 }
-function flatMatches(tatame: TatameInfo): FlatMatch[] {
-  const result: FlatMatch[] = []
+
+function getAthletes(tatame: TatameInfo): AthleteEntry[] {
+  const entries: AthleteEntry[] = []
+  const seen = new Set<string>()
+
   for (const b of tatame.brackets) {
+    const label = catLabel(b)
     for (const m of b.matches) {
-      if (!m.endedAt && m.position1 !== null) result.push({ bracketLabel: catLabel(b), match: m })
+      if (m.endedAt) continue
+      if (!m.position1) continue
+
+      // p1
+      const p1Name = getName(m.position1)
+      if (p1Name !== "BYE") {
+        const key = `${m.id}-p1`
+        if (!seen.has(key)) {
+          seen.add(key)
+          const allCalls = m.callTimes ?? []
+          const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
+          entries.push({
+            key,
+            name: p1Name,
+            team: getTeam(m.position1) || label,
+            checkedIn: m.p1CheckedIn,
+            calls: p1Calls.length,
+            isWO: m.isWO && !!m.endedAt,
+          })
+        }
+      }
+
+      // p2
+      if (m.position2) {
+        const p2Name = getName(m.position2)
+        if (p2Name !== "BYE") {
+          const key = `${m.id}-p2`
+          if (!seen.has(key)) {
+            seen.add(key)
+            const allCalls = m.callTimes ?? []
+            const p2Calls = allCalls.filter(c => c.pos === "p2")
+            entries.push({
+              key,
+              name: p2Name,
+              team: getTeam(m.position2) || label,
+              checkedIn: m.p2CheckedIn,
+              calls: p2Calls.length,
+              isWO: m.isWO && !!m.endedAt,
+            })
+          }
+        }
+      }
     }
   }
-  return result.slice(0, 5)
+
+  // Não confirmados primeiro, depois confirmados (para referência)
+  // Filtra apenas os que ainda não confirmaram
+  return entries.filter(e => !e.checkedIn && !e.isWO)
 }
 
-function statusStyle(checkedIn: boolean, calls: CallTime[] | null, isWO: boolean) {
-  if (isWO)      return { bg: "#334155", text: "#94a3b8", sub: "#64748b" }
-  if (checkedIn) return { bg: "#14532d", text: "#bbf7d0", sub: "#86efac" }
-  const n = calls?.length ?? 0
-  if (n >= 3)    return { bg: "#7f1d1d", text: "#fecaca", sub: "#fca5a5" }
-  if (n === 2)   return { bg: "#7c2d12", text: "#fed7aa", sub: "#fdba74" }
-  if (n === 1)   return { bg: "#713f12", text: "#fde68a", sub: "#fcd34d" }
-  return           { bg: "#991b1b", text: "#fecdd3", sub: "#fca5a5" }
+function rowBg(calls: number) {
+  if (calls >= 3) return "#7f1d1d"
+  if (calls === 2) return "#7c2d12"
+  if (calls === 1) return "#713f12"
+  return "#1e3a5f"
+}
+function rowText(calls: number) {
+  if (calls >= 3) return "#fecaca"
+  if (calls === 2) return "#fed7aa"
+  if (calls === 1) return "#fde68a"
+  return "#bfdbfe"
 }
 
 const LEGEND = [
-  { bg: "#991b1b", label: "Não pesado" },
+  { bg: "#1e3a5f", label: "Aguardando" },
   { bg: "#713f12", label: "1ª Chamada" },
   { bg: "#7c2d12", label: "2ª Chamada" },
   { bg: "#7f1d1d", label: "3ª Chamada" },
-  { bg: "#14532d", label: "Presente" },
-  { bg: "#334155", label: "W.O." },
 ]
 
-// Alturas calculadas para 5 cards caberem em 1080px
-// Overhead: padding(40) + topbar(60) + legenda(50) + col-header(80) + 4 gaps(48) = 278px
-// Disponível: 1080 - 278 = 802px / 5 cards = 160px por card
-const ROW_H   = 56   // altura de cada linha de atleta
-const CAT_H   = 22   // altura do cabeçalho de categoria
-const VS_H    = 16   // altura da divisória VS
-const GAP     = 12   // gap entre cards
-const FS_NAME = 20   // fonte do nome
-const FS_TEAM = 14   // fonte da equipe
-const FS_CAT  = 13   // fonte da categoria
-
-function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
-  pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null
-  seed: number; isWO: boolean
-}) {
-  const name = getName(pos)
-  const team = getTeam(pos)
-  if (name === "BYE") return <div style={{ height: ROW_H, backgroundColor: "#0f172a" }} />
-  const s = statusStyle(checkedIn, calls, isWO)
-  return (
-    <div style={{ height: ROW_H, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: 10, padding: "0 16px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: FS_NAME, width: 32, textAlign: "center", flexShrink: 0 }}>{seed}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: FS_NAME, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: FS_TEAM, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
-      </div>
-    </div>
-  )
-}
-
-function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
-  const { match, bracketLabel } = fm
-  const isSolo = match.position2 === null
-  const allCalls = match.callTimes as CallTime[] | null
-  const p1Calls = allCalls ? allCalls.filter(c => c.pos === "p1" || !c.pos) : null
-  const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
-  const isWOFinal = match.isWO && match.endedAt !== null
-  const cardH = CAT_H + ROW_H + (isSolo ? 0 : VS_H + ROW_H)
-  return (
-    <div style={{ height: cardH, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: 6, backgroundColor: "#0f172a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ height: CAT_H, backgroundColor: "#1e293b", display: "flex", alignItems: "center", padding: "0 16px", flexShrink: 0 }}>
-        <span style={{ color: "#94a3b8", fontSize: FS_CAT, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bracketLabel}</span>
-      </div>
-      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
-      {!isSolo && (
-        <div style={{ height: VS_H, backgroundColor: "#0a0f1a", display: "flex", alignItems: "center", padding: "0 16px", flexShrink: 0 }}>
-          <div style={{ flex: 1, height: 1, backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#475569", fontSize: 14, fontWeight: 800, padding: "0 10px" }}>VS</span>
-          <div style={{ flex: 1, height: 1, backgroundColor: "#1e293b" }} />
-        </div>
-      )}
-      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />}
-    </div>
-  )
-}
+const NAME_H = 88   // altura de cada linha de atleta
+const GAP = 4
 
 export default function PainelPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -156,7 +162,6 @@ export default function PainelPage() {
   const [scaleX, setScaleX] = useState(1)
   const [scaleY, setScaleY] = useState(1)
 
-  // Escala X e Y independentemente para preencher a tela inteira sem espaços
   useEffect(() => {
     const recalc = () => {
       setScaleX(window.innerWidth / DESIGN_W)
@@ -209,10 +214,8 @@ export default function PainelPage() {
     const mid = Math.ceil(allTatames.length / 2)
     return painelNum === "1" ? allTatames.slice(0, mid) : allTatames.slice(mid)
   })()
-  const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
 
   return (
-    // Fundo ocupa toda a tela
     <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#0a0f1a", overflow: "hidden", position: "relative" }}>
 
       {showOverlay && (
@@ -236,22 +239,16 @@ export default function PainelPage() {
         </button>
       )}
 
-
-      {/* Container interno: tamanho fixo 1920×1080, escalado e centralizado */}
       <div style={{
-        width: DESIGN_W,
-        height: DESIGN_H,
+        width: DESIGN_W, height: DESIGN_H,
         transform: `scaleX(${scaleX}) scaleY(${scaleY})`,
         transformOrigin: "top left",
-        position: "absolute",
-        top: 0,
-        left: 0,
+        position: "absolute", top: 0, left: 0,
         backgroundColor: "#0a0f1a",
         padding: "20px 24px",
         boxSizing: "border-box",
         fontFamily: "system-ui, sans-serif",
-        display: "flex",
-        flexDirection: "column",
+        display: "flex", flexDirection: "column",
       }}>
 
         {/* Topbar */}
@@ -273,7 +270,7 @@ export default function PainelPage() {
         </div>
 
         {/* Legenda */}
-        <div style={{ display: "flex", gap: 20, marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #1e293b", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 24, marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #1e293b", flexShrink: 0 }}>
           {LEGEND.map(l => (
             <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3 }} />
@@ -291,28 +288,67 @@ export default function PainelPage() {
           </div>
         ) : (
           <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 16 }}>
-            {columns.map(({ tatame, matches }, colIdx) => {
+            {tatames.map((tatame, colIdx) => {
               const color = COL_COLORS[colIdx % COL_COLORS.length]
               const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
               const op = tatame.operations[0]?.user.name ?? ""
+              const athletes = getAthletes(tatame)
+
+              // Divide em colunas de NAMES_PER_COL
+              const cols: AthleteEntry[][] = []
+              for (let i = 0; i < athletes.length; i += NAMES_PER_COL) {
+                cols.push(athletes.slice(i, i + NAMES_PER_COL))
+              }
+              if (cols.length === 0) cols.push([])
+
               return (
-                <div key={tatame.id} style={{ display: "flex", flexDirection: "column" }}>
-                  {/* Cabeçalho */}
+                <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  {/* Cabeçalho do tatame */}
                   <div style={{ textAlign: "center", paddingBottom: 10, borderBottom: `4px solid ${color}`, marginBottom: 12, flexShrink: 0 }}>
-                    <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 36, letterSpacing: "0.04em" }}>Tatame {num}</div>
-                    {op && <div style={{ color: "#64748b", fontSize: 18, marginTop: 2 }}>{op}</div>}
+                    <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 32, letterSpacing: "0.04em" }}>Tatame {num}</div>
+                    {op && <div style={{ color: "#64748b", fontSize: 16, marginTop: 2 }}>{op}</div>}
                   </div>
-                  {/* Cards */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: GAP, paddingBottom: GAP }}>
-                    {matches.length === 0 ? (
-                      <div style={{ textAlign: "center", padding: "60px 0" }}>
-                        <span style={{ color: "#1e293b", fontSize: 20 }}>Sem lutas pendentes</span>
+
+                  {/* Colunas de nomes */}
+                  <div style={{ flex: 1, display: "flex", gap: 8, minHeight: 0 }}>
+                    {cols.map((col, ci) => (
+                      <div key={ci} style={{ flex: 1, display: "flex", flexDirection: "column", gap: GAP }}>
+                        {col.length === 0 ? (
+                          <div style={{ textAlign: "center", paddingTop: 40 }}>
+                            <span style={{ color: "#1e293b", fontSize: 18 }}>Sem atletas pendentes</span>
+                          </div>
+                        ) : (
+                          col.map((a, idx) => (
+                            <div key={a.key} style={{
+                              height: NAME_H,
+                              backgroundColor: rowBg(a.calls),
+                              borderRadius: 6,
+                              display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
+                              borderLeft: `4px solid ${color}`,
+                            }}>
+                              <span style={{ color: rowText(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
+                                {ci * NAMES_PER_COL + idx + 1}
+                              </span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ color: rowText(a.calls), fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {a.name}
+                                </div>
+                                {a.team && (
+                                  <div style={{ color: rowText(a.calls), opacity: 0.7, fontSize: 14, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {a.team}
+                                  </div>
+                                )}
+                              </div>
+                              {a.calls > 0 && (
+                                <span style={{ color: rowText(a.calls), fontSize: 13, fontWeight: 700, flexShrink: 0, opacity: 0.9 }}>
+                                  {a.calls}ª chamada
+                                </span>
+                              )}
+                            </div>
+                          ))
+                        )}
                       </div>
-                    ) : (
-                      matches.map(fm => (
-                        <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
-                      ))
-                    )}
+                    ))}
                   </div>
                 </div>
               )
