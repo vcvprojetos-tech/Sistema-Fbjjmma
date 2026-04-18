@@ -366,23 +366,28 @@ export default function TatamePage() {
     : bracket ? [bracket] : []
   const isGroup = groupBrackets.length > 1
 
-  // Confrontos: todos os brackets ativos no grupo
-  const currentMatches = groupBrackets.flatMap(b =>
-    b.matches
-      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id !== null)
-      .map(m => ({ ...m, _bracketId: b.id }))
-  ).sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
-
-  // Partidas solo (1 atleta): pesagem individual
-  const soloMatches = groupBrackets.flatMap(b =>
-    b.matches
-      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
-      .map(m => ({ ...m, _bracketId: b.id, _isMidBracket: b.positions.length > 1 }))
-  )
-
-  // Para exibir progresso: total de partidas no grupo
+  // Confrontos: todos os brackets ativos no grupo (para contexto/pódio)
   const allGroupMatches = groupBrackets.flatMap(b => b.matches)
   const maxRound = allGroupMatches.length > 0 ? Math.max(...allGroupMatches.map(m => m.round)) : 0
+
+  // Fila global: todas as chaves EM_ANDAMENTO do tatame, em ordem de bracketNumber
+  const allActiveBrackets = tatame.brackets
+    .filter(b => b.status === "EM_ANDAMENTO")
+    .sort((a, b) => a.bracketNumber - b.bracketNumber)
+
+  // Confrontos globais (ambos atletas definidos, partida não encerrada)
+  const currentMatches = allActiveBrackets.flatMap(b =>
+    b.matches
+      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id !== null)
+      .map(m => ({ ...m, _bracketId: b.id, _bracketLabel: catLabel(b) }))
+  ).sort((a, b) => a._bracketId.localeCompare(b._bracketId) || a.round - b.round || a.matchNumber - b.matchNumber)
+
+  // Partidas solo globais (1 atleta aguardando pesagem)
+  const soloMatches = allActiveBrackets.flatMap(b =>
+    b.matches
+      .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
+      .map(m => ({ ...m, _bracketId: b.id, _bracketLabel: catLabel(b), _isMidBracket: b.positions.length > 1 }))
+  )
 
   // Pódio: sempre calculado a partir da Grande Final (se grupo) ou do bracket simples
   const podiumBracket = isGroup
@@ -692,7 +697,7 @@ export default function TatamePage() {
                   )}
 
                   {/* EM_ANDAMENTO — todas as partidas prontas (ambos atletas definidos) */}
-                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && (
+                  {(allActiveBrackets.length > 0 || groupBrackets.some(b => b.status === "EM_ANDAMENTO")) && (
                     <div className="space-y-3">
                       {/* Indicador de progresso por rodada */}
                       {maxRound > 1 && (
@@ -732,19 +737,24 @@ export default function TatamePage() {
                               borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "#333",
                               backgroundColor: "var(--card)",
                             }}>
-                            <div className="px-3 py-2 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
-                              <span className="text-xs text-[#6b7280] whitespace-nowrap shrink-0">
-                                R{match.round} · P{match.matchNumber}
-                              </span>
-                              {isDone ? (
-                                <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">
-                                  {match.isWO ? `W.O. (${match.woType === "PESO" ? "Peso" : "Ausência"})` : "Finalizada"}
-                                </span>
-                              ) : bothPresent ? (
-                                <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">● Prontos</span>
-                              ) : (
-                                <span className="text-xs text-[#6b7280] whitespace-nowrap">Confirme presença</span>
+                            <div className="px-3 py-2 flex flex-col gap-0.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                              {match._bracketLabel && (
+                                <span className="text-[10px] text-[#f59e0b] font-semibold truncate">{match._bracketLabel}</span>
                               )}
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs text-[#6b7280] whitespace-nowrap shrink-0">
+                                  R{match.round} · P{match.matchNumber}
+                                </span>
+                                {isDone ? (
+                                  <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">
+                                    {match.isWO ? `W.O. (${match.woType === "PESO" ? "Peso" : "Ausência"})` : "Finalizada"}
+                                  </span>
+                                ) : bothPresent ? (
+                                  <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">● Prontos</span>
+                                ) : (
+                                  <span className="text-xs text-[#6b7280] whitespace-nowrap">Confirme presença</span>
+                                )}
+                              </div>
                             </div>
 
 
@@ -921,7 +931,10 @@ export default function TatamePage() {
                     return (
                       <div key={match.id} className="rounded-xl border overflow-hidden"
                         style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
-                        <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+                        <div className="px-3 py-2 flex flex-col gap-0.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                          {match._bracketLabel && (
+                            <span className="text-[10px] text-[#f59e0b] font-semibold truncate">{match._bracketLabel}</span>
+                          )}
                           <span className="text-xs font-semibold" style={{ color: isMid ? "#60a5fa" : "#fbbf24" }}>
                             {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
                           </span>
