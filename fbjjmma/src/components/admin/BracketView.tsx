@@ -217,12 +217,16 @@ interface SlotEntry { posId: string | null; isWinner: boolean; hasPotential: boo
 // posId = null + hasPotential = false → true BYE (no athlete, no future athlete)
 // posId = null + hasPotential = true  → match not decided yet
 // posId = someId                      → athlete occupying this slot
+//
+// matchBySoloPosRound: posId → (round → solo match)
+// Usado para checar resultado de partidas solo antes de auto-avançar por BYE.
 function buildSlots(
   order: number[],
   posNumToId: Map<number, string>,
   posIdMap: Map<string, BPos>,
   matchByPair: Map<string, BMatch>,
-  numRounds: number
+  numRounds: number,
+  matchBySoloPosRound?: Map<string, Map<number, BMatch>>
 ): Array<Array<SlotEntry>> {
   const slots: Array<Array<SlotEntry>> = []
 
@@ -233,6 +237,25 @@ function buildSlots(
     const hasAthlete = posIdMap.get(posId)?.registration != null
     return { posId: hasAthlete ? posId : null, isWinner: false, hasPotential: false }
   }))
+
+  // Resolve avanço por BYE: verifica resultado da partida solo antes de auto-avançar
+  function resolveByeAdvance(athletePosId: string, round: number): SlotEntry {
+    const soloMatch = matchBySoloPosRound?.get(athletePosId)?.get(round)
+    if (!soloMatch) {
+      // Sem partida solo registrada → auto-avança (BYE verdadeiro, seed sem atleta)
+      return { posId: athletePosId, isWinner: false, hasPotential: false }
+    }
+    if (soloMatch.winnerId === athletePosId) {
+      // Atleta confirmou presença e avançou
+      return { posId: athletePosId, isWinner: true, hasPotential: false }
+    }
+    if (soloMatch.isWO && soloMatch.endedAt) {
+      // Atleta tomou W.O. — não avança
+      return { posId: null, isWinner: false, hasPotential: false }
+    }
+    // Partida pendente (aguardando pesagem)
+    return { posId: null, isWinner: false, hasPotential: true }
+  }
 
   for (let r = 1; r < numRounds; r++) {
     const prev = slots[r - 1]
@@ -248,16 +271,16 @@ function buildSlots(
           // a's match not decided yet — wait
           curr.push({ posId: null, isWinner: false, hasPotential: true })
         } else {
-          // a is BYE — b auto-advances
-          curr.push({ posId: b.posId, isWinner: false, hasPotential: b.hasPotential })
+          // a is BYE — verifica resultado da partida solo de b
+          curr.push(resolveByeAdvance(b.posId!, r))
         }
       } else if (!b.posId) {
         if (b.hasPotential) {
           // b's match not decided yet — wait
           curr.push({ posId: null, isWinner: false, hasPotential: true })
         } else {
-          // b is BYE — a auto-advances
-          curr.push({ posId: a.posId, isWinner: false, hasPotential: a.hasPotential })
+          // b is BYE — verifica resultado da partida solo de a
+          curr.push(resolveByeAdvance(a.posId!, r))
         }
       } else {
         // Both have athletes — look up the match result
@@ -553,6 +576,18 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     return m
   }, [matches])
 
+  // Map posId → (round → solo match) para checar resultado de partidas solo antes de auto-avançar
+  const matchBySoloPosRound = useMemo(() => {
+    const m = new Map<string, Map<number, BMatch>>()
+    for (const match of matches) {
+      if (match.position1Id && !match.position2Id) {
+        if (!m.has(match.position1Id)) m.set(match.position1Id, new Map())
+        m.get(match.position1Id)!.set(match.round, match)
+      }
+    }
+    return m
+  }, [matches])
+
   const n = positions.length
   const bracketSize = Math.max(nextPow2(Math.max(n, 2)), 16)
   const halfSize = bracketSize / 2
@@ -564,12 +599,12 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
 
   // Build progression slots for both halves
   const leftSlots = useMemo(
-    () => buildSlots(leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds),
-    [leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds]
+    () => buildSlots(leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound),
+    [leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound]
   )
   const rightSlots = useMemo(
-    () => buildSlots(rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds),
-    [rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds]
+    () => buildSlots(rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound),
+    [rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound]
   )
 
   // centerYs[r][i] = center y of slot i at round r, based on athlete card geometry
