@@ -93,12 +93,7 @@ export async function POST(
           matchNumber: matchNumber++,
           position1Id: pos1?.id ?? null,
           position2Id: pos2?.id ?? null,
-          ...(pos1 !== null && pos2 === null && {
-            winnerId: pos1.id,
-            isWO: true,
-            woType: "AUSENCIA",
-            endedAt: new Date(),
-          }),
+          // Posição BYE cria partida solo pendente — coordenador confirma pesagem antes de avançar
         },
       })
     }
