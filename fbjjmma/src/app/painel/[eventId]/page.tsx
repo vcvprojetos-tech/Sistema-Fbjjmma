@@ -198,11 +198,6 @@ export default function PainelPage() {
     return () => clearInterval(iv)
   }, [fetchData])
 
-  // DEBUG — remover após diagnóstico
-  const debugInfo = typeof window !== "undefined"
-    ? `tela: ${window.innerWidth}x${window.innerHeight} | scale: ${scale.toFixed(3)} | design: ${DESIGN_W}x${DESIGN_H}`
-    : ""
-
   if (!data) return (
     <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0a0f1a" }}>
       <p style={{ color: "#475569" }}>Carregando painel...</p>
@@ -242,21 +237,18 @@ export default function PainelPage() {
         </button>
       )}
 
-      {/* DEBUG — painel de diagnóstico */}
-      <div style={{ position: "fixed", top: 0, left: 0, zIndex: 9998, backgroundColor: "rgba(0,0,0,0.85)", color: "#facc15", fontSize: "1rem", padding: "6px 12px", fontFamily: "monospace", pointerEvents: "none" }}>
-        {debugInfo}
-      </div>
 
       {/* Container interno: tamanho fixo 1920×1080, escalado e centralizado */}
       <div style={{
         width: DESIGN_W,
         height: DESIGN_H,
         transform: `scale(${scale})`,
-        transformOrigin: "top center",
+        transformOrigin: "center center",
         position: "absolute",
-        top: 0,
+        top: "50%",
         left: "50%",
         marginLeft: -DESIGN_W / 2,
+        marginTop: -DESIGN_H / 2,
         backgroundColor: "#0a0f1a",
         padding: "20px 24px",
         boxSizing: "border-box",
