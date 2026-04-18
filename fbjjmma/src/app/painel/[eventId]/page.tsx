@@ -87,22 +87,22 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// AthleteRow: padding fixo, sem overflow hidden — o conteúdo nunca é cortado
+// AthleteRow: flexShrink:0 garante que nunca encolhe — padding define altura
 function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null; seed: number; isWO: boolean
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
   if (name === "BYE") return (
-    <div style={{ backgroundColor: "#0f172a", padding: "10px" }} />
+    <div style={{ flexShrink: 0, height: "40px", backgroundColor: "#0f172a" }} />
   )
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(1rem, 2vh, 1.4rem)", width: "1.4em", textAlign: "center", flexShrink: 0 }}>{seed}</span>
+    <div style={{ flexShrink: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "clamp(6px, 1.2vh, 14px) 12px" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(0.9rem, 1.8vh, 1.3rem)", width: "1.4em", textAlign: "center", flexShrink: 0 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(1rem, 2vh, 1.4rem)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "clamp(0.75rem, 1.5vh, 1rem)", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.9rem, 1.8vh, 1.3rem)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: "clamp(0.65rem, 1.3vh, 0.95rem)", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
@@ -116,14 +116,15 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    // flex:1 + sem overflow hidden no card — o conteúdo define a altura mínima
-    <div style={{ flex: 1, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
-      <div style={{ backgroundColor: "#1e293b", padding: "4px 12px" }}>
-        <span style={{ color: "#94a3b8", fontSize: "clamp(0.6rem, 1.3vh, 0.85rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
+    // flexShrink:0 — o card NUNCA encolhe abaixo do seu conteúdo natural
+    // flexGrow:1 — cresce para preencher espaço extra disponível
+    <div style={{ flexShrink: 0, flexGrow: 1, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column" }}>
+      <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "clamp(3px, 0.6vh, 7px) 12px" }}>
+        <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 1.2vh, 0.82rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
       <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
       {!isSolo && (
-        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "4px 10px" }}>
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "clamp(2px, 0.4vh, 5px) 10px" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
           <span style={{ color: "#475569", fontSize: "0.6rem", fontWeight: 800, padding: "0 8px", letterSpacing: "0.1em" }}>VS</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
@@ -266,8 +267,8 @@ export default function PainelPage() {
                   <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.04em" }}>Tatame {num}</div>
                   {op && <div style={{ color: "#64748b", fontSize: "0.65rem", marginTop: "1px" }}>{op}</div>}
                 </div>
-                {/* Container de lutas */}
-                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "6px", paddingTop: "6px" }}>
+                {/* Container de lutas: overflowY auto rola se não couber, nunca corta */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px", paddingTop: "6px", overflowY: "auto" }}>
                   {matches.length === 0 ? (
                     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
