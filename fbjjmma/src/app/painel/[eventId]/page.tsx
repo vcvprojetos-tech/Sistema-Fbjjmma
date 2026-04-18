@@ -87,23 +87,22 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// AthleteRow: flex:1 ocupa o espaço disponível, texto centralizado — nunca cortado pelo topo
+// AthleteRow: padding fixo, sem overflow hidden — o conteúdo nunca é cortado
 function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null; seed: number; isWO: boolean
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
   if (name === "BYE") return (
-    <div style={{ flex: 1, minHeight: 0, backgroundColor: "#0f172a" }} />
+    <div style={{ backgroundColor: "#0f172a", padding: "10px" }} />
   )
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    // flex:1 + alignItems:center: o texto fica sempre no meio da área disponível
-    <div style={{ flex: 1, minHeight: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "4px 10px", overflow: "hidden" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(0.75rem, 1.8vh, 1.3rem)", width: "1.4em", textAlign: "center", flexShrink: 0, lineHeight: 1 }}>{seed}</span>
+    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(1rem, 2vh, 1.4rem)", width: "1.4em", textAlign: "center", flexShrink: 0 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.75rem, 1.8vh, 1.3rem)", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "clamp(0.6rem, 1.4vh, 1rem)", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(1rem, 2vh, 1.4rem)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: "clamp(0.75rem, 1.5vh, 1rem)", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
@@ -117,16 +116,16 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ flex: 1, minHeight: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* Cabeçalho da categoria — altura fixa pequena */}
-      <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "3px 10px" }}>
-        <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 1.3vh, 0.85rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
+    // flex:1 + sem overflow hidden no card — o conteúdo define a altura mínima
+    <div style={{ flex: 1, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
+      <div style={{ backgroundColor: "#1e293b", padding: "4px 12px" }}>
+        <span style={{ color: "#94a3b8", fontSize: "clamp(0.6rem, 1.3vh, 0.85rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
       <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
       {!isSolo && (
-        <div style={{ flexShrink: 0, height: "16px", display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "4px 10px" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#334155", fontSize: "0.55rem", fontWeight: 800, padding: "0 6px", letterSpacing: "0.1em" }}>VS</span>
+          <span style={{ color: "#475569", fontSize: "0.6rem", fontWeight: 800, padding: "0 8px", letterSpacing: "0.1em" }}>VS</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
         </div>
       )}
