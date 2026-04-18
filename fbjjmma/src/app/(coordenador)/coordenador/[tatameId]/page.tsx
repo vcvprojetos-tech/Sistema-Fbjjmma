@@ -763,6 +763,22 @@ export default function TatamePage() {
                             </div>
                             {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
                             <button
+                              onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
+                              disabled={actionLoading}
+                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                              style={{ backgroundColor: "#78350f" }}
+                            >
+                              Desclassificação por Peso
+                            </button>
+                            <button
+                              onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: "", loserName: p1Name }); setDesclReason(""); setCallMenu(null) }}
+                              disabled={actionLoading}
+                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                              style={{ backgroundColor: "#7c3aed" }}
+                            >
+                              Desclassificado
+                            </button>
+                            <button
                               onClick={() => setCallMenu(null)}
                               className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
                               style={{ backgroundColor: "var(--card)" }}
