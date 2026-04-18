@@ -67,7 +67,7 @@ function flatMatches(tatame: TatameInfo): FlatMatch[] {
       if (!m.endedAt && m.position1 !== null) result.push({ bracketLabel: catLabel(b), match: m })
     }
   }
-  return result.slice(0, 4)
+  return result.slice(0, 5)
 }
 
 function statusStyle(checkedIn: boolean, calls: CallTime[] | null, isWO: boolean) {
@@ -89,14 +89,16 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// Tamanhos fixos em px baseados em 1080p — escalam junto com o zoom da página
-const ROW_H   = 108  // altura de cada linha de atleta
-const CAT_H   = 38   // altura do cabeçalho de categoria
-const VS_H    = 28   // altura da divisória VS
+// Alturas calculadas para 5 cards caberem em 1080px
+// Overhead: padding(40) + topbar(60) + legenda(50) + col-header(80) + 4 gaps(48) = 278px
+// Disponível: 1080 - 278 = 802px / 5 cards = 160px por card
+const ROW_H   = 61   // altura de cada linha de atleta
+const CAT_H   = 22   // altura do cabeçalho de categoria
+const VS_H    = 16   // altura da divisória VS
 const GAP     = 12   // gap entre cards
-const FS_NAME = 28   // fonte do nome
-const FS_TEAM = 20   // fonte da equipe
-const FS_CAT  = 18   // fonte da categoria
+const FS_NAME = 20   // fonte do nome
+const FS_TEAM = 14   // fonte da equipe
+const FS_CAT  = 13   // fonte da categoria
 
 function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null
