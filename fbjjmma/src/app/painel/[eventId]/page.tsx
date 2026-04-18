@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 
 const AGE_LABELS: Record<string, string> = {
@@ -85,66 +85,48 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// Calcula tamanhos em px a partir da altura real da tela
-function calcSizes(screenH: number, numCards: number) {
-  // Espaço fixo: topbar ~52px + legenda ~36px + col-header ~58px + gaps ~30px = 176px
-  const overhead = 176
-  const totalGaps = (numCards - 1) * 6
-  const cardH = Math.floor((screenH - overhead - totalGaps) / numCards)
-  // Dentro do card: catH + rowH + vsH + rowH
-  const catH  = Math.max(22, Math.floor(cardH * 0.13))
-  const vsH   = Math.max(16, Math.floor(cardH * 0.08))
-  const rowH  = Math.floor((cardH - catH - vsH) / 2)
-  const fsName = Math.max(13, Math.floor(rowH * 0.38))
-  const fsTeam = Math.max(10, Math.floor(rowH * 0.27))
-  const fsCat  = Math.max(10, Math.floor(catH * 0.55))
-  return { cardH, catH, vsH, rowH, fsName, fsTeam, fsCat }
-}
-
-function AthleteRow({ pos, checkedIn, calls, seed, isWO, rowH, fsName, fsTeam }: {
+// Row sem height — tamanho definido pelo padding+fonte, nunca cortado
+function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
   pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null
-  seed: number; isWO: boolean; rowH: number; fsName: number; fsTeam: number
+  seed: number; isWO: boolean
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
-  if (name === "BYE") return <div style={{ height: rowH, backgroundColor: "#0f172a" }} />
+  if (name === "BYE") return <div style={{ backgroundColor: "#0f172a", padding: "18px 10px" }} />
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ height: rowH, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "0 10px", overflow: "hidden" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: fsName, width: fsName * 1.4, textAlign: "center", flexShrink: 0, lineHeight: 1 }}>{seed}</span>
+    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: 8, padding: "14px 12px" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: fsName, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: fsTeam, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: 18, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: 13, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
 }
 
-function MatchCell({ fm, accentColor, sizes }: {
-  fm: FlatMatch; accentColor: string
-  sizes: ReturnType<typeof calcSizes>
-}) {
+// Card sem height — cresce conforme conteúdo
+function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
   const allCalls = match.callTimes as CallTime[] | null
   const p1Calls = allCalls ? allCalls.filter(c => c.pos === "p1" || !c.pos) : null
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
-  const { cardH, catH, vsH, rowH, fsName, fsTeam, fsCat } = sizes
   return (
-    <div style={{ height: cardH, flexShrink: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: 4, backgroundColor: "#0f172a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ height: catH, flexShrink: 0, backgroundColor: "#1e293b", display: "flex", alignItems: "center", padding: "0 10px" }}>
-        <span style={{ color: "#94a3b8", fontSize: fsCat, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bracketLabel}</span>
+    <div style={{ border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: 4, backgroundColor: "#0f172a" }}>
+      <div style={{ backgroundColor: "#1e293b", padding: "6px 12px" }}>
+        <span style={{ color: "#94a3b8", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
-      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} rowH={rowH} fsName={fsName} fsTeam={fsTeam} />
+      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
       {!isSolo && (
-        <div style={{ height: vsH, flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "5px 10px" }}>
           <div style={{ flex: 1, height: 1, backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#475569", fontSize: fsCat, fontWeight: 800, padding: "0 8px" }}>VS</span>
+          <span style={{ color: "#475569", fontSize: 11, fontWeight: 800, padding: "0 8px" }}>VS</span>
           <div style={{ flex: 1, height: 1, backgroundColor: "#1e293b" }} />
         </div>
       )}
-      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} rowH={rowH} fsName={fsName} fsTeam={fsTeam} />}
+      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />}
     </div>
   )
 }
@@ -157,16 +139,6 @@ export default function PainelPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
-  const [screenH, setScreenH] = useState(0)
-  const headerRef = useRef<HTMLDivElement>(null)
-
-  // Mede a altura real da tela
-  useEffect(() => {
-    const update = () => setScreenH(window.innerHeight)
-    update()
-    window.addEventListener("resize", update)
-    return () => window.removeEventListener("resize", update)
-  }, [])
 
   const enterFullscreen = useCallback(() => {
     document.documentElement.requestFullscreen?.().catch(() => {})
@@ -174,10 +146,7 @@ export default function PainelPage() {
   }, [])
 
   useEffect(() => {
-    const onChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-      setScreenH(window.innerHeight)
-    }
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener("fullscreenchange", onChange)
     return () => document.removeEventListener("fullscreenchange", onChange)
   }, [])
@@ -210,11 +179,10 @@ export default function PainelPage() {
     return painelNum === "1" ? allTatames.slice(0, mid) : allTatames.slice(mid)
   })()
   const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
-  const maxCards = Math.max(...columns.map(c => c.matches.length), 1)
-  const sizes = screenH > 0 ? calcSizes(screenH, maxCards) : null
 
   return (
-    <div ref={headerRef} style={{ height: "100dvh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    // Página rola se não couber — sem overflow hidden em lugar nenhum
+    <div style={{ minHeight: "100dvh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif" }}>
 
       {showOverlay && (
         <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0f1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
@@ -238,7 +206,7 @@ export default function PainelPage() {
       )}
 
       {/* Topbar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo2.png" alt="FBJJMMA" style={{ width: 28, height: 28, objectFit: "contain" }} />
@@ -256,7 +224,7 @@ export default function PainelPage() {
       </div>
 
       {/* Legenda */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #1e293b", flexShrink: 0 }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #1e293b" }}>
         {LEGEND.map(l => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 10, height: 10, backgroundColor: l.bg, borderRadius: 2 }} />
@@ -266,36 +234,36 @@ export default function PainelPage() {
       </div>
 
       {tatames.length === 0 ? (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 0" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ color: "#1e293b", fontSize: "3rem", marginBottom: 10 }}>📋</div>
             <div style={{ color: "#475569", fontSize: "1rem" }}>Nenhum tatame ativo no momento</div>
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 8 }}>
           {columns.map(({ tatame, matches }, colIdx) => {
             const color = COL_COLORS[colIdx % COL_COLORS.length]
             const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
             const op = tatame.operations[0]?.user.name ?? ""
             return (
-              <div key={tatame.id} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              <div key={tatame.id}>
                 {/* Cabeçalho da coluna */}
-                <div style={{ textAlign: "center", paddingBottom: 8, borderBottom: `3px solid ${color}`, flexShrink: 0 }}>
+                <div style={{ textAlign: "center", paddingBottom: 8, borderBottom: `3px solid ${color}`, marginBottom: 8 }}>
                   <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.04em" }}>Tatame {num}</div>
                   {op && <div style={{ color: "#64748b", fontSize: "0.65rem", marginTop: 1 }}>{op}</div>}
                 </div>
-                {/* Cards de luta */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, paddingTop: 6, overflow: "hidden" }}>
+                {/* Cards */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {matches.length === 0 ? (
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ textAlign: "center", padding: "40px 0" }}>
                       <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
                     </div>
-                  ) : sizes ? (
+                  ) : (
                     matches.map(fm => (
-                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} sizes={sizes} />
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
                     ))
-                  ) : null}
+                  )}
                 </div>
               </div>
             )
