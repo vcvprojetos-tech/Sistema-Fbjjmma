@@ -303,7 +303,7 @@ export default function PainelPage() {
                   </div>
 
                   {/* Lista de nomes: sempre 10 slots, flex distribui igualmente */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: GAP, minHeight: 0 }}>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: GAP, minHeight: 0, overflow: "hidden" }}>
                     {athletes.length === 0 ? (
                       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <span style={{ color: "#1e293b", fontSize: 18 }}>Sem atletas pendentes</span>
@@ -315,7 +315,7 @@ export default function PainelPage() {
                           // Slot vazio
                           return (
                             <div key={`empty-${idx}`} style={{
-                              flex: 1, borderRadius: 6,
+                              flex: 1, minHeight: 0, borderRadius: 6,
                               backgroundColor: "#0f172a",
                               border: "1px dashed #1e293b",
                             }} />
@@ -323,10 +323,11 @@ export default function PainelPage() {
                         }
                         return (
                           <div key={a.key} style={{
-                            flex: 1,
+                            flex: 1, minHeight: 0,
                             backgroundColor: rowBg(a.calls),
                             borderRadius: 6,
                             display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
+                            overflow: "hidden",
                             borderLeft: `4px solid ${color}`,
                           }}>
                             <span style={{ color: rowText(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
