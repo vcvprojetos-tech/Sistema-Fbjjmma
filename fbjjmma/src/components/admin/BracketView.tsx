@@ -226,7 +226,8 @@ function buildSlots(
   posIdMap: Map<string, BPos>,
   matchByPair: Map<string, BMatch>,
   numRounds: number,
-  matchBySoloPosRound?: Map<string, Map<number, BMatch>>
+  matchBySoloPosRound?: Map<string, Map<number, BMatch>>,
+  bracketStarted?: boolean
 ): Array<Array<SlotEntry>> {
   const slots: Array<Array<SlotEntry>> = []
 
@@ -240,6 +241,10 @@ function buildSlots(
 
   // Resolve avanço por BYE: verifica resultado da partida solo antes de auto-avançar
   function resolveByeAdvance(athletePosId: string, round: number): SlotEntry {
+    // Chave não iniciada: nenhum número deve avançar nas caixas de conexão
+    if (!bracketStarted) {
+      return { posId: null, isWinner: false, hasPotential: false }
+    }
     const soloMatch = matchBySoloPosRound?.get(athletePosId)?.get(round)
     if (!soloMatch) {
       // Sem partida solo registrada → auto-avança (BYE verdadeiro, seed sem atleta)
@@ -597,14 +602,16 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const leftOrder = useMemo(() => getSlotOrder(1, halfSize), [halfSize])
   const rightOrder = useMemo(() => getSlotOrder(2, halfSize), [halfSize])
 
+  const bracketStarted = matches.length > 0
+
   // Build progression slots for both halves
   const leftSlots = useMemo(
-    () => buildSlots(leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound),
-    [leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound]
+    () => buildSlots(leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted),
+    [leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted]
   )
   const rightSlots = useMemo(
-    () => buildSlots(rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound),
-    [rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound]
+    () => buildSlots(rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted),
+    [rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted]
   )
 
   // centerYs[r][i] = center y of slot i at round r, based on athlete card geometry
