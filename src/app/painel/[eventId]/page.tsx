@@ -295,11 +295,11 @@ export default function PainelPage() {
               const athletes = getAthletes(tatame).slice(0, NAMES_PER_COL)
 
               return (
-                <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minWidth: 0, height: "100%", minHeight: 0 }}>
                   {/* Cabeçalho do tatame */}
-                  <div style={{ textAlign: "center", paddingBottom: 10, borderBottom: `4px solid ${color}`, marginBottom: 12, flexShrink: 0 }}>
-                    <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 32, letterSpacing: "0.04em" }}>Tatame {num}</div>
-                    {op && <div style={{ color: "#64748b", fontSize: 16, marginTop: 2 }}>{op}</div>}
+                  <div style={{ textAlign: "center", paddingBottom: 8, borderBottom: `4px solid ${color}`, marginBottom: 10, flexShrink: 0 }}>
+                    <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em" }}>Tatame {num}</div>
+                    {op && <div style={{ color: "#64748b", fontSize: 14, marginTop: 2 }}>{op}</div>}
                   </div>
 
                   {/* Lista de nomes: sempre 10 slots, flex distribui igualmente */}
