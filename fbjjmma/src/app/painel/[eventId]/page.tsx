@@ -85,28 +85,34 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// Row sem height — tamanho definido pelo padding+fonte, nunca cortado
-function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
+// Fonte escala com a altura disponível dividida pelo número de cards
+// 4 cards → ~3.5vh por linha de nome; 2 cards → ~7vh
+function fsName(n: number) { return `${(68 / (n * 5.5)).toFixed(2)}vh` }
+function fsTeam(n: number) { return `${(68 / (n * 7.5)).toFixed(2)}vh` }
+function fsCat(n: number)  { return `${(68 / (n * 10)).toFixed(2)}vh` }
+
+// AthleteRow: flex:1 + min-height:0 → ocupa espaço disponível sem estourar
+function AthleteRow({ pos, checkedIn, calls, seed, isWO, n }: {
   pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null
-  seed: number; isWO: boolean
+  seed: number; isWO: boolean; n: number
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
-  if (name === "BYE") return <div style={{ backgroundColor: "#0f172a", padding: "18px 10px" }} />
+  if (name === "BYE") return <div style={{ flex: 1, minHeight: 0, backgroundColor: "#0f172a" }} />
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: 8, padding: "14px 12px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{seed}</span>
+    <div style={{ flex: 1, minHeight: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: 6, padding: "0 10px", overflow: "hidden" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: fsName(n), width: "1.6em", textAlign: "center", flexShrink: 0, lineHeight: 1 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: 18, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: 13, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: fsName(n), lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: fsTeam(n), marginTop: "0.2em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
 }
 
-// Card sem height — cresce conforme conteúdo
-function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
+// Card: flex:1 + min-height:0 → divide o espaço da coluna igualmente
+function MatchCell({ fm, accentColor, n }: { fm: FlatMatch; accentColor: string; n: number }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
   const allCalls = match.callTimes as CallTime[] | null
@@ -114,19 +120,23 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: 4, backgroundColor: "#0f172a" }}>
-      <div style={{ backgroundColor: "#1e293b", padding: "6px 12px" }}>
-        <span style={{ color: "#94a3b8", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
+    <div style={{ flex: 1, minHeight: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: 4, backgroundColor: "#0f172a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Categoria — flex-shrink:0, altura pelo conteúdo */}
+      <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "0.4em 10px", display: "flex", alignItems: "center" }}>
+        <span style={{ color: "#94a3b8", fontSize: fsCat(n), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bracketLabel}</span>
       </div>
-      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
+      {/* Atleta 1 — flex:1 */}
+      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} n={n} />
+      {/* VS — flex-shrink:0 */}
       {!isSolo && (
-        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "5px 10px" }}>
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0.3em 10px" }}>
           <div style={{ flex: 1, height: 1, backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#475569", fontSize: 11, fontWeight: 800, padding: "0 8px" }}>VS</span>
+          <span style={{ color: "#475569", fontSize: fsCat(n), fontWeight: 800, padding: "0 8px" }}>VS</span>
           <div style={{ flex: 1, height: 1, backgroundColor: "#1e293b" }} />
         </div>
       )}
-      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />}
+      {/* Atleta 2 — flex:1 */}
+      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} n={n} />}
     </div>
   )
 }
@@ -167,7 +177,7 @@ export default function PainelPage() {
   }, [fetchData])
 
   if (!data) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0a0f1a" }}>
+    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0a0f1a" }}>
       <p style={{ color: "#475569" }}>Carregando painel...</p>
     </div>
   )
@@ -179,10 +189,11 @@ export default function PainelPage() {
     return painelNum === "1" ? allTatames.slice(0, mid) : allTatames.slice(mid)
   })()
   const columns = tatames.map(t => ({ tatame: t, matches: flatMatches(t) }))
+  const maxCards = Math.max(...columns.map(c => c.matches.length), 1)
 
   return (
-    // Página rola se não couber — sem overflow hidden em lugar nenhum
-    <div style={{ minHeight: "100dvh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "8px 12px", fontFamily: "system-ui, sans-serif" }}>
+    // height exato da viewport + overflow hidden = nada estoura para fora
+    <div style={{ height: "100dvh", width: "100%", boxSizing: "border-box", backgroundColor: "#0a0f1a", padding: "6px 10px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {showOverlay && (
         <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0f1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
@@ -200,68 +211,71 @@ export default function PainelPage() {
 
       {!showOverlay && (
         <button onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
-          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#64748b", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
+          style={{ position: "fixed", bottom: 10, right: 10, zIndex: 1000, backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#64748b", fontSize: "0.7rem", padding: "5px 8px", cursor: "pointer" }}>
           {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
         </button>
       )}
 
-      {/* Topbar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {/* Topbar — flex-shrink:0 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo2.png" alt="FBJJMMA" style={{ width: 28, height: 28, objectFit: "contain" }} />
+          <img src="/logo2.png" alt="FBJJMMA" style={{ width: 24, height: 24, objectFit: "contain" }} />
           <div>
-            <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: "0.9rem" }}>{event.name}</div>
-            <div style={{ color: "#64748b", fontSize: "0.6rem" }}>Painel de Chamadas — Área de Pesagem</div>
+            <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: "0.85rem" }}>{event.name}</div>
+            <div style={{ color: "#64748b", fontSize: "0.58rem" }}>Painel de Chamadas — Área de Pesagem</div>
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: "#475569", fontSize: "0.55rem" }}>Última atualização</div>
-          <div style={{ color: "#64748b", fontSize: "0.7rem", fontFamily: "monospace" }}>
+          <div style={{ color: "#475569", fontSize: "0.5rem" }}>Última atualização</div>
+          <div style={{ color: "#64748b", fontSize: "0.65rem", fontFamily: "monospace" }}>
             {lastUpdate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </div>
         </div>
       </div>
 
-      {/* Legenda */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #1e293b" }}>
+      {/* Legenda — flex-shrink:0 */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 4, paddingBottom: 4, borderBottom: "1px solid #1e293b", flexShrink: 0 }}>
         {LEGEND.map(l => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <div style={{ width: 10, height: 10, backgroundColor: l.bg, borderRadius: 2 }} />
-            <span style={{ color: "#64748b", fontSize: "0.62rem" }}>{l.label}</span>
+            <div style={{ width: 8, height: 8, backgroundColor: l.bg, borderRadius: 2 }} />
+            <span style={{ color: "#64748b", fontSize: "0.58rem" }}>{l.label}</span>
           </div>
         ))}
       </div>
 
       {tatames.length === 0 ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 0" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ color: "#1e293b", fontSize: "3rem", marginBottom: 10 }}>📋</div>
             <div style={{ color: "#475569", fontSize: "1rem" }}>Nenhum tatame ativo no momento</div>
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 8 }}>
+        // Grid de colunas — flex:1 min-height:0 para ocupar espaço restante
+        <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 8 }}>
           {columns.map(({ tatame, matches }, colIdx) => {
             const color = COL_COLORS[colIdx % COL_COLORS.length]
             const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
             const op = tatame.operations[0]?.user.name ?? ""
             return (
-              <div key={tatame.id}>
-                {/* Cabeçalho da coluna */}
-                <div style={{ textAlign: "center", paddingBottom: 8, borderBottom: `3px solid ${color}`, marginBottom: 8 }}>
-                  <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.04em" }}>Tatame {num}</div>
-                  {op && <div style={{ color: "#64748b", fontSize: "0.65rem", marginTop: 1 }}>{op}</div>}
+              // Coluna: flex column, height 100% herdada do grid
+              <div key={tatame.id} style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+                {/* Cabeçalho — flex-shrink:0 */}
+                <div style={{ textAlign: "center", paddingBottom: 6, borderBottom: `3px solid ${color}`, flexShrink: 0 }}>
+                  <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.1rem", letterSpacing: "0.04em" }}>Tatame {num}</div>
+                  {op && <div style={{ color: "#64748b", fontSize: "0.6rem", marginTop: 1 }}>{op}</div>}
                 </div>
-                {/* Cards */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {/* Container dos cards — flex:1 min-height:0, divide espaço entre os cards */}
+                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 6, paddingTop: 6 }}>
                   {matches.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
                     </div>
                   ) : (
                     matches.map(fm => (
-                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
+                      // n = maxCards para que a fonte seja igual em todas as colunas
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} n={maxCards} />
                     ))
                   )}
                 </div>
