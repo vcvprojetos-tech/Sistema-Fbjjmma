@@ -267,7 +267,7 @@ export default function PainelPage() {
                   {op && <div style={{ color: "#64748b", fontSize: "0.65rem", marginTop: "1px" }}>{op}</div>}
                 </div>
                 {/* Container de lutas */}
-                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "6px", paddingTop: "6px", overflow: "hidden" }}>
+                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "6px", paddingTop: "6px" }}>
                   {matches.length === 0 ? (
                     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
