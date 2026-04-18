@@ -87,50 +87,55 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-// AthleteRow: flexShrink:0 garante que nunca encolhe — padding define altura
-function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
-  pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null; seed: number; isWO: boolean
+// Cada linha de atleta ocupa exatamente 1/N do espaço disponível via flex:1
+// O font-size usa vw para escalar com a LARGURA da coluna, não com a altura
+function AthleteRow({ pos, checkedIn, calls, seed, isWO, numCols }: {
+  pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null; seed: number; isWO: boolean; numCols: number
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
-  if (name === "BYE") return (
-    <div style={{ flexShrink: 0, height: "40px", backgroundColor: "#0f172a" }} />
-  )
+  // Escala com a largura de cada coluna: 80vw / numCols / 10 ≈ tamanho adequado
+  const fs = `clamp(0.75rem, ${7 / numCols}vw, 1.4rem)`
+  const fsSub = `clamp(0.6rem, ${5 / numCols}vw, 1rem)`
+  if (name === "BYE") return <div style={{ flex: 1, backgroundColor: "#0f172a" }} />
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ flexShrink: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "clamp(6px, 1.2vh, 14px) 12px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "clamp(0.9rem, 1.8vh, 1.3rem)", width: "1.4em", textAlign: "center", flexShrink: 0 }}>{seed}</span>
+    <div style={{ flex: 1, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "6px", padding: "0 10px", minHeight: 0 }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: fs, width: "1.4em", textAlign: "center", flexShrink: 0, lineHeight: 1 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "clamp(0.9rem, 1.8vh, 1.3rem)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "clamp(0.65rem, 1.3vh, 0.95rem)", marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: fs, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: fsSub, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
 }
 
-function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
+function MatchCell({ fm, accentColor, numCols }: { fm: FlatMatch; accentColor: string; numCols: number }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
   const allCalls = match.callTimes as CallTime[] | null
   const p1Calls = allCalls ? allCalls.filter(c => c.pos === "p1" || !c.pos) : null
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
+  const fsCat = `clamp(0.5rem, ${4.5 / numCols}vw, 0.85rem)`
   return (
-    // flexShrink:0 — o card NUNCA encolhe abaixo do seu conteúdo natural
-    // flexGrow:1 — cresce para preencher espaço extra disponível
-    <div style={{ flexShrink: 0, flexGrow: 1, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column" }}>
-      <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "clamp(3px, 0.6vh, 7px) 12px" }}>
-        <span style={{ color: "#94a3b8", fontSize: "clamp(0.55rem, 1.2vh, 0.82rem)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
+    // flex:1 cresce e encolhe proporcionalmente — nunca extrapola o container
+    <div style={{ flex: 1, minHeight: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column" }}>
+      {/* Cabeçalho: altura automática pelo conteúdo */}
+      <div style={{ flexShrink: 0, backgroundColor: "#1e293b", padding: "3px 10px" }}>
+        <span style={{ color: "#94a3b8", fontSize: fsCat, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
       </div>
-      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
+      {/* Linha atleta 1 */}
+      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} numCols={numCols} />
       {!isSolo && (
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "clamp(2px, 0.4vh, 5px) 10px" }}>
+        <div style={{ flexShrink: 0, height: "14px", display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#475569", fontSize: "0.6rem", fontWeight: 800, padding: "0 8px", letterSpacing: "0.1em" }}>VS</span>
+          <span style={{ color: "#475569", fontSize: "0.5rem", fontWeight: 800, padding: "0 6px" }}>VS</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
         </div>
       )}
-      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />}
+      {/* Linha atleta 2 */}
+      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} numCols={numCols} />}
     </div>
   )
 }
@@ -275,7 +280,7 @@ export default function PainelPage() {
                     </div>
                   ) : (
                     matches.map(fm => (
-                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} numCols={tatames.length} />
                     ))
                   )}
                 </div>
