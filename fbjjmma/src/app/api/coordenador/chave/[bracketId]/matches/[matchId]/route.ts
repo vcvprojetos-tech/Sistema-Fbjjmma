@@ -116,6 +116,8 @@ export async function PUT(
     const totalPositions = await prisma.bracketPosition.count({ where: { bracketId } })
 
     if (totalPositions === 3) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const matchAny = prisma.match as any
       if (match.round === 1) {
         // Loser gets a second chance — do NOT mark as eliminated
         const thirdPosition = await prisma.bracketPosition.findFirst({
@@ -124,13 +126,15 @@ export async function PUT(
             id: { notIn: [match.position1Id, match.position2Id].filter(Boolean) as string[] },
           },
         })
-        await prisma.match.create({
+        // Perdedor do R1 estava presente (jogou a partida); thirdPosition ainda não foi confirmado
+        await matchAny.create({
           data: {
             bracketId,
             round: 2,
             matchNumber: 1,
             position1Id: loserId ?? null,
             position2Id: thirdPosition!.id,
+            p1CheckedIn: !!loserId, // perdedor estava presente
           },
         })
       } else if (match.round === 2) {
@@ -139,13 +143,16 @@ export async function PUT(
           await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
         }
         const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1 } })
-        await prisma.match.create({
+        // Ambos os finalistas já jogaram rodadas anteriores — ambos confirmados
+        await matchAny.create({
           data: {
             bracketId,
             round: 3,
             matchNumber: 1,
             position1Id: round1Match!.winnerId!,
             position2Id: winnerId,
+            p1CheckedIn: true,
+            p2CheckedIn: true,
           },
         })
       } else {

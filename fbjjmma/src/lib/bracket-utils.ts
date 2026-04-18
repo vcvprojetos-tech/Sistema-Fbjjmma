@@ -59,6 +59,12 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
   const round1Count = allMatches.filter((m) => m.round === 1).length
   if (round1Count === 0) return false
 
+  // Posições que já confirmaram presença (venceram alguma partida anterior)
+  const confirmedPositions = new Set<string>()
+  for (const m of allMatches) {
+    if (m.winnerId) confirmedPositions.add(m.winnerId)
+  }
+
   // Agrupa por rodada
   const byRound = new Map<number, typeof allMatches>()
   for (const m of allMatches) {
@@ -93,10 +99,12 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
       const adv1 = m1.winnerId // null se W.O. duplo
       const adv2 = m2.winnerId // null se W.O. duplo
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const matchAny = prisma.match as any
       let created
       if (adv1 === null && adv2 === null) {
         // Ambos os lados sem vencedor → propaga W.O. duplo para cima (auto-resolvido)
-        created = await prisma.match.create({
+        created = await matchAny.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
             position1Id: null, position2Id: null,
@@ -105,26 +113,35 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
         })
       } else if (adv1 === null) {
         // Lado esquerdo sem vencedor (W.O.) → adv2 já passou pela pesagem, avança automaticamente
-        created = await prisma.match.create({
+        confirmedPositions.add(adv2!)
+        created = await matchAny.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
             position1Id: adv2, position2Id: null,
             winnerId: adv2, isWO: true, woType: "AUSENCIA", endedAt: new Date(),
+            p1CheckedIn: true,
           },
         })
       } else if (adv2 === null) {
         // Lado direito sem vencedor (W.O.) → adv1 já passou pela pesagem, avança automaticamente
-        created = await prisma.match.create({
+        confirmedPositions.add(adv1!)
+        created = await matchAny.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
             position1Id: adv1, position2Id: null,
             winnerId: adv1, isWO: true, woType: "AUSENCIA", endedAt: new Date(),
+            p1CheckedIn: true,
           },
         })
       } else {
-        // Partida normal com dois atletas
-        created = await prisma.match.create({
-          data: { bracketId, round: nextRound, matchNumber: nextMN, position1Id: adv1, position2Id: adv2 },
+        // Partida normal com dois atletas — propaga check-in de rodadas anteriores
+        created = await matchAny.create({
+          data: {
+            bracketId, round: nextRound, matchNumber: nextMN,
+            position1Id: adv1, position2Id: adv2,
+            p1CheckedIn: confirmedPositions.has(adv1),
+            p2CheckedIn: confirmedPositions.has(adv2),
+          },
         })
       }
 
