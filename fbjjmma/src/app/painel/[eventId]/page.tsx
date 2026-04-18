@@ -245,15 +245,16 @@ export default function PainelPage() {
         {debugInfo}
       </div>
 
-      {/* Container interno: tamanho fixo 1920×1080, escalado para caber na tela */}
+      {/* Container interno: tamanho fixo 1920×1080, escalado e centralizado */}
       <div style={{
         width: DESIGN_W,
         height: DESIGN_H,
         transform: `scale(${scale})`,
-        transformOrigin: "top left",
+        transformOrigin: "top center",
         position: "absolute",
         top: 0,
-        left: 0,
+        left: "50%",
+        marginLeft: -DESIGN_W / 2,
         backgroundColor: "#0a0f1a",
         padding: "20px 24px",
         boxSizing: "border-box",
