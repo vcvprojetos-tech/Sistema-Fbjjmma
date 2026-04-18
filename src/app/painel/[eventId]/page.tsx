@@ -286,48 +286,46 @@ export default function PainelPage() {
             </div>
           </div>
         ) : (
-          <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 16 }}>
+          <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gridTemplateRows: "1fr", gap: 16, overflow: "hidden" }}>
             {tatames.map((tatame, colIdx) => {
               const color = COL_COLORS[colIdx % COL_COLORS.length]
               const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
               const op = tatame.operations[0]?.user.name ?? ""
-              // Mostra apenas os primeiros 10; os demais aguardam na fila
               const athletes = getAthletes(tatame).slice(0, NAMES_PER_COL)
 
               return (
-                <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minWidth: 0, height: "100%", minHeight: 0 }}>
+                <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
                   {/* Cabeçalho do tatame */}
                   <div style={{ textAlign: "center", paddingBottom: 8, borderBottom: `4px solid ${color}`, marginBottom: 10, flexShrink: 0 }}>
                     <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em" }}>Tatame {num}</div>
                     {op && <div style={{ color: "#64748b", fontSize: 14, marginTop: 2 }}>{op}</div>}
                   </div>
 
-                  {/* Lista de nomes: sempre 10 slots, flex distribui igualmente */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: GAP, minHeight: 0, overflow: "hidden" }}>
-                    {athletes.length === 0 ? (
-                      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ color: "#1e293b", fontSize: 18 }}>Sem atletas pendentes</span>
-                      </div>
-                    ) : (
-                      Array.from({ length: NAMES_PER_COL }).map((_, idx) => {
+                  {/* Lista de nomes: sempre 10 slots via CSS grid */}
+                  {athletes.length === 0 ? (
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ color: "#1e293b", fontSize: 18 }}>Sem atletas pendentes</span>
+                    </div>
+                  ) : (
+                    <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateRows: `repeat(${NAMES_PER_COL}, 1fr)`, gap: GAP, overflow: "hidden" }}>
+                      {Array.from({ length: NAMES_PER_COL }).map((_, idx) => {
                         const a = athletes[idx]
                         if (!a) {
-                          // Slot vazio
                           return (
                             <div key={`empty-${idx}`} style={{
-                              flex: 1, minHeight: 0, borderRadius: 6,
+                              borderRadius: 6,
                               backgroundColor: "#0f172a",
                               border: "1px dashed #1e293b",
+                              minHeight: 0,
                             }} />
                           )
                         }
                         return (
                           <div key={a.key} style={{
-                            flex: 1, minHeight: 0,
                             backgroundColor: rowBg(a.calls),
                             borderRadius: 6,
                             display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
-                            overflow: "hidden",
+                            overflow: "hidden", minHeight: 0,
                             borderLeft: `4px solid ${color}`,
                           }}>
                             <span style={{ color: rowText(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
@@ -350,9 +348,9 @@ export default function PainelPage() {
                             )}
                           </div>
                         )
-                      })
-                    )}
-                  </div>
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })}
