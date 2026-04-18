@@ -973,6 +973,19 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     }}>
       <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
       {secondPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
+    </div>,
+    <div key="final-3" style={{
+      position: "absolute", left: centerX,
+      top: finalCenterY + finalBoxH + 9,
+      width: CENTER_W, height: finalBoxH,
+      border: `1px solid ${thirdPlaceReg ? "#5c3a1e" : "transparent"}`,
+      backgroundColor: thirdPlaceReg ? "#1a0e00" : "transparent",
+      borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
+    }}>
+      {thirdPlaceReg && <>
+        <span style={{ fontSize: 7, color: "#cd7c2f", fontWeight: 600, lineHeight: 1.2 }}>3° Lugar</span>
+        <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>
+      </>}
     </div>
   )
 
