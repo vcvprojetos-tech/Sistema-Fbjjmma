@@ -153,14 +153,14 @@ export default function PainelPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
-  const [scale, setScale] = useState(1)
+  const [scaleX, setScaleX] = useState(1)
+  const [scaleY, setScaleY] = useState(1)
 
-  // Calcula o scale para encaixar DESIGN_W x DESIGN_H na janela atual
+  // Escala X e Y independentemente para preencher a tela inteira sem espaços
   useEffect(() => {
     const recalc = () => {
-      const sw = window.innerWidth / DESIGN_W
-      const sh = window.innerHeight / DESIGN_H
-      setScale(Math.min(sw, sh))
+      setScaleX(window.innerWidth / DESIGN_W)
+      setScaleY(window.innerHeight / DESIGN_H)
     }
     recalc()
     window.addEventListener("resize", recalc)
@@ -175,9 +175,8 @@ export default function PainelPage() {
   useEffect(() => {
     const onChange = () => {
       setIsFullscreen(!!document.fullscreenElement)
-      const sw = window.innerWidth / DESIGN_W
-      const sh = window.innerHeight / DESIGN_H
-      setScale(Math.min(sw, sh))
+      setScaleX(window.innerWidth / DESIGN_W)
+      setScaleY(window.innerHeight / DESIGN_H)
     }
     document.addEventListener("fullscreenchange", onChange)
     return () => document.removeEventListener("fullscreenchange", onChange)
@@ -242,13 +241,11 @@ export default function PainelPage() {
       <div style={{
         width: DESIGN_W,
         height: DESIGN_H,
-        transform: `scale(${scale})`,
-        transformOrigin: "center center",
+        transform: `scaleX(${scaleX}) scaleY(${scaleY})`,
+        transformOrigin: "top left",
         position: "absolute",
-        top: "50%",
-        left: "50%",
-        marginLeft: -DESIGN_W / 2,
-        marginTop: -DESIGN_H / 2,
+        top: 0,
+        left: 0,
         backgroundColor: "#0a0f1a",
         padding: "20px 24px",
         boxSizing: "border-box",
