@@ -303,7 +303,7 @@ export default function PainelPage() {
                     {op && <div style={{ color: "#64748b", fontSize: 18, marginTop: 2 }}>{op}</div>}
                   </div>
                   {/* Cards */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: GAP, paddingBottom: GAP }}>
                     {matches.length === 0 ? (
                       <div style={{ textAlign: "center", padding: "60px 0" }}>
                         <span style={{ color: "#1e293b", fontSize: 20 }}>Sem lutas pendentes</span>
