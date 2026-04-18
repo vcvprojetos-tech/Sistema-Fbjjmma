@@ -292,14 +292,9 @@ export default function PainelPage() {
               const color = COL_COLORS[colIdx % COL_COLORS.length]
               const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
               const op = tatame.operations[0]?.user.name ?? ""
-              const athletes = getAthletes(tatame)
-
-              // Divide em colunas de NAMES_PER_COL
-              const cols: AthleteEntry[][] = []
-              for (let i = 0; i < athletes.length; i += NAMES_PER_COL) {
-                cols.push(athletes.slice(i, i + NAMES_PER_COL))
-              }
-              if (cols.length === 0) cols.push([])
+              // Mostra apenas os primeiros 10; os demais aguardam na fila
+              const athletes = getAthletes(tatame).slice(0, NAMES_PER_COL)
+              const cols: AthleteEntry[][] = [athletes]
 
               return (
                 <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
