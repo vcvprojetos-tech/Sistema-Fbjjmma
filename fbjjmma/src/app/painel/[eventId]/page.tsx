@@ -87,26 +87,45 @@ const LEGEND = [
   { bg: "#334155", label: "W.O." },
 ]
 
-function AthleteRow({ pos, checkedIn, calls, seed, isWO }: {
-  pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null; seed: number; isWO: boolean
+// Calcula alturas em vh baseado no número de cards — tudo proporcional à tela
+// Overhead fixo: topbar 8vh + legenda 6vh + col-header 8vh + padding/gaps 4vh = 26vh
+// Cada card ocupa: (100vh - 26vh) / numCards = 74vh / numCards
+function getCardVh(numCards: number) {
+  const available = 74 // vh disponível para os cards
+  const cardVh = available / numCards
+  return {
+    cardH:   `${cardVh}vh`,
+    rowH:    `${cardVh * 0.38}vh`,
+    catH:    `${cardVh * 0.16}vh`,
+    vsH:     `${cardVh * 0.08}vh`,
+    fsName:  `${cardVh * 0.17}vh`,
+    fsTeam:  `${cardVh * 0.12}vh`,
+    fsCat:   `${cardVh * 0.09}vh`,
+    seedW:   `${cardVh * 0.22}vh`,
+  }
+}
+
+function AthleteRow({ pos, checkedIn, calls, seed, isWO, styles }: {
+  pos: MatchInfo["position1"]; checkedIn: boolean; calls: CallTime[] | null
+  seed: number; isWO: boolean
+  styles: ReturnType<typeof getCardVh>
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
-  if (name === "BYE") return <div style={{ height: "50px", backgroundColor: "#0f172a" }} />
+  if (name === "BYE") return <div style={{ height: styles.rowH, backgroundColor: "#0f172a", flexShrink: 0 }} />
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    // Altura definida pelo padding — NÃO encolhe, NÃO tem overflow hidden
-    <div style={{ backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "8px", padding: "14px 12px" }}>
-      <span style={{ color: s.sub, fontWeight: 800, fontSize: "1rem", width: "1.4em", textAlign: "center", flexShrink: 0 }}>{seed}</span>
+    <div style={{ height: styles.rowH, flexShrink: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "6px", padding: "0 10px" }}>
+      <span style={{ color: s.sub, fontWeight: 800, fontSize: styles.fsName, width: styles.seedW, textAlign: "center", flexShrink: 0, lineHeight: 1 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: s.text, fontWeight: 700, fontSize: "1rem", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        {team && <div style={{ color: s.sub, fontSize: "0.8rem", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
+        <div style={{ color: s.text, fontWeight: 700, fontSize: styles.fsName, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        {team && <div style={{ color: s.sub, fontSize: styles.fsTeam, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team}</div>}
       </div>
     </div>
   )
 }
 
-function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) {
+function MatchCell({ fm, accentColor, styles }: { fm: FlatMatch; accentColor: string; styles: ReturnType<typeof getCardVh> }) {
   const { match, bracketLabel } = fm
   const isSolo = match.position2 === null
   const allCalls = match.callTimes as CallTime[] | null
@@ -114,20 +133,19 @@ function MatchCell({ fm, accentColor }: { fm: FlatMatch; accentColor: string }) 
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    // Sem flex height — altura definida pelo conteúdo interno
-    <div style={{ border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a" }}>
-      <div style={{ backgroundColor: "#1e293b", padding: "5px 12px" }}>
-        <span style={{ color: "#94a3b8", fontSize: "0.75rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{bracketLabel}</span>
+    <div style={{ height: styles.cardH, flexShrink: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ height: styles.catH, flexShrink: 0, backgroundColor: "#1e293b", display: "flex", alignItems: "center", padding: "0 10px" }}>
+        <span style={{ color: "#94a3b8", fontSize: styles.fsCat, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bracketLabel}</span>
       </div>
-      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} />
+      <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} styles={styles} />
       {!isSolo && (
-        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "4px 10px" }}>
+        <div style={{ height: styles.vsH, flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
-          <span style={{ color: "#475569", fontSize: "0.55rem", fontWeight: 800, padding: "0 8px" }}>VS</span>
+          <span style={{ color: "#475569", fontSize: styles.fsCat, fontWeight: 800, padding: "0 8px" }}>VS</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
         </div>
       )}
-      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} />}
+      {!isSolo && <AthleteRow pos={match.position2} checkedIn={match.p2CheckedIn} calls={p2Calls} seed={2} isWO={isWOFinal} styles={styles} />}
     </div>
   )
 }
@@ -257,6 +275,7 @@ export default function PainelPage() {
             const color = COL_COLORS[colIdx % COL_COLORS.length]
             const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
             const op = tatame.operations[0]?.user.name ?? ""
+            const cardStyles = getCardVh(Math.max(matches.length, 1))
             return (
               <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
                 {/* Cabeçalho da coluna */}
@@ -264,15 +283,15 @@ export default function PainelPage() {
                   <div style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.04em" }}>Tatame {num}</div>
                   {op && <div style={{ color: "#64748b", fontSize: "0.65rem", marginTop: "1px" }}>{op}</div>}
                 </div>
-                {/* Container de lutas: overflowY auto rola se não couber, nunca corta */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px", paddingTop: "6px", overflowY: "auto" }}>
+                {/* Container de lutas */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px", paddingTop: "6px" }}>
                   {matches.length === 0 ? (
                     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: "#1e293b", fontSize: "0.75rem" }}>Sem lutas pendentes</span>
                     </div>
                   ) : (
                     matches.map(fm => (
-                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} />
+                      <MatchCell key={fm.match.id} fm={fm} accentColor={color} styles={cardStyles} />
                     ))
                   )}
                 </div>
