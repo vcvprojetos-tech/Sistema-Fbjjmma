@@ -112,10 +112,10 @@ function AthleteRow({ pos, checkedIn, calls, seed, isWO, styles }: {
 }) {
   const name = getName(pos)
   const team = getTeam(pos)
-  if (name === "BYE") return <div style={{ height: styles.rowH, backgroundColor: "#0f172a", flexShrink: 0 }} />
+  if (name === "BYE") return <div style={{ minHeight: styles.rowH, backgroundColor: "#0f172a", flexShrink: 0 }} />
   const s = statusStyle(checkedIn, calls, isWO)
   return (
-    <div style={{ height: styles.rowH, flexShrink: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "6px", padding: "0 10px" }}>
+    <div style={{ minHeight: styles.rowH, flexShrink: 0, backgroundColor: s.bg, display: "flex", alignItems: "center", gap: "6px", padding: "2px 10px" }}>
       <span style={{ color: s.sub, fontWeight: 800, fontSize: styles.fsName, width: styles.seedW, textAlign: "center", flexShrink: 0, lineHeight: 1 }}>{seed}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: s.text, fontWeight: 700, fontSize: styles.fsName, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
@@ -133,13 +133,13 @@ function MatchCell({ fm, accentColor, styles }: { fm: FlatMatch; accentColor: st
   const p2Calls = allCalls ? allCalls.filter(c => c.pos === "p2" || !c.pos) : null
   const isWOFinal = match.isWO && match.endedAt !== null
   return (
-    <div style={{ height: styles.cardH, flexShrink: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ height: styles.catH, flexShrink: 0, backgroundColor: "#1e293b", display: "flex", alignItems: "center", padding: "0 10px" }}>
+    <div style={{ minHeight: styles.cardH, flexShrink: 0, border: `1px solid #334155`, borderTop: `3px solid ${accentColor}`, borderRadius: "4px", backgroundColor: "#0f172a", display: "flex", flexDirection: "column" }}>
+      <div style={{ minHeight: styles.catH, flexShrink: 0, backgroundColor: "#1e293b", display: "flex", alignItems: "center", padding: "0 10px" }}>
         <span style={{ color: "#94a3b8", fontSize: styles.fsCat, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bracketLabel}</span>
       </div>
       <AthleteRow pos={match.position1} checkedIn={match.p1CheckedIn} calls={p1Calls} seed={1} isWO={isWOFinal} styles={styles} />
       {!isSolo && (
-        <div style={{ height: styles.vsH, flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
+        <div style={{ minHeight: styles.vsH, flexShrink: 0, display: "flex", alignItems: "center", backgroundColor: "#0a0f1a", padding: "0 10px" }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
           <span style={{ color: "#475569", fontSize: styles.fsCat, fontWeight: 800, padding: "0 8px" }}>VS</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#1e293b" }} />
