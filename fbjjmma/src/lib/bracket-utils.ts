@@ -104,21 +104,21 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
           },
         })
       } else if (adv1 === null) {
-        // Lado esquerdo sem vencedor → criar partida solo PENDENTE para adv2
-        // O coordenador confirma presença ou aplica W.O. ao atleta restante
+        // Lado esquerdo sem vencedor (W.O.) → adv2 já passou pela pesagem, avança automaticamente
         created = await prisma.match.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
             position1Id: adv2, position2Id: null,
-            // sem winnerId nem endedAt → coordenador decide
+            winnerId: adv2, isWO: true, woType: "AUSENCIA", endedAt: new Date(),
           },
         })
       } else if (adv2 === null) {
-        // Lado direito sem vencedor → criar partida solo PENDENTE para adv1
+        // Lado direito sem vencedor (W.O.) → adv1 já passou pela pesagem, avança automaticamente
         created = await prisma.match.create({
           data: {
             bracketId, round: nextRound, matchNumber: nextMN,
             position1Id: adv1, position2Id: null,
+            winnerId: adv1, isWO: true, woType: "AUSENCIA", endedAt: new Date(),
           },
         })
       } else {
