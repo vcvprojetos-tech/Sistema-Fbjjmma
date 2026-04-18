@@ -895,6 +895,18 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     : null
   const secondPlaceReg = secondPosId ? posIdMap.get(secondPosId)?.registration ?? null : null
 
+  // 3° lugar: perdedor da semifinal do campeão (ou do vice se o lado do campeão foi W.O.)
+  const thirdPlaceReg = (() => {
+    if (!finalMatch?.winnerId || maxRealRound < 2) return null
+    const semiRound = maxRealRound - 1
+    const champSemi = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId && !m.isWO)
+    const runnerUpSemi = realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
+    const semi = champSemi ?? runnerUpSemi
+    if (!semi) return null
+    const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
+    return loserId ? posIdMap.get(loserId)?.registration ?? null : null
+  })()
+
 
   const leftFinalistPosNum = leftSlots[numHalfRounds - 1]?.[0]?.posId
     ? posIdMap.get(leftSlots[numHalfRounds - 1][0].posId!)?.position ?? null
@@ -981,6 +993,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const placements = [
     { label: "1° Lugar", color: "#fbbf24", reg: primeiro },
     { label: "2° Lugar", color: "var(--muted-foreground)", reg: segundo },
+    { label: "3° Lugar", color: "#cd7c2f", reg: thirdPlaceReg },
   ]
 
   const title = [

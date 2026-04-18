@@ -418,10 +418,12 @@ export default function TatamePage() {
         return podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
       }
       if (podiumMaxRound < 2) return null
-      const semi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
+      // Tenta a semifinal do campeão; se foi W.O. (BYE), tenta a do vice-campeão
+      const champSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
+      const runnerUpId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
+      const runnerUpSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === runnerUpId)
+      const semi = (!champSemi?.isWO ? champSemi : null) ?? (!runnerUpSemi?.isWO ? runnerUpSemi : null)
       if (!semi) return null
-      // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
-      if (semi.isWO) return null
       const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
       return loserId ? podiumBracket.positions.find(p => p.id === loserId) ?? null : null
     }
