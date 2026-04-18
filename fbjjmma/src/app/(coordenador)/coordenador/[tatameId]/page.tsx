@@ -689,108 +689,6 @@ export default function TatamePage() {
                     </div>
                   )}
 
-                  {/* Partidas solo: 1 atleta aguardando pesagem */}
-                  {soloMatches.map(match => {
-                    const p1 = match.position1
-                    const p1Name = getAthleteName(p1)
-                    const p1Present = match.p1CheckedIn
-                    const isMid = match._isMidBracket
-                    const calls = match.callTimes ?? []
-                    const callErr = callError?.matchId === match.id ? callError : null
-                    return (
-                      <div key={match.id} className="rounded-xl border overflow-hidden"
-                        style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
-                        <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-                          <span className="text-xs font-semibold" style={{ color: isMid ? "#60a5fa" : "#fbbf24" }}>
-                            {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
-                          </span>
-                        </div>
-                        <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
-                          <button
-                            onClick={() => togglePresent(match.id, match._bracketId, "p1", p1Present)}
-                            disabled={actionLoading}
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
-                            style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
-                          >
-                            {p1Present ? "✓" : "1"}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
-                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
-                          </div>
-                          <span className="text-xs text-[#6b7280]">TAP</span>
-                        </div>
-                        <div className="flex gap-2 p-3">
-                          <button
-                            onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
-                            disabled={actionLoading || (isMid && !p1Present)}
-                            className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
-                            style={{ backgroundColor: "#15803d" }}
-                          >
-                            {isMid ? "▶ Avançar" : "✓ Campeão"}
-                          </button>
-                          {callMenu?.matchId !== match.id && (
-                            <button
-                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
-                              disabled={actionLoading}
-                              className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
-                            >
-                              W.O.
-                            </button>
-                          )}
-                        </div>
-                        {callMenu?.matchId === match.id && (
-                          <div className="px-3 pb-3 flex flex-col gap-2" style={{ borderTop: "1px solid var(--border)" }}>
-                            <p className="text-xs text-[#f87171] font-semibold pt-2">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
-                            <div className="flex gap-1.5">
-                              {[1, 2, 3].map(n => {
-                                const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos)
-                                const done = posCalls.some((c: CallTime) => c.call === n)
-                                const isLoadingCall = callLoading === `${match.id}-${n}`
-                                const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
-                                return (
-                                  <button
-                                    key={n}
-                                    onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
-                                    disabled={!canCall || !!callLoading || actionLoading}
-                                    className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                    style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
-                                  >
-                                    {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                            {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
-                            <button
-                              onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
-                              disabled={actionLoading}
-                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                              style={{ backgroundColor: "#78350f" }}
-                            >
-                              Desclassificação por Peso
-                            </button>
-                            <button
-                              onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: "", loserName: p1Name }); setDesclReason(""); setCallMenu(null) }}
-                              disabled={actionLoading}
-                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                              style={{ backgroundColor: "#7c3aed" }}
-                            >
-                              Desclassificado
-                            </button>
-                            <button
-                              onClick={() => setCallMenu(null)}
-                              className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
-                              style={{ backgroundColor: "var(--card)" }}
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-
                   {/* EM_ANDAMENTO — todas as partidas prontas (ambos atletas definidos) */}
                   {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && (
                     <div className="space-y-3">
@@ -1009,6 +907,108 @@ export default function TatamePage() {
                       )}
                     </div>
                   )}
+
+                  {/* Partidas solo: 1 atleta aguardando pesagem — exibidas após as lutas normais */}
+                  {soloMatches.map(match => {
+                    const p1 = match.position1
+                    const p1Name = getAthleteName(p1)
+                    const p1Present = match.p1CheckedIn
+                    const isMid = match._isMidBracket
+                    const calls = match.callTimes ?? []
+                    const callErr = callError?.matchId === match.id ? callError : null
+                    return (
+                      <div key={match.id} className="rounded-xl border overflow-hidden"
+                        style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
+                        <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <span className="text-xs font-semibold" style={{ color: isMid ? "#60a5fa" : "#fbbf24" }}>
+                            {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
+                          </span>
+                        </div>
+                        <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <button
+                            onClick={() => togglePresent(match.id, match._bracketId, "p1", p1Present)}
+                            disabled={actionLoading}
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
+                            style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                          >
+                            {p1Present ? "✓" : "1"}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
+                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
+                          </div>
+                          <span className="text-xs text-[#6b7280]">TAP</span>
+                        </div>
+                        <div className="flex gap-2 p-3">
+                          <button
+                            onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
+                            disabled={actionLoading || (isMid && !p1Present)}
+                            className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
+                            style={{ backgroundColor: "#15803d" }}
+                          >
+                            {isMid ? "▶ Avançar" : "✓ Campeão"}
+                          </button>
+                          {callMenu?.matchId !== match.id && (
+                            <button
+                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
+                              disabled={actionLoading}
+                              className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
+                            >
+                              W.O.
+                            </button>
+                          )}
+                        </div>
+                        {callMenu?.matchId === match.id && (
+                          <div className="px-3 pb-3 flex flex-col gap-2" style={{ borderTop: "1px solid var(--border)" }}>
+                            <p className="text-xs text-[#f87171] font-semibold pt-2">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
+                            <div className="flex gap-1.5">
+                              {[1, 2, 3].map(n => {
+                                const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos)
+                                const done = posCalls.some((c: CallTime) => c.call === n)
+                                const isLoadingCall = callLoading === `${match.id}-${n}`
+                                const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
+                                return (
+                                  <button
+                                    key={n}
+                                    onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
+                                    disabled={!canCall || !!callLoading || actionLoading}
+                                    className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
+                                    style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                  >
+                                    {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                            {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                            <button
+                              onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
+                              disabled={actionLoading}
+                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                              style={{ backgroundColor: "#78350f" }}
+                            >
+                              Desclassificação por Peso
+                            </button>
+                            <button
+                              onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: "", loserName: p1Name }); setDesclReason(""); setCallMenu(null) }}
+                              disabled={actionLoading}
+                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                              style={{ backgroundColor: "#7c3aed" }}
+                            >
+                              Desclassificado
+                            </button>
+                            <button
+                              onClick={() => setCallMenu(null)}
+                              className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
+                              style={{ backgroundColor: "var(--card)" }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
 
                   {/* FINALIZADA / PREMIADA — pódio (só quando a GF finalizou, ou chave simples finalizada) */}
                   {(isGroup
