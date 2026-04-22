@@ -21,6 +21,26 @@ const DESIGN_W = 1920
 const DESIGN_H = 1080
 
 const NAMES_PER_COL = 10
+const GAP = 4
+
+// Alturas fixas para layout determinístico
+const TOPBAR_H   = 52   // topbar
+const TOPBAR_MB  = 10
+const LEGEND_H   = 38   // legenda
+const LEGEND_MB  = 10
+const COL_HEAD_H = 60   // cabeçalho da coluna (título + coordenador)
+const COL_HEAD_MB = 8
+const OUTER_PAD_T = 16
+const OUTER_PAD_B = 12
+const OUTER_PAD_H = 16  // horizontal
+
+const SLOTS_AREA_H =
+  DESIGN_H - OUTER_PAD_T - OUTER_PAD_B
+  - TOPBAR_H - TOPBAR_MB
+  - LEGEND_H - LEGEND_MB
+  - COL_HEAD_H - COL_HEAD_MB
+
+const SLOT_H = Math.floor((SLOTS_AREA_H - (NAMES_PER_COL - 1) * GAP) / NAMES_PER_COL)
 
 interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
 interface MatchInfo {
@@ -81,7 +101,6 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
       if (m.endedAt) continue
       if (!m.position1) continue
 
-      // p1
       const p1Name = getName(m.position1)
       if (p1Name !== "BYE") {
         const key = `${m.id}-p1`
@@ -90,8 +109,7 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
           const allCalls = m.callTimes ?? []
           const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
           entries.push({
-            key,
-            name: p1Name,
+            key, name: p1Name,
             team: getTeam(m.position1) || label,
             checkedIn: m.p1CheckedIn,
             calls: p1Calls.length,
@@ -100,7 +118,6 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
         }
       }
 
-      // p2
       if (m.position2) {
         const p2Name = getName(m.position2)
         if (p2Name !== "BYE") {
@@ -110,8 +127,7 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
             const allCalls = m.callTimes ?? []
             const p2Calls = allCalls.filter(c => c.pos === "p2")
             entries.push({
-              key,
-              name: p2Name,
+              key, name: p2Name,
               team: getTeam(m.position2) || label,
               checkedIn: m.p2CheckedIn,
               calls: p2Calls.length,
@@ -123,8 +139,6 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
     }
   }
 
-  // Não confirmados primeiro, depois confirmados (para referência)
-  // Filtra apenas os que ainda não confirmaram
   return entries.filter(e => !e.checkedIn && !e.isWO)
 }
 
@@ -147,9 +161,6 @@ const LEGEND = [
   { bg: "#7c2d12", label: "2ª Chamada" },
   { bg: "#7f1d1d", label: "3ª Chamada" },
 ]
-
-const NAME_H = 88   // altura de cada linha de atleta
-const GAP = 4
 
 export default function PainelPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -209,10 +220,16 @@ export default function PainelPage() {
   )
 
   const { event, tatames: allTatames } = data
+
+  // Divisão dos tatames por painel:
+  // ≤ 4 tatames → todos no painel 1
+  //   6 tatames → painel 1: 1-3, painel 2: 4-6
+  //   8 tatames → painel 1: 1-4, painel 2: 5-8
   const tatames = (() => {
     if (!painelNum) return allTatames
-    const mid = Math.ceil(allTatames.length / 2)
-    return painelNum === "1" ? allTatames.slice(0, mid) : allTatames.slice(mid)
+    const total = allTatames.length
+    const splitAt = total <= 4 ? total : Math.ceil(total / 2)
+    return painelNum === "1" ? allTatames.slice(0, splitAt) : allTatames.slice(splitAt)
   })()
 
   return (
@@ -245,105 +262,111 @@ export default function PainelPage() {
         transformOrigin: "top left",
         position: "absolute", top: 0, left: 0,
         backgroundColor: "#0a0f1a",
-        padding: "20px 24px",
+        padding: `${OUTER_PAD_T}px ${OUTER_PAD_H}px ${OUTER_PAD_B}px`,
         boxSizing: "border-box",
         fontFamily: "system-ui, sans-serif",
-        display: "flex", flexDirection: "column",
       }}>
 
         {/* Topbar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexShrink: 0 }}>
+        <div style={{ height: TOPBAR_H, marginBottom: TOPBAR_MB, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo2.png" alt="FBJJMMA" style={{ width: 40, height: 40, objectFit: "contain" }} />
+            <img src="/logo2.png" alt="FBJJMMA" style={{ width: 38, height: 38, objectFit: "contain" }} />
             <div>
-              <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: 22 }}>{event.name}</div>
-              <div style={{ color: "#64748b", fontSize: 14 }}>Painel de Chamadas — Área de Pesagem</div>
+              <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: 20 }}>{event.name}</div>
+              <div style={{ color: "#64748b", fontSize: 13 }}>Painel de Chamadas — Área de Pesagem</div>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ color: "#475569", fontSize: 12 }}>Última atualização</div>
-            <div style={{ color: "#64748b", fontSize: 16, fontFamily: "monospace" }}>
+            <div style={{ color: "#475569", fontSize: 11 }}>Última atualização</div>
+            <div style={{ color: "#64748b", fontSize: 15, fontFamily: "monospace" }}>
               {lastUpdate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </div>
           </div>
         </div>
 
         {/* Legenda */}
-        <div style={{ display: "flex", gap: 24, marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #1e293b", flexShrink: 0 }}>
+        <div style={{ height: LEGEND_H, marginBottom: LEGEND_MB, display: "flex", alignItems: "center", gap: 24, borderBottom: "1px solid #1e293b" }}>
           {LEGEND.map(l => (
             <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3 }} />
-              <span style={{ color: "#64748b", fontSize: 16 }}>{l.label}</span>
+              <span style={{ color: "#64748b", fontSize: 15 }}>{l.label}</span>
             </div>
           ))}
         </div>
 
         {tatames.length === 0 ? (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ height: SLOTS_AREA_H + COL_HEAD_H + COL_HEAD_MB, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ color: "#1e293b", fontSize: 60, marginBottom: 10 }}>📋</div>
               <div style={{ color: "#475569", fontSize: 24 }}>Nenhum tatame ativo no momento</div>
             </div>
           </div>
         ) : (
-          <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 16 }}>
             {tatames.map((tatame, colIdx) => {
               const color = COL_COLORS[colIdx % COL_COLORS.length]
               const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
               const op = tatame.operations[0]?.user.name ?? ""
-              // Mostra apenas os primeiros 10; os demais aguardam na fila
               const athletes = getAthletes(tatame).slice(0, NAMES_PER_COL)
-              const cols: AthleteEntry[][] = [athletes]
 
               return (
-                <div key={tatame.id} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                <div key={tatame.id}>
                   {/* Cabeçalho do tatame */}
-                  <div style={{ textAlign: "center", paddingBottom: 10, borderBottom: `4px solid ${color}`, marginBottom: 12, flexShrink: 0 }}>
-                    <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 32, letterSpacing: "0.04em" }}>Tatame {num}</div>
-                    {op && <div style={{ color: "#64748b", fontSize: 16, marginTop: 2 }}>{op}</div>}
+                  <div style={{ height: COL_HEAD_H, marginBottom: COL_HEAD_MB, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", borderBottom: `4px solid ${color}` }}>
+                    <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em" }}>Tatame {num}</div>
+                    {op && <div style={{ color: "#64748b", fontSize: 14, marginTop: 2 }}>{op}</div>}
                   </div>
 
-                  {/* Colunas de nomes */}
-                  <div style={{ flex: 1, display: "flex", gap: 8, minHeight: 0 }}>
-                    {cols.map((col, ci) => (
-                      <div key={ci} style={{ flex: 1, display: "flex", flexDirection: "column", gap: GAP }}>
-                        {col.length === 0 ? (
-                          <div style={{ textAlign: "center", paddingTop: 40 }}>
-                            <span style={{ color: "#1e293b", fontSize: 18 }}>Sem atletas pendentes</span>
-                          </div>
-                        ) : (
-                          col.map((a, idx) => (
-                            <div key={a.key} style={{
-                              height: NAME_H,
-                              backgroundColor: rowBg(a.calls),
-                              borderRadius: 6,
-                              display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
-                              borderLeft: `4px solid ${color}`,
-                            }}>
-                              <span style={{ color: rowText(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
-                                {ci * NAMES_PER_COL + idx + 1}
-                              </span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ color: rowText(a.calls), fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {a.name}
-                                </div>
-                                {a.team && (
-                                  <div style={{ color: rowText(a.calls), opacity: 0.7, fontSize: 14, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {a.team}
-                                  </div>
-                                )}
+                  {/* Lista de nomes: 10 slots de altura fixa */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
+                    {athletes.length === 0 ? (
+                      <div style={{ height: SLOTS_AREA_H, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ color: "#1e293b", fontSize: 18 }}>Sem atletas pendentes</span>
+                      </div>
+                    ) : (
+                      Array.from({ length: NAMES_PER_COL }).map((_, idx) => {
+                        const a = athletes[idx]
+                        if (!a) {
+                          return (
+                            <div key={`empty-${idx}`} style={{
+                              height: SLOT_H, borderRadius: 6,
+                              backgroundColor: "#0f172a",
+                              border: "1px dashed #1e293b",
+                            }} />
+                          )
+                        }
+                        return (
+                          <div key={a.key} style={{
+                            height: SLOT_H,
+                            backgroundColor: rowBg(a.calls),
+                            borderRadius: 6,
+                            display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
+                            overflow: "hidden",
+                            borderLeft: `4px solid ${color}`,
+                          }}>
+                            <span style={{ color: rowText(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
+                              {idx + 1}
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: rowText(a.calls), fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {a.name}
                               </div>
-                              {a.calls > 0 && (
-                                <span style={{ color: rowText(a.calls), fontSize: 13, fontWeight: 700, flexShrink: 0, opacity: 0.9 }}>
-                                  {a.calls}ª chamada
-                                </span>
+                              {a.team && (
+                                <div style={{ color: rowText(a.calls), opacity: 0.7, fontSize: 14, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {a.team}
+                                </div>
                               )}
                             </div>
-                          ))
-                        )}
-                      </div>
-                    ))}
+                            {a.calls > 0 && (
+                              <span style={{ color: rowText(a.calls), fontSize: 13, fontWeight: 700, flexShrink: 0, opacity: 0.9 }}>
+                                {a.calls}ª chamada
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })
+                    )}
                   </div>
                 </div>
               )
