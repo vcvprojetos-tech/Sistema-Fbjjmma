@@ -1866,15 +1866,26 @@ export default function EventoDetailPage() {
                   Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
                 </p>
               </div>
-              <a
-                href={`/api/admin/eventos/${id}/backup`}
-                download
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#0f766e" }}
-              >
-                <Download className="w-4 h-4" />
-                Baixar Backup
-              </a>
+              <div className="flex gap-2 flex-shrink-0">
+                <a
+                  href={`/admin/eventos/${id}/backup-visual`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: "#0f766e" }}
+                >
+                  <Download className="w-4 h-4" />
+                  Ver / Imprimir Chaves
+                </a>
+                <a
+                  href={`/api/admin/eventos/${id}/backup`}
+                  download
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}
+                >
+                  JSON
+                </a>
+              </div>
             </div>
           </div>
 
