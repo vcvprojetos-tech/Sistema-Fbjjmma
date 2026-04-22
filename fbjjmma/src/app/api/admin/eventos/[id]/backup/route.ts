@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { readBackupFile, saveBackupFile } from "@/lib/event-backup"
 
 export async function GET(
   _req: NextRequest,
@@ -11,6 +12,21 @@ export async function GET(
 
   const { id: eventId } = await params
 
+  // Tenta ler do arquivo em disco primeiro
+  const fileData = readBackupFile(eventId)
+  if (fileData) {
+    const event = (fileData as { event: { name: string } }).event
+    const filename = `backup_${event.name.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().slice(0, 10)}.json`
+    return new NextResponse(JSON.stringify(fileData, null, 2), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    })
+  }
+
+  // Fallback: lê do banco (e salva o arquivo para próximas vezes)
   const event = await prisma.event.findUnique({
     where: { id: eventId },
     select: { id: true, name: true, date: true },
@@ -19,10 +35,7 @@ export async function GET(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const brackets = await (prisma.bracket as any).findMany({
-    where: {
-      eventId,
-      status: { in: ["FINALIZADA", "PREMIADA"] },
-    },
+    where: { eventId, status: { in: ["FINALIZADA", "PREMIADA"] } },
     include: {
       weightCategory: { select: { name: true, ageGroup: true, sex: true } },
       positions: {
@@ -77,17 +90,17 @@ export async function GET(
 
   const backup = {
     exportedAt: new Date().toISOString(),
-    event: {
-      id: event.id,
-      name: event.name,
-      date: event.date,
-    },
+    event: { id: event.id, name: event.name, date: event.date },
     totalBrackets: brackets.length,
     brackets,
   }
 
-  const filename = `backup_${event.name.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().slice(0, 10)}.json`
+  // Salva no disco para próximas consultas
+  if (brackets.length > 0) {
+    await saveBackupFile(eventId)
+  }
 
+  const filename = `backup_${event.name.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().slice(0, 10)}.json`
   return new NextResponse(JSON.stringify(backup, null, 2), {
     status: 200,
     headers: {
