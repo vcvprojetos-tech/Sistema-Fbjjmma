@@ -3,7 +3,20 @@ import { WOType } from "@prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { notifyTatame } from "@/lib/tatame-events"
-import { resetBracketAwards, propagateBracket, checkAndCreateGrandFinal } from "@/lib/bracket-utils"
+import { propagateBracket, resetBracketAwards, checkAndCreateGrandFinal } from "@/lib/bracket-utils"
+import { saveBackupFile } from "@/lib/event-backup"
+
+async function finalizeBracket(bracketId: string) {
+  await resetBracketAwards(bracketId)
+  const bracket = await prisma.bracket.update({
+    where: { id: bracketId },
+    data: { status: "FINALIZADA" },
+    select: { eventId: true },
+  })
+  await checkAndCreateGrandFinal(bracketId)
+  // Salva snapshot em disco — persiste mesmo se os dados do banco forem apagados
+  saveBackupFile(bracket.eventId).catch(() => {})
+}
 
 export async function PUT(
   req: NextRequest,
@@ -17,7 +30,7 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const { winnerId, isWO, woType, woWeight } = body
+    const { winnerId, isWO, woType, woWeight, woReason } = body
 
     const [match, bracketRecord] = await Promise.all([
       prisma.match.findFirst({ where: { id: matchId, bracketId } }),
@@ -53,9 +66,7 @@ export async function PUT(
       // Propaga: pode haver rodadas seguintes (ex: solo criado por W.O. duplo no meio da chave)
       const finished = await propagateBracket(bracketId)
       if (finished) {
-        await resetBracketAwards(bracketId)
-        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
-        await checkAndCreateGrandFinal(bracketId)
+        await finalizeBracket(bracketId)
       }
       if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
       return NextResponse.json({ message: isWO ? "Atleta desclassificado." : "Campeão declarado." })
@@ -78,9 +89,7 @@ export async function PUT(
       ])
       const finished = await propagateBracket(bracketId)
       if (finished) {
-        await resetBracketAwards(bracketId)
-        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
-        await checkAndCreateGrandFinal(bracketId)
+        await finalizeBracket(bracketId)
       }
       if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
       return NextResponse.json({ message: "Dupla ausência registrada." })
@@ -93,12 +102,14 @@ export async function PUT(
 
     const loserId = winnerId === match.position1Id ? match.position2Id : match.position1Id
 
-    await prisma.match.update({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma.match as any).update({
       where: { id: matchId },
       data: {
         winnerId,
         isWO: Boolean(isWO),
         woType: woType ? (woType as WOType) : null,
+        woReason: woReason ?? null,
         // Se desclassificação por peso, salva o peso no campo do perdedor
         ...(woWeight != null && woType === "PESO" && {
           [winnerId === match.position1Id ? "woWeight2" : "woWeight1"]: Number(woWeight),
@@ -114,6 +125,8 @@ export async function PUT(
     const totalPositions = await prisma.bracketPosition.count({ where: { bracketId } })
 
     if (totalPositions === 3) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const matchAny = prisma.match as any
       if (match.round === 1) {
         // Loser gets a second chance — do NOT mark as eliminated
         const thirdPosition = await prisma.bracketPosition.findFirst({
@@ -122,13 +135,15 @@ export async function PUT(
             id: { notIn: [match.position1Id, match.position2Id].filter(Boolean) as string[] },
           },
         })
-        await prisma.match.create({
+        // Perdedor do R1 estava presente (jogou a partida); thirdPosition ainda não foi confirmado
+        await matchAny.create({
           data: {
             bracketId,
             round: 2,
             matchNumber: 1,
             position1Id: loserId ?? null,
             position2Id: thirdPosition!.id,
+            p1CheckedIn: !!loserId, // perdedor estava presente
           },
         })
       } else if (match.round === 2) {
@@ -137,13 +152,16 @@ export async function PUT(
           await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
         }
         const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1 } })
-        await prisma.match.create({
+        // Ambos os finalistas já jogaram rodadas anteriores — ambos confirmados
+        await matchAny.create({
           data: {
             bracketId,
             round: 3,
             matchNumber: 1,
             position1Id: round1Match!.winnerId!,
             position2Id: winnerId,
+            p1CheckedIn: true,
+            p2CheckedIn: true,
           },
         })
       } else {
@@ -151,9 +169,7 @@ export async function PUT(
         if (loserId) {
           await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
         }
-        await resetBracketAwards(bracketId)
-        await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
-        await checkAndCreateGrandFinal(bracketId)
+        await finalizeBracket(bracketId)
       }
       if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
       return NextResponse.json({ message: "Resultado registrado." })
@@ -207,9 +223,7 @@ export async function PUT(
     // Propaga: cria partidas das rodadas seguintes cujos dois atletas já estão definidos
     const finished = await propagateBracket(bracketId)
     if (finished) {
-      await resetBracketAwards(bracketId)
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "FINALIZADA" } })
-      await checkAndCreateGrandFinal(bracketId)
+      await finalizeBracket(bracketId)
     }
 
     if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
