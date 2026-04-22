@@ -63,6 +63,16 @@ export async function POST(
           position2Id: positions[2].id, // pos 3
         },
       })
+      // Partida solo para pos 2 (atleta que aguarda) — permite check-in e aparece no painel
+      await prisma.match.create({
+        data: {
+          bracketId,
+          round: 1,
+          matchNumber: 2,
+          position1Id: positions[1].id, // pos 2 aguarda
+          position2Id: null,
+        },
+      })
       await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
       if (bracket.tatameId) notifyTatame(bracket.tatameId)
       return NextResponse.json({ message: "Chave iniciada." })
