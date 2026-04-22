@@ -52,7 +52,7 @@ interface MatchInfo {
   position2: { id: string; registration: { athlete: { user: { name: string } } | null; guestName?: string | null; team?: { name: string } | null } | null } | null
 }
 interface BracketInfo {
-  id: string; bracketNumber: number; belt: string; isAbsolute: boolean
+  id: string; bracketNumber: number; belt: string; isAbsolute: boolean; status: string
   weightCategory: { name: string; ageGroup: string; sex: string }
   matches: MatchInfo[]
 }
@@ -70,6 +70,7 @@ interface AthleteEntry {
   key: string
   name: string
   team: string
+  category: string
   checkedIn: boolean
   calls: number
   isWO: boolean
@@ -95,8 +96,14 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
   const entries: AthleteEntry[] = []
   const seen = new Set<string>()
 
-  for (const b of tatame.brackets) {
-    const label = catLabel(b)
+  // EM_ANDAMENTO antes de DESIGNADA, depois por bracketNumber
+  const sorted = [...tatame.brackets].sort((a, b) => {
+    const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
+    return statusOrder(a.status) - statusOrder(b.status) || a.bracketNumber - b.bracketNumber
+  })
+
+  for (const b of sorted) {
+    const category = catLabel(b)
     for (const m of b.matches) {
       if (m.endedAt) continue
       if (!m.position1) continue
@@ -110,7 +117,8 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
           const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
           entries.push({
             key, name: p1Name,
-            team: getTeam(m.position1) || label,
+            team: getTeam(m.position1),
+            category,
             checkedIn: m.p1CheckedIn,
             calls: p1Calls.length,
             isWO: m.isWO && !!m.endedAt,
@@ -128,7 +136,8 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
             const p2Calls = allCalls.filter(c => c.pos === "p2")
             entries.push({
               key, name: p2Name,
-              team: getTeam(m.position2) || label,
+              team: getTeam(m.position2),
+              category,
               checkedIn: m.p2CheckedIn,
               calls: p2Calls.length,
               isWO: m.isWO && !!m.endedAt,
@@ -352,11 +361,16 @@ export default function PainelPage() {
                               <div style={{ color: rowText(a.calls), fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                 {a.name}
                               </div>
-                              {a.team && (
-                                <div style={{ color: rowText(a.calls), opacity: 0.7, fontSize: 14, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {a.team}
-                                </div>
-                              )}
+                              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2 }}>
+                                {a.team && (
+                                  <span style={{ color: rowText(a.calls), opacity: 0.75, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {a.team}
+                                  </span>
+                                )}
+                                <span style={{ color: rowText(a.calls), opacity: 0.5, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>
+                                  {a.category}
+                                </span>
+                              </div>
                             </div>
                             {a.calls > 0 && (
                               <span style={{ color: rowText(a.calls), fontSize: 13, fontWeight: 700, flexShrink: 0, opacity: 0.9 }}>
