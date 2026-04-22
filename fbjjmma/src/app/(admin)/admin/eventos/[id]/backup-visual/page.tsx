@@ -23,7 +23,6 @@ interface BackupData {
   brackets: BracketItem[]
 }
 
-// Tipos compatíveis com BracketView
 interface BracketItem {
   id: string
   bracketNumber: number
@@ -80,14 +79,14 @@ export default function BackupVisualPage() {
   useEffect(() => { load() }, [load])
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: "var(--background)" }}>
-      <p style={{ color: "var(--muted-foreground)" }}>Carregando chaves...</p>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff" }}>
+      <p style={{ color: "#666" }}>Carregando chaves...</p>
     </div>
   )
 
   if (error || !data) return (
-    <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: "var(--background)" }}>
-      <p className="text-red-400">{error || "Sem dados."}</p>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#fff" }}>
+      <p style={{ color: "red" }}>{error || "Sem dados."}</p>
     </div>
   )
 
@@ -97,49 +96,135 @@ export default function BackupVisualPage() {
 
   return (
     <>
-      {/* CSS de impressão */}
       <style>{`
+        /* ── Tela ── */
+        body { margin: 0; }
+
+        .print-wrapper {
+          background: #fff;
+          min-height: 100vh;
+          padding: 0;
+        }
+
+        .screen-topbar {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: #1e293b;
+          border-bottom: 1px solid #334155;
+          padding: 10px 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .bracket-page {
+          background: #fff;
+          padding: 20px 24px 12px;
+          border-bottom: 2px solid #e2e8f0;
+        }
+
+        .bracket-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 10px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .bracket-number {
+          font-size: 11px;
+          color: #64748b;
+          margin-bottom: 2px;
+        }
+
+        .bracket-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: #0f172a;
+        }
+
+        .status-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 10px;
+          border-radius: 999px;
+        }
+
+        /* ── Impressão ── */
         @media print {
-          .no-print { display: none !important; }
-          .bracket-page { page-break-after: always; break-after: page; }
-          .bracket-page:last-child { page-break-after: avoid; break-after: avoid; }
-          body { background: white !important; color: black !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .screen-topbar { display: none !important; }
+
+          .print-wrapper {
+            background: #fff !important;
+            padding: 0 !important;
+          }
+
+          .bracket-page {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            page-break-after: always;
+            break-after: page;
+            padding: 12px 16px 8px;
+            border-bottom: none;
+          }
+
+          .bracket-page:last-child {
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+
+          /* Força cores claras no SVG e nos elementos da BracketView */
+          svg text { fill: #0f172a !important; }
+          svg line, svg path { stroke: #555 !important; }
+          svg rect { fill: #f1f5f9 !important; stroke: #94a3b8 !important; }
+
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
         }
       `}</style>
 
-      {/* Barra de controle — não aparece na impressão */}
-      <div className="no-print sticky top-0 z-50 border-b px-6 py-3 flex items-center gap-4"
-        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-        <Link href={`/admin/eventos/${id}`}
-          className="flex items-center gap-2 text-sm"
-          style={{ color: "var(--muted-foreground)" }}>
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Link>
-        <div className="flex-1">
-          <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>
-            {data.event.name} {dateStr && `— ${dateStr}`}
-          </p>
-          <p style={{ color: "var(--muted-foreground)", fontSize: 12 }}>
-            {data.brackets.length} chave(s) finalizada(s)
-          </p>
-        </div>
-        <button
-          onClick={() => window.print()}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-          style={{ backgroundColor: "#0f766e" }}
-        >
-          <Printer className="w-4 h-4" />
-          Imprimir / Salvar PDF
-        </button>
-      </div>
+      <div className="print-wrapper">
 
-      {/* Conteúdo imprimível */}
-      <div style={{ backgroundColor: "var(--background)", padding: "24px 16px" }}>
+        {/* Barra de controle — só aparece na tela */}
+        <div className="screen-topbar">
+          <Link href={`/admin/eventos/${id}`}
+            style={{ display: "flex", alignItems: "center", gap: 6, color: "#94a3b8", fontSize: 13, textDecoration: "none" }}>
+            <ArrowLeft style={{ width: 14, height: 14 }} /> Voltar
+          </Link>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: "#f1f5f9", fontWeight: 600, fontSize: 13, margin: 0 }}>
+              {data.event.name}{dateStr && ` — ${dateStr}`}
+            </p>
+            <p style={{ color: "#64748b", fontSize: 11, margin: 0 }}>
+              {data.brackets.length} chave(s) finalizada(s)
+            </p>
+          </div>
+          <button
+            onClick={() => window.print()}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "#0f766e", color: "#fff", border: "none",
+              borderRadius: 8, padding: "8px 16px", fontSize: 13,
+              fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            <Printer style={{ width: 14, height: 14 }} />
+            Imprimir / Salvar PDF
+          </button>
+        </div>
 
         {data.brackets.length === 0 && (
-          <div className="text-center py-20">
-            <p style={{ color: "var(--muted-foreground)" }}>Nenhuma chave finalizada ainda.</p>
+          <div style={{ textAlign: "center", padding: "80px 0" }}>
+            <p style={{ color: "#64748b" }}>Nenhuma chave finalizada ainda.</p>
           </div>
         )}
 
@@ -149,34 +234,23 @@ export default function BackupVisualPage() {
           const sex = bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino"
           const peso = bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name
           const title = `${sex} | ${age} | ${peso} | ${belt}`
-          const statusLabel = bracket.status === "PREMIADA" ? "Premiada" : "Finalizada"
-          const statusColor = bracket.status === "PREMIADA" ? "#a78bfa" : "#4ade80"
+          const isPremiada = bracket.status === "PREMIADA"
 
           return (
-            <div key={bracket.id} className="bracket-page" style={{ marginBottom: 40 }}>
-              {/* Cabeçalho da chave */}
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                marginBottom: 12, paddingBottom: 8,
-                borderBottom: "1px solid var(--border)",
-              }}>
+            <div key={bracket.id} className="bracket-page">
+              <div className="bracket-header">
                 <div>
-                  <p style={{ fontSize: 11, color: "var(--muted-foreground)", marginBottom: 2 }}>
-                    Chave #{bracket.bracketNumber}
-                  </p>
-                  <p style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)" }}>
-                    {title}
-                  </p>
+                  <p className="bracket-number">Chave #{bracket.bracketNumber}</p>
+                  <p className="bracket-title">{title}</p>
                 </div>
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: "2px 10px",
-                  borderRadius: 999, backgroundColor: statusColor + "22", color: statusColor,
+                <span className="status-badge" style={{
+                  background: isPremiada ? "#ede9fe" : "#dcfce7",
+                  color: isPremiada ? "#7c3aed" : "#16a34a",
                 }}>
-                  {statusLabel}
+                  {isPremiada ? "Premiada" : "Finalizada"}
                 </span>
               </div>
 
-              {/* BracketView */}
               <BracketView bracket={bracket} />
             </div>
           )
