@@ -81,16 +81,27 @@ function buildPrintHTML(data: BackupData): string {
 
     // Pódio
     const realMatches = b.matches.filter(m => m.position1Id && m.position2Id && m.endedAt)
+    const soloMatch = b.matches.find(m => m.position1Id && !m.position2Id && m.endedAt && m.winnerId)
     const maxRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
-    const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
-    const champPos = finalMatch?.winnerId ? posMap.get(finalMatch.winnerId) : undefined
-    const viceId = finalMatch ? (finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id) : null
-    const vicePos = viceId ? posMap.get(viceId) : undefined
-    const thirdPos = b.positions.find(p =>
-      p.id !== champPos?.id && p.id !== vicePos?.id && p.registration !== null &&
-      b.matches.some(m => (m.position1Id === p.id || m.position2Id === p.id) && m.endedAt) &&
-      !b.matches.some(m => m.round === maxRound && (m.position1Id === p.id || m.position2Id === p.id))
-    )
+
+    let champPos: BPos | undefined
+    let vicePos: BPos | undefined
+    let thirdPos: BPos | undefined
+
+    if (realMatches.length === 0 && soloMatch) {
+      // Chave com 1 atleta: campeão é o único atleta
+      champPos = soloMatch.winnerId ? posMap.get(soloMatch.winnerId) : undefined
+    } else {
+      const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+      champPos = finalMatch?.winnerId ? posMap.get(finalMatch.winnerId) : undefined
+      const viceId = finalMatch ? (finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id) : null
+      vicePos = viceId ? posMap.get(viceId) : undefined
+      thirdPos = b.positions.find(p =>
+        p.id !== champPos?.id && p.id !== vicePos?.id && p.registration !== null &&
+        b.matches.some(m => (m.position1Id === p.id || m.position2Id === p.id) && m.endedAt) &&
+        !b.matches.some(m => m.round === maxRound && (m.position1Id === p.id || m.position2Id === p.id))
+      )
+    }
 
     const medal = (label: string, bg: string, color: string, pos: BPos | undefined) => {
       if (!pos?.registration) return ""
