@@ -1856,6 +1856,28 @@ export default function EventoDetailPage() {
             </div>
           </div>
 
+          {/* Backup de chaves finalizadas */}
+          <div className="rounded-lg border p-4"
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-semibold text-sm">Backup das Chaves Finalizadas</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">
+                  Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
+                </p>
+              </div>
+              <a
+                href={`/api/admin/eventos/${id}/backup`}
+                download
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: "#0f766e" }}
+              >
+                <Download className="w-4 h-4" />
+                Baixar Backup
+              </a>
+            </div>
+          </div>
+
           {/* Painel de stats das chaves por tatame */}
           {brackets.length > 0 && (
             <div className="flex gap-3 flex-wrap">
