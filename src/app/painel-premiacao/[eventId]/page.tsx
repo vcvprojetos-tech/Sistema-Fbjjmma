@@ -17,6 +17,7 @@ const BELT_LABELS: Record<string, string> = {
 
 const DESIGN_W = 1920
 const DESIGN_H = 1080
+const NUM_COLS = 4
 const NAMES_PER_COL = 10
 const GAP = 4
 
@@ -118,11 +119,24 @@ function getPodium(b: BracketInfo): { pos: BPos; place: number }[] {
   return result
 }
 
+// Retorna o timestamp da última partida finalizada da chave (proxy de quando foi finalizada)
+function bracketFinalizedAt(b: BracketInfo): number {
+  const times = b.matches
+    .filter(m => m.endedAt)
+    .map(m => new Date(m.endedAt!).getTime())
+  return times.length > 0 ? Math.max(...times) : 0
+}
+
 function getAwardEntries(brackets: BracketInfo[]): AwardEntry[] {
+  // Ordena chaves pelo momento de finalização (mais antiga primeiro)
+  const sorted = [...brackets].sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
+
   const entries: AwardEntry[] = []
-  for (const b of brackets) {
+  for (const b of sorted) {
     const category = catLabel(b)
-    for (const { pos, place } of getPodium(b)) {
+    // Dentro de cada chave: 1°, 2°, 3°
+    const podium = getPodium(b).sort((a, c) => a.place - c.place)
+    for (const { pos, place } of podium) {
       const reg = pos.registration
       if (!reg || reg.awarded) continue
       entries.push({
@@ -134,8 +148,7 @@ function getAwardEntries(brackets: BracketInfo[]): AwardEntry[] {
       })
     }
   }
-  // Ordena por lugar (1°, 2°, 3°) e depois por categoria
-  return entries.sort((a, b) => a.place - b.place || a.category.localeCompare(b.category))
+  return entries
 }
 
 function placeColor(place: number) {
@@ -204,12 +217,10 @@ export default function PainelPremiacaoPage() {
   )
 
   const entries = getAwardEntries(data.brackets)
-  // Divide em colunas de 10
-  const cols: AwardEntry[][] = []
-  for (let i = 0; i < entries.length; i += NAMES_PER_COL) {
-    cols.push(entries.slice(i, i + NAMES_PER_COL))
-  }
-  if (cols.length === 0) cols.push([])
+  // Sempre 4 colunas fixas de até 10 slots cada
+  const cols: AwardEntry[][] = Array.from({ length: NUM_COLS }, (_, i) =>
+    entries.slice(i * NAMES_PER_COL, (i + 1) * NAMES_PER_COL)
+  )
 
   // Altura fixa por slot
   const TOPBAR_H = 52
@@ -293,7 +304,7 @@ export default function PainelPremiacaoPage() {
             </div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))`, gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${NUM_COLS}, minmax(0, 1fr))`, gap: 16 }}>
             {cols.map((col, colIdx) => (
               <div key={colIdx}>
                 <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
