@@ -436,8 +436,10 @@ function ThreeAthleteBracket({
   }
 
   const champion = finalWinnerId ? posIdMap3.get(finalWinnerId)?.registration ?? null : null
-  const runnerUp = finalLoserId ? posIdMap3.get(finalLoserId)?.registration ?? null : null
-  const thirdPlace = m2LoserId ? posIdMap3.get(m2LoserId)?.registration ?? null : null
+  // Se a final terminou por W.O., o perdedor foi desclassificado — sem 2° lugar
+  const runnerUp = (finalLoserId && !mFinal?.isWO) ? posIdMap3.get(finalLoserId)?.registration ?? null : null
+  // Se o perdedor do R2 foi eliminado por W.O., não recebe 3° lugar
+  const thirdPlace = (m2LoserId && !m2?.isWO) ? posIdMap3.get(m2LoserId)?.registration ?? null : null
 
   const bracketTitle = [
     weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
@@ -890,7 +892,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const firstPlaceReg = finalWinnerId
     ? posIdMap.get(finalWinnerId)?.registration ?? null
     : null
-  const secondPosId = (finalMatch && finalWinnerId)
+  const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO)
     ? (finalWinnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id)
     : null
   const secondPlaceReg = secondPosId ? posIdMap.get(secondPosId)?.registration ?? null : null
