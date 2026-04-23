@@ -1856,6 +1856,28 @@ export default function EventoDetailPage() {
             </div>
           </div>
 
+          {/* Painel de Premiação */}
+          <div className="rounded-lg border p-4"
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-white font-semibold text-sm">Painel de Premiação</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <a
+                href={`/painel-premiacao/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: "#92400e" }}
+              >
+                Abrir Painel de Premiação
+              </a>
+            </div>
+          </div>
+
           {/* Backup de chaves finalizadas */}
           <div className="rounded-lg border p-4"
             style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
