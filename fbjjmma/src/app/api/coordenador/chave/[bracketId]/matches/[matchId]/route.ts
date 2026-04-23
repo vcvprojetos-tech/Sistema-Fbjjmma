@@ -153,19 +153,40 @@ export async function PUT(
           },
         })
 
+        // Verifica se o atleta em espera já foi W.O.'d na partida solo de check-in
+        const thirdAlreadyWO = await prisma.match.findFirst({
+          where: {
+            bracketId,
+            position1Id: thirdPosition!.id,
+            position2Id: null,
+            isWO: true,
+            endedAt: { not: null },
+          },
+        })
+
         if (isWO && loserId) {
-          // W.O. no R1 (ex: desclassificação por peso ou ausência): o perdedor está fora,
-          // o atleta em espera vai direto para a final contra o vencedor do R1.
-          await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+          // W.O. no R1 (ex: desclassificação por peso ou ausência): o perdedor está fora.
+          if (thirdAlreadyWO) {
+            // Atleta em espera também já foi W.O.'d: vencedor do R1 é campeão direto (solo)
+            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+            await matchAny.create({
+              data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null, p1CheckedIn: true },
+            })
+          } else {
+            // Atleta em espera está disponível: vai direto para a final contra o vencedor do R1
+            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+            await matchAny.create({
+              data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: thirdPosition!.id, p1CheckedIn: true },
+            })
+          }
+        } else if (thirdAlreadyWO) {
+          // Resultado normal no R1, mas atleta em espera já foi W.O.'d:
+          // perdedor do R1 é eliminado, vencedor é campeão direto (solo)
+          if (loserId) {
+            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+          }
           await matchAny.create({
-            data: {
-              bracketId,
-              round: 3,
-              matchNumber: 1,
-              position1Id: winnerId,
-              position2Id: thirdPosition!.id,
-              p1CheckedIn: true,
-            },
+            data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null, p1CheckedIn: true },
           })
         } else {
           // Resultado normal: perdedor do R1 tem segunda chance contra o atleta em espera
