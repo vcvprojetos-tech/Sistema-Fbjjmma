@@ -153,17 +153,33 @@ export async function PUT(
           },
         })
 
-        // Perdedor do R1 estava presente (jogou a partida); thirdPosition ainda não foi confirmado
-        await matchAny.create({
-          data: {
-            bracketId,
-            round: 2,
-            matchNumber: 1,
-            position1Id: loserId ?? null,
-            position2Id: thirdPosition!.id,
-            p1CheckedIn: !!loserId, // perdedor estava presente
-          },
-        })
+        if (isWO && loserId) {
+          // W.O. no R1 (ex: desclassificação por peso ou ausência): o perdedor está fora,
+          // o atleta em espera vai direto para a final contra o vencedor do R1.
+          await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+          await matchAny.create({
+            data: {
+              bracketId,
+              round: 3,
+              matchNumber: 1,
+              position1Id: winnerId,
+              position2Id: thirdPosition!.id,
+              p1CheckedIn: true,
+            },
+          })
+        } else {
+          // Resultado normal: perdedor do R1 tem segunda chance contra o atleta em espera
+          await matchAny.create({
+            data: {
+              bracketId,
+              round: 2,
+              matchNumber: 1,
+              position1Id: loserId ?? null,
+              position2Id: thirdPosition!.id,
+              p1CheckedIn: !!loserId,
+            },
+          })
+        }
       } else if (match.round === 2) {
         // Loser of round 2 = 3rd place
         if (loserId) {
