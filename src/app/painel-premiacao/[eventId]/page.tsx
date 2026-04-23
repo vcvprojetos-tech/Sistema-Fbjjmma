@@ -114,8 +114,16 @@ function getPodium(b: BracketInfo): { pos: BPos; place: number }[] {
 
   const result: { pos: BPos; place: number }[] = []
   if (champPos) result.push({ pos: champPos, place: 1 })
-  if (vicePos) result.push({ pos: vicePos, place: 2 })
-  if (thirdPos) result.push({ pos: thirdPos, place: 3 })
+  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
+  if (vicePos && !finalMatch.isWO) result.push({ pos: vicePos, place: 2 })
+  if (thirdPos) {
+    // Se o candidato ao 3° foi eliminado por W.O. em alguma partida, não recebe colocação
+    const eliminatedByWO = b.matches.some(m =>
+      m.isWO && m.endedAt && m.winnerId !== thirdPos.id &&
+      (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
+    )
+    if (!eliminatedByWO) result.push({ pos: thirdPos, place: 3 })
+  }
   return result
 }
 
