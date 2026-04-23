@@ -1,22 +1,41 @@
 ﻿"use client"
 
-import React, { useMemo } from "react"
+import React, { useMemo, useRef, useState, useEffect } from "react"
+
+function useContainerScale(totalWidth: number, totalHeight: number) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      const w = el.clientWidth
+      if (w <= 0) return
+      // Nunca cresce além do tamanho natural — apenas encolhe em telas estreitas
+      setScale(Math.min(1, w / totalWidth))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [totalWidth, totalHeight])
+  return { ref, scale }
+}
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
-const ATHLETE_H = 40
-const ATHLETE_W = 116
+const ATHLETE_H = 44
+const ATHLETE_W = 170
 // Result boxes (inner rounds) — small placeholders
-const RESULT_H = 16
-const RESULT_W = 24
+const RESULT_H = 18
+const RESULT_W = 28
 // Final center boxes
-const CENTER_W = 68
+const CENTER_W = 80
 // Spacing
-const ROUND_GAP = 8   // horizontal gap between any two columns
+const ROUND_GAP = 10  // horizontal gap between any two columns
 const GROUP_GAP = 8   // vertical gap between match pairs in athlete column
 const PADDING = 10
 const POS_LABEL_W = 16 // space for position number label beside athlete card
 const LINE_COLOR = "#555"
-const SCALE = 0.82     // fator de redução para caber na tela sem scroll horizontal
 
 const AGE_GROUP_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -52,12 +71,20 @@ interface BMatch {
   woWeight1?: number | null
   woWeight2?: number | null
   endedAt?: string | null
+  callTimes?: Array<{ call: number; at: string; pos?: "p1" | "p2" | null }> | null
+  woReason?: string | null
+}
+
+const BELT_LABELS: Record<string, string> = {
+  BRANCA: "Branca", AMARELA_LARANJA_VERDE: "Amar/Lar/Verde",
+  AZUL: "Azul", ROXA: "Roxa", MARROM: "Marrom", PRETA: "Preta",
 }
 
 interface BracketData {
   id: string
   bracketNumber: number
   isAbsolute: boolean
+  belt?: string
   weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: BPos[]
   matches?: BMatch[]
@@ -105,9 +132,16 @@ function getRegName(reg: Reg | null): string {
   return reg?.athlete?.user.name ?? reg?.guestName ?? "—"
 }
 
-function woLabel(woType?: string | null, weight?: number | null): string {
+function woLabel(woType?: string | null, weight?: number | null, reason?: string | null): string {
   if (woType === "PESO") return weight ? `Peso (${weight}kg)` : "Peso"
+  if (woType === "DESCLASSIFICACAO") return reason ? `Desclassificado: ${reason}` : "Desclassificado"
   return "Ausência"
+}
+
+function fmtTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Bahia" })
+  } catch { return iso }
 }
 
 function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<string, BPos> }) {
@@ -115,26 +149,29 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
   if (woMatches.length === 0) return null
 
   // Expande cada partida W.O. em entradas individuais por atleta
-  const entries: { key: string; name: string; label: string }[] = []
+  const entries: { key: string; name: string; label: string; calls: Array<{ call: number; at: string }> }[] = []
   for (const m of woMatches) {
     const isSolo = m.position2Id === null
     const isDoubleWO = !isSolo && m.winnerId === null && !!m.position1Id && !!m.position2Id
+    const allCalls = m.callTimes ?? []
 
     if (isDoubleWO) {
-      // Ambos ausentes — lista os dois
       const reg1 = posIdMap.get(m.position1Id!)?.registration ?? null
       const reg2 = posIdMap.get(m.position2Id!)?.registration ?? null
-      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null) })
-      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null) })
+      const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
+      const p2Calls = allCalls.filter(c => c.pos === "p2" || !c.pos)
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), calls: p1Calls })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), calls: p2Calls })
     } else if (m.position1Id) {
-      // Solo com winnerId preenchido = BYE automático (atleta avançou, ninguém tomou W.O.)
       if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
         ? m.position1Id
         : (m.winnerId === m.position1Id ? m.position2Id : m.position1Id)
       const loserReg = loserId ? posIdMap.get(loserId)?.registration ?? null : null
       const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
-      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null) })
+      const loserPos = loserId === m.position1Id ? "p1" : "p2"
+      const loserCalls = allCalls.filter(c => c.pos === loserPos || !c.pos)
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), calls: loserCalls })
     }
   }
 
@@ -142,12 +179,23 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
   return (
     <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
       <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>W.O.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         {entries.map(e => (
-          <div key={e.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
-            <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
-            <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
+          <div key={e.key}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
+              <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
+              <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
+            </div>
+            {e.calls.length > 0 && (
+              <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
+                {e.calls.sort((a, b) => a.call - b.call).map(c => (
+                  <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
+                    <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -169,12 +217,17 @@ interface SlotEntry { posId: string | null; isWinner: boolean; hasPotential: boo
 // posId = null + hasPotential = false → true BYE (no athlete, no future athlete)
 // posId = null + hasPotential = true  → match not decided yet
 // posId = someId                      → athlete occupying this slot
+//
+// matchBySoloPosRound: posId → (round → solo match)
+// Usado para checar resultado de partidas solo antes de auto-avançar por BYE.
 function buildSlots(
   order: number[],
   posNumToId: Map<number, string>,
   posIdMap: Map<string, BPos>,
   matchByPair: Map<string, BMatch>,
-  numRounds: number
+  numRounds: number,
+  matchBySoloPosRound?: Map<string, Map<number, BMatch>>,
+  bracketStarted?: boolean
 ): Array<Array<SlotEntry>> {
   const slots: Array<Array<SlotEntry>> = []
 
@@ -185,6 +238,29 @@ function buildSlots(
     const hasAthlete = posIdMap.get(posId)?.registration != null
     return { posId: hasAthlete ? posId : null, isWinner: false, hasPotential: false }
   }))
+
+  // Resolve avanço por BYE: verifica resultado da partida solo antes de auto-avançar
+  function resolveByeAdvance(athletePosId: string, round: number): SlotEntry {
+    // Chave não iniciada: nenhum número deve avançar nas caixas de conexão
+    if (!bracketStarted) {
+      return { posId: null, isWinner: false, hasPotential: false }
+    }
+    const soloMatch = matchBySoloPosRound?.get(athletePosId)?.get(round)
+    if (!soloMatch) {
+      // Sem partida solo registrada → auto-avança (BYE verdadeiro, seed sem atleta)
+      return { posId: athletePosId, isWinner: false, hasPotential: false }
+    }
+    if (soloMatch.winnerId === athletePosId) {
+      // Atleta confirmou presença e avançou
+      return { posId: athletePosId, isWinner: true, hasPotential: false }
+    }
+    if (soloMatch.isWO && soloMatch.endedAt) {
+      // Atleta tomou W.O. — não avança
+      return { posId: null, isWinner: false, hasPotential: false }
+    }
+    // Partida pendente (aguardando pesagem)
+    return { posId: null, isWinner: false, hasPotential: true }
+  }
 
   for (let r = 1; r < numRounds; r++) {
     const prev = slots[r - 1]
@@ -200,16 +276,16 @@ function buildSlots(
           // a's match not decided yet — wait
           curr.push({ posId: null, isWinner: false, hasPotential: true })
         } else {
-          // a is BYE — b auto-advances
-          curr.push({ posId: b.posId, isWinner: false, hasPotential: b.hasPotential })
+          // a is BYE — verifica resultado da partida solo de b
+          curr.push(resolveByeAdvance(b.posId!, r))
         }
       } else if (!b.posId) {
         if (b.hasPotential) {
           // b's match not decided yet — wait
           curr.push({ posId: null, isWinner: false, hasPotential: true })
         } else {
-          // b is BYE — a auto-advances
-          curr.push({ posId: a.posId, isWinner: false, hasPotential: a.hasPotential })
+          // b is BYE — verifica resultado da partida solo de a
+          curr.push(resolveByeAdvance(a.posId!, r))
         }
       } else {
         // Both have athletes — look up the match result
@@ -231,7 +307,7 @@ function ThreeAthleteBracket({
   bracket: BracketData
   onAthleteClick?: (registrationId: string) => void
 }) {
-  const { positions, weightCategory, bracketNumber, isAbsolute, matches = [] } = bracket
+  const { positions, weightCategory, bracketNumber, isAbsolute, belt, matches = [] } = bracket
 
   const pos1 = positions.find(p => p.position === 1) ?? positions[0] ?? null
   const pos2 = positions.find(p => p.position === 2) ?? positions[1] ?? null
@@ -329,10 +405,10 @@ function ThreeAthleteBracket({
         }}>{posLabel}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 10, color: dimmed ? "#a07830" : clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
+            <p style={{ fontSize: 9, color: dimmed ? "#a07830" : clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
               {name.toUpperCase()}
             </p>
-            <p style={{ fontSize: 9, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
+            <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
               {(team || "—").toUpperCase()}
             </p>
           </>
@@ -360,26 +436,30 @@ function ThreeAthleteBracket({
   }
 
   const champion = finalWinnerId ? posIdMap3.get(finalWinnerId)?.registration ?? null : null
-  const runnerUp = finalLoserId ? posIdMap3.get(finalLoserId)?.registration ?? null : null
-  const thirdPlace = m2LoserId ? posIdMap3.get(m2LoserId)?.registration ?? null : null
+  // Se a final terminou por W.O., o perdedor foi desclassificado — sem 2° lugar
+  const runnerUp = (finalLoserId && !mFinal?.isWO) ? posIdMap3.get(finalLoserId)?.registration ?? null : null
+  // Se o perdedor do R2 foi eliminado por W.O., não recebe 3° lugar
+  const thirdPlace = (m2LoserId && !m2?.isWO) ? posIdMap3.get(m2LoserId)?.registration ?? null : null
 
   const bracketTitle = [
     weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
     AGE_GROUP_LABELS[weightCategory.ageGroup] || weightCategory.ageGroup,
     isAbsolute ? null : `${weightCategory.name} | Até ${weightCategory.maxWeight}kg`,
     isAbsolute ? "Absoluto" : null,
+    belt ? (BELT_LABELS[belt] || belt) : null,
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
 
   const loserLabel = m1LoserPos ? String(m1LoserPos.position) : "?"
+  const { ref: containerRef3, scale: scale3 } = useContainerScale(TOTAL_W, TOTAL_H)
 
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{bracketTitle}</p>
       </div>
-      <div style={{ overflow: "hidden", height: Math.round(TOTAL_H * SCALE) }}>
-        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H, transform: `scale(${SCALE})`, transformOrigin: "top left" }}>
+      <div ref={containerRef3} style={{ overflow: "hidden", width: "100%", height: Math.round(TOTAL_H * scale3) }}>
+        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H, transform: `scale(${scale3})`, transformOrigin: "top left" }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={TOTAL_W} height={TOTAL_H}>
             {/* M1: pos1 & pos3 bracket lines */}
             <line x1={BLX} y1={pos1CY} x2={BLX} y2={pos3CY} stroke={LINE_COLOR} strokeWidth={1} />
@@ -469,7 +549,7 @@ function ThreeAthleteBracket({
 // ── End ThreeAthleteBracket ────────────────────────────────────────────────
 
 function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData; onAthleteClick?: (registrationId: string) => void }) {
-  const { positions, weightCategory, bracketNumber, isAbsolute, matches = [] } = bracket
+  const { positions, weightCategory, bracketNumber, isAbsolute, belt, matches = [] } = bracket
 
   const posMap = useMemo(() => {
     const m = new Map<number, BPos>()
@@ -503,6 +583,18 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     return m
   }, [matches])
 
+  // Map posId → (round → solo match) para checar resultado de partidas solo antes de auto-avançar
+  const matchBySoloPosRound = useMemo(() => {
+    const m = new Map<string, Map<number, BMatch>>()
+    for (const match of matches) {
+      if (match.position1Id && !match.position2Id) {
+        if (!m.has(match.position1Id)) m.set(match.position1Id, new Map())
+        m.get(match.position1Id)!.set(match.round, match)
+      }
+    }
+    return m
+  }, [matches])
+
   const n = positions.length
   const bracketSize = Math.max(nextPow2(Math.max(n, 2)), 16)
   const halfSize = bracketSize / 2
@@ -512,14 +604,16 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const leftOrder = useMemo(() => getSlotOrder(1, halfSize), [halfSize])
   const rightOrder = useMemo(() => getSlotOrder(2, halfSize), [halfSize])
 
+  const bracketStarted = matches.length > 0
+
   // Build progression slots for both halves
   const leftSlots = useMemo(
-    () => buildSlots(leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds),
-    [leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds]
+    () => buildSlots(leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted),
+    [leftOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted]
   )
   const rightSlots = useMemo(
-    () => buildSlots(rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds),
-    [rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds]
+    () => buildSlots(rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted),
+    [rightOrder, posNumToId, posIdMap, matchByPair, numHalfRounds, matchBySoloPosRound, bracketStarted]
   )
 
   // centerYs[r][i] = center y of slot i at round r, based on athlete card geometry
@@ -668,8 +762,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 10, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
-            <p style={{ fontSize: 9, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (
           <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>—</p>
@@ -745,8 +839,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 10, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
-            <p style={{ fontSize: 9, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (
           <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>—</p>
@@ -798,10 +892,22 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const firstPlaceReg = finalWinnerId
     ? posIdMap.get(finalWinnerId)?.registration ?? null
     : null
-  const secondPosId = (finalMatch && finalWinnerId)
+  const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO)
     ? (finalWinnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id)
     : null
   const secondPlaceReg = secondPosId ? posIdMap.get(secondPosId)?.registration ?? null : null
+
+  // 3° lugar: perdedor da semifinal do campeão (ou do vice se o lado do campeão foi W.O.)
+  const thirdPlaceReg = (() => {
+    if (!finalMatch?.winnerId || maxRealRound < 2) return null
+    const semiRound = maxRealRound - 1
+    const champSemi = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId && !m.isWO)
+    const runnerUpSemi = realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
+    const semi = champSemi ?? runnerUpSemi
+    if (!semi) return null
+    const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
+    return loserId ? posIdMap.get(loserId)?.registration ?? null : null
+  })()
 
 
   const leftFinalistPosNum = leftSlots[numHalfRounds - 1]?.[0]?.posId
@@ -869,6 +975,17 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     }}>
       <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
       {secondPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
+    </div>,
+    <div key="final-3" style={{
+      position: "absolute", left: centerX,
+      top: finalCenterY + finalBoxH + 9,
+      width: CENTER_W, height: finalBoxH,
+      border: `1px solid ${thirdPlaceReg ? "#5c3a1e" : "#2a2000"}`,
+      backgroundColor: thirdPlaceReg ? "#1a0e00" : "#100e00",
+      borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
+    }}>
+      <span style={{ fontSize: 7, color: "#cd7c2f", fontWeight: 600, lineHeight: 1.2 }}>3° Lugar</span>
+      {thirdPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
     </div>
   )
 
@@ -889,6 +1006,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const placements = [
     { label: "1° Lugar", color: "#fbbf24", reg: primeiro },
     { label: "2° Lugar", color: "var(--muted-foreground)", reg: segundo },
+    { label: "3° Lugar", color: "#cd7c2f", reg: thirdPlaceReg },
   ]
 
   const title = [
@@ -896,16 +1014,19 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     AGE_GROUP_LABELS[weightCategory.ageGroup] || weightCategory.ageGroup,
     isAbsolute ? null : `${weightCategory.name} | Até ${weightCategory.maxWeight}kg`,
     isAbsolute ? "Absoluto" : null,
+    belt ? (BELT_LABELS[belt] || belt) : null,
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
+
+  const { ref: containerRef, scale } = useContainerScale(totalWidth, totalHeight)
 
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
       </div>
-      <div style={{ overflow: "hidden", height: Math.round(Math.max(80, totalHeight) * SCALE) }}>
-        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${SCALE})`, transformOrigin: "top left" }}>
+      <div ref={containerRef} style={{ overflow: "hidden", width: "100%", height: Math.round(totalHeight * scale) }}>
+        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${scale})`, transformOrigin: "top left" }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
             {lines}
           </svg>
