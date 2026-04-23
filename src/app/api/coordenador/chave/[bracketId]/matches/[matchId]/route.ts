@@ -135,6 +135,24 @@ export async function PUT(
             id: { notIn: [match.position1Id, match.position2Id].filter(Boolean) as string[] },
           },
         })
+
+        // Fecha a partida solo de check-in do atleta em espera (R1 matchNumber 2)
+        // para que não apareça mais como luta pendente na tela do coordenador
+        await prisma.match.updateMany({
+          where: {
+            bracketId,
+            round: 1,
+            matchNumber: { not: match.matchNumber },
+            position2Id: null,
+            winnerId: null,
+            endedAt: null,
+          },
+          data: {
+            winnerId: thirdPosition!.id,
+            endedAt: new Date(),
+          },
+        })
+
         // Perdedor do R1 estava presente (jogou a partida); thirdPosition ainda não foi confirmado
         await matchAny.create({
           data: {
