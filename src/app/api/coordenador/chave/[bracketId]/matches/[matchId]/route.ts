@@ -167,11 +167,13 @@ export async function PUT(
         if (isWO && loserId) {
           // W.O. no R1 (ex: desclassificação por peso ou ausência): o perdedor está fora.
           if (thirdAlreadyWO) {
-            // Atleta em espera também já foi W.O.'d: vencedor do R1 é campeão direto (solo)
+            // Atleta em espera também já foi W.O.'d: vencedor do R1 é campeão — cria R3 solo já finalizado
             await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
             await matchAny.create({
-              data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null, p1CheckedIn: true },
+              data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null,
+                      winnerId: winnerId, p1CheckedIn: true, endedAt: new Date() },
             })
+            await finalizeBracket(bracketId)
           } else {
             // Atleta em espera está disponível: vai direto para a final contra o vencedor do R1
             await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
@@ -181,13 +183,15 @@ export async function PUT(
           }
         } else if (thirdAlreadyWO) {
           // Resultado normal no R1, mas atleta em espera já foi W.O.'d:
-          // perdedor do R1 é eliminado, vencedor é campeão direto (solo)
+          // perdedor do R1 é eliminado, vencedor é campeão — cria R3 solo já finalizado
           if (loserId) {
             await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
           }
           await matchAny.create({
-            data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null, p1CheckedIn: true },
+            data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null,
+                    winnerId: winnerId, p1CheckedIn: true, endedAt: new Date() },
           })
+          await finalizeBracket(bracketId)
         } else {
           // Resultado normal: perdedor do R1 tem segunda chance contra o atleta em espera
           await matchAny.create({
