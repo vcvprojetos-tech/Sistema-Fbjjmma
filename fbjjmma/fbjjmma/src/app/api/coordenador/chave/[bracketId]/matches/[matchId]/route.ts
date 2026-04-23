@@ -135,24 +135,6 @@ export async function PUT(
             id: { notIn: [match.position1Id, match.position2Id].filter(Boolean) as string[] },
           },
         })
-
-        // Fecha a partida solo de check-in do atleta em espera (R1 matchNumber 2)
-        // para que não apareça mais como luta pendente na tela do coordenador
-        await prisma.match.updateMany({
-          where: {
-            bracketId,
-            round: 1,
-            matchNumber: { not: match.matchNumber },
-            position2Id: null,
-            winnerId: null,
-            endedAt: null,
-          },
-          data: {
-            winnerId: thirdPosition!.id,
-            endedAt: new Date(),
-          },
-        })
-
         // Perdedor do R1 estava presente (jogou a partida); thirdPosition ainda não foi confirmado
         await matchAny.create({
           data: {
@@ -169,8 +151,7 @@ export async function PUT(
         if (loserId) {
           await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
         }
-        // matchNumber: 1 garante que pegamos o combate real, não a partida solo de check-in (matchNumber: 2)
-        const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1, matchNumber: 1 } })
+        const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1 } })
         // Ambos os finalistas já jogaram rodadas anteriores — ambos confirmados
         await matchAny.create({
           data: {
