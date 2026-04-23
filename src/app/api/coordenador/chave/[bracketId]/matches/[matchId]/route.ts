@@ -169,7 +169,8 @@ export async function PUT(
         if (loserId) {
           await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
         }
-        const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1 } })
+        // matchNumber: 1 garante que pegamos o combate real, não a partida solo de check-in (matchNumber: 2)
+        const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1, matchNumber: 1 } })
         // Ambos os finalistas já jogaram rodadas anteriores — ambos confirmados
         await matchAny.create({
           data: {
