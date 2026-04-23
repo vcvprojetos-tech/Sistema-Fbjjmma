@@ -401,7 +401,8 @@ export default function TatamePage() {
           ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
           : null)
     : null
-  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch
+  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
+  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch && !podiumLastMatch.isWO
     ? podiumBracket.positions.find(p =>
         p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
@@ -415,7 +416,13 @@ export default function TatamePage() {
       if (podiumBracket.positions.length === 3) {
         const firstId = podiumLastMatch.winnerId
         const secondId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
-        return podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+        const thirdCandidate = podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+        // Se o candidato ao 3° foi eliminado por W.O., não recebe colocação
+        const eliminatedByWO = thirdCandidate ? podiumBracket.matches.some(m =>
+          m.isWO && m.endedAt && m.winnerId !== thirdCandidate.id &&
+          (m.position1Id === thirdCandidate.id || m.position2Id === thirdCandidate.id)
+        ) : false
+        return eliminatedByWO ? null : thirdCandidate
       }
       if (podiumMaxRound < 2) return null
       // Tenta a semifinal do campeão; se foi W.O. (BYE), tenta a do vice-campeão
