@@ -1379,33 +1379,34 @@ export default function TatamePage() {
 
       {/* Modal de consulta de documento (Cronograma / Tabela de Peso) */}
       {docModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3"
+          style={{ backgroundColor: "rgba(0,0,0,0.92)" }}
           onClick={() => setDocModal(null)}>
-          <div className="w-full max-w-4xl rounded-2xl overflow-hidden flex flex-col"
-            style={{ backgroundColor: "var(--card-alt)", maxHeight: "90vh" }}
+          <div className="w-full max-w-3xl rounded-2xl overflow-hidden flex flex-col"
+            style={{ backgroundColor: "var(--card-alt)", maxHeight: "95vh" }}
             onClick={e => e.stopPropagation()}>
             {/* Cabeçalho */}
-            <div className="flex items-center justify-between px-5 py-3 border-b shrink-0"
-              style={{ borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between px-4 py-3 shrink-0">
               <p className="text-white font-bold text-sm">{docModal.title}</p>
               <button onClick={() => setDocModal(null)}
-                className="text-[#6b7280] hover:text-white text-lg leading-none">✕</button>
+                className="text-[#6b7280] hover:text-white text-xl leading-none">✕</button>
             </div>
-            {/* Conteúdo */}
-            <div className="flex-1 overflow-auto p-2 min-h-0">
+            {/* Conteúdo — sem controles do browser */}
+            <div className="flex-1 flex items-center justify-center p-2 min-h-0 overflow-hidden">
               {docModal.url.match(/\.(pdf)$/i) ? (
-                <iframe src={docModal.url} className="w-full rounded" style={{ height: "75vh", border: "none" }} />
+                <iframe
+                  src={`${docModal.url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                  className="w-full h-full rounded"
+                  style={{ border: "none", minHeight: "82vh" }}
+                />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={docModal.url} alt={docModal.title} className="max-w-full mx-auto rounded" />
+                <img
+                  src={docModal.url}
+                  alt={docModal.title}
+                  style={{ maxHeight: "82vh", maxWidth: "100%", objectFit: "contain", borderRadius: 8 }}
+                />
               )}
-            </div>
-            <div className="px-5 py-3 shrink-0 border-t" style={{ borderColor: "var(--border)" }}>
-              <a href={docModal.url} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-[#60a5fa] underline">
-                Abrir em nova aba
-              </a>
             </div>
           </div>
         </div>
