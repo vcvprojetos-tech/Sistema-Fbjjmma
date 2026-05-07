@@ -95,10 +95,14 @@ export async function POST(req: NextRequest) {
   })
 
   if (sessaoAtiva) {
-    return NextResponse.json(
-      { error: `Você já está conectado no ${sessaoAtiva.tatame.name} em outro dispositivo. Feche a outra sessão antes de continuar.` },
-      { status: 409 }
-    )
+    // Permite reconexão ao mesmo tatame (a transação final encerra a sessão antiga)
+    const mesmoTatame = sessaoAtiva.tatame.name.endsWith(`- Tatame ${tatameNum}`)
+    if (!mesmoTatame) {
+      return NextResponse.json(
+        { error: `Você já está conectado no ${sessaoAtiva.tatame.name} em outro dispositivo. Feche a outra sessão antes de continuar.` },
+        { status: 409 }
+      )
+    }
   }
 
   const tatameName = `${user.name} - Tatame ${tatameNum}`
