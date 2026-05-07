@@ -18,5 +18,6 @@ jobs:
           script: |
             cd /var/www/fbjjmma
             git pull
+            cd fbjjmma
             npm run build
             pm2 restart fbjjmma
