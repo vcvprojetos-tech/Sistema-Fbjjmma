@@ -116,6 +116,52 @@ function sortBrackets(list: BracketData[]) {
   })
 }
 
+// Deve coincidir com CALL_INTERVAL_MS na rota chamada/route.ts
+const CALL_INTERVAL_MS = 5 * 60 * 1000
+
+function CallCountdown({ calls, absentPosition }: {
+  calls: CallTime[]
+  absentPosition: "p1" | "p2" | null
+}) {
+  const posCalls = calls.filter(c => c.pos === absentPosition || c.pos == null)
+  const lastDoneCall = [...posCalls].filter(c => c.call <= 2).sort((a, b) => b.call - a.call)[0] ?? null
+  const nextCallNum = lastDoneCall ? lastDoneCall.call + 1 : null
+
+  const [remaining, setRemaining] = useState(0)
+
+  useEffect(() => {
+    if (!lastDoneCall) { setRemaining(0); return }
+    const update = () => {
+      setRemaining(Math.max(0, CALL_INTERVAL_MS - (Date.now() - new Date(lastDoneCall.at).getTime())))
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastDoneCall?.at])
+
+  if (!lastDoneCall || nextCallNum == null) return null
+  // Se a próxima chamada já foi registrada, não mostrar countdown
+  if (posCalls.some(c => c.call >= nextCallNum)) return null
+
+  const mins = Math.floor(remaining / 60000)
+  const secs = Math.floor((remaining % 60000) / 1000)
+
+  if (remaining <= 0) {
+    return (
+      <p className="text-xs text-center font-semibold py-1" style={{ color: "#4ade80" }}>
+        ✓ {nextCallNum}ª chamada disponível
+      </p>
+    )
+  }
+
+  return (
+    <p className="text-xs text-center font-medium py-1" style={{ color: "#f59e0b" }}>
+      ⏱ {nextCallNum}ª chamada em {mins}:{secs.toString().padStart(2, "0")}
+    </p>
+  )
+}
+
 export default function TatamePage() {
   const { tatameId } = useParams<{ tatameId: string }>()
   const [tatame, setTatame] = useState<TatameData | null>(null)
@@ -889,6 +935,7 @@ export default function TatamePage() {
                                       })}
                                     </div>
                                     {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                                    <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
                                     <button
                                       onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
                                       disabled={actionLoading}
@@ -1023,6 +1070,7 @@ export default function TatamePage() {
                               })}
                             </div>
                             {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                            <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
                             <button
                               onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
                               disabled={actionLoading}
