@@ -20,4 +20,5 @@ jobs:
             git pull
             cd fbjjmma
             npm run build
+            npx prisma migrate deploy
             pm2 restart fbjjmma
