@@ -969,9 +969,9 @@ export default function TatamePage() {
                             }}
                             disabled={actionLoading}
                             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
-                            style={{ backgroundColor: p1Present || isMid ? "#15803d" : "#222", color: "var(--foreground)" }}
+                            style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
                           >
-                            {p1Present || isMid ? "✓" : "1"}
+                            {p1Present ? "✓" : "1"}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
