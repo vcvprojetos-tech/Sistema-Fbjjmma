@@ -67,6 +67,7 @@ type Tab =
 interface Event {
   id: string
   name: string
+  status: string
   typeId: string
   state: string
   city: string
@@ -368,6 +369,42 @@ export default function EventoDetailPage() {
   const [resultadoLoading, setResultadoLoading] = useState(false)
   const [resultadoEdits, setResultadoEdits] = useState<Record<string, Partial<Registration>>>({})
   const [resultadoSaving, setResultadoSaving] = useState(false)
+
+  // Finalizar evento
+  const [finalizarLoading, setFinalizarLoading] = useState(false)
+
+  const finalizarEvento = useCallback(async () => {
+    if (!confirm("Finalizar este evento? Coordenadores não poderão mais criar tatames para ele.")) return
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ENCERRADO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
+
+  const reabrirEvento = useCallback(async () => {
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "EM_ANDAMENTO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
 
   // Modal inscrição
   const [inscreverOpen, setInscreverOpen] = useState(false)
@@ -853,12 +890,40 @@ export default function EventoDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-            {eventLoading ? "Carregando..." : event?.name || "Evento"}
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+              {eventLoading ? "Carregando..." : event?.name || "Evento"}
+            </h1>
+            {event?.status === "ENCERRADO" && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#7f1d1d40", color: "#f87171", border: "1px solid #f8717144" }}>
+                ENCERRADO
+              </span>
+            )}
+          </div>
           <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
         </div>
+        {event && (
+          event.status === "ENCERRADO" ? (
+            <Button
+              onClick={reabrirEvento}
+              disabled={finalizarLoading}
+              variant="outline"
+              className="text-xs"
+            >
+              {finalizarLoading ? "..." : "Reabrir Evento"}
+            </Button>
+          ) : (
+            <Button
+              onClick={finalizarEvento}
+              disabled={finalizarLoading}
+              className="text-xs font-bold"
+              style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #991b1b" }}
+            >
+              {finalizarLoading ? "..." : "Finalizar Evento"}
+            </Button>
+          )
+        )}
       </div>
 
       {/* Tabs */}

@@ -24,23 +24,25 @@ export async function POST(req: NextRequest) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
+  const baseWhere = { deletedAt: null, status: { not: "ENCERRADO" as const } }
+
   let event = await prisma.event.findFirst({
-    where: { deletedAt: null, date: { gte: sevenDaysAgo, lte: tomorrow } },
-    orderBy: { date: "desc" }, // mais recente primeiro (prioriza hoje/ontem sobre eventos futuros próximos)
+    where: { ...baseWhere, date: { gte: sevenDaysAgo, lte: tomorrow } },
+    orderBy: { date: "desc" },
   })
 
   // Se não há evento nos últimos 7 dias, pega o próximo futuro
   if (!event) {
     event = await prisma.event.findFirst({
-      where: { deletedAt: null, date: { gt: tomorrow } },
+      where: { ...baseWhere, date: { gt: tomorrow } },
       orderBy: { date: "asc" },
     })
   }
 
-  // Fallback: evento mais recente de todos
+  // Fallback: evento mais recente não-encerrado
   if (!event) {
     event = await prisma.event.findFirst({
-      where: { deletedAt: null },
+      where: baseWhere,
       orderBy: { date: "desc" },
     })
   }
