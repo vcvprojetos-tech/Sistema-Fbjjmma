@@ -42,6 +42,8 @@ const SLOTS_AREA_H =
 
 const SLOT_H = Math.floor((SLOTS_AREA_H - (NAMES_PER_COL - 1) * GAP) / NAMES_PER_COL)
 
+const CALL_INTERVAL_MS = 5 * 60 * 1000
+
 interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
 interface MatchInfo {
   id: string; round: number; matchNumber: number
@@ -73,6 +75,7 @@ interface AthleteEntry {
   category: string
   checkedIn: boolean
   calls: number
+  lastCallAt: string | null
   isWO: boolean
 }
 
@@ -115,12 +118,14 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
           seen.add(key)
           const allCalls = m.callTimes ?? []
           const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
+          const p1LastCall = p1Calls.length > 0 ? p1Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
           entries.push({
             key, name: p1Name,
             team: getTeam(m.position1),
             category,
             checkedIn: m.p1CheckedIn,
             calls: p1Calls.length,
+            lastCallAt: p1LastCall,
             isWO: m.isWO && !!m.endedAt,
           })
         }
@@ -134,12 +139,14 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
             seen.add(key)
             const allCalls = m.callTimes ?? []
             const p2Calls = allCalls.filter(c => c.pos === "p2" || c.pos == null)
+            const p2LastCall = p2Calls.length > 0 ? p2Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
             entries.push({
               key, name: p2Name,
               team: getTeam(m.position2),
               category,
               checkedIn: m.p2CheckedIn,
               calls: p2Calls.length,
+              lastCallAt: p2LastCall,
               isWO: m.isWO && !!m.endedAt,
             })
           }
@@ -181,6 +188,12 @@ export default function PainelPage() {
   const [showOverlay, setShowOverlay] = useState(true)
   const [scaleX, setScaleX] = useState(1)
   const [scaleY, setScaleY] = useState(1)
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     const recalc = () => {
@@ -373,9 +386,22 @@ export default function PainelPage() {
                               </div>
                             </div>
                             {a.calls > 0 && (
-                              <span style={{ color: rowText(a.calls), fontSize: 13, fontWeight: 700, flexShrink: 0, opacity: 0.9 }}>
-                                {a.calls}ª chamada
-                              </span>
+                              <div style={{ flexShrink: 0, textAlign: "right" }}>
+                                <div style={{ color: rowText(a.calls), fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+                                  {a.calls}ª chamada
+                                </div>
+                                {a.calls < 3 && a.lastCallAt && (() => {
+                                  const remaining = Math.max(0, CALL_INTERVAL_MS - (now - new Date(a.lastCallAt).getTime()))
+                                  if (remaining <= 0) return null
+                                  const mins = Math.floor(remaining / 60000)
+                                  const secs = Math.floor((remaining % 60000) / 1000)
+                                  return (
+                                    <div style={{ color: rowText(a.calls), fontSize: 11, opacity: 0.75, marginTop: 1 }}>
+                                      {a.calls + 1}ª em {mins}:{secs.toString().padStart(2, "0")}
+                                    </div>
+                                  )
+                                })()}
+                              </div>
                             )}
                           </div>
                         )
