@@ -323,7 +323,8 @@ function ThreeAthleteBracket({
   const m1LoserId = m1WinnerId
     ? (m1WinnerId === m1!.position1Id ? m1!.position2Id : m1!.position1Id)
     : null
-  const m1LoserPos = m1LoserId ? (posIdMap3.get(m1LoserId) ?? null) : null
+  // Se M1 foi W.O., o perdedor não entra na repescagem — slot fica vazio
+  const m1LoserPos = (m1LoserId && !m1?.isWO) ? (posIdMap3.get(m1LoserId) ?? null) : null
 
   const m2WinnerId = m2?.winnerId ?? null
   const m2LoserId = m2WinnerId
