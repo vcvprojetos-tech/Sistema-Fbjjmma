@@ -1379,35 +1379,33 @@ export default function TatamePage() {
 
       {/* Modal de consulta de documento (Cronograma / Tabela de Peso) */}
       {docModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3"
+        <div className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ backgroundColor: "rgba(0,0,0,0.92)" }}
           onClick={() => setDocModal(null)}>
-          <div className="w-full max-w-3xl rounded-2xl overflow-hidden flex flex-col"
-            style={{ backgroundColor: "var(--card-alt)", maxHeight: "95vh" }}
+          {/* Botão fechar flutuante */}
+          <button
+            onClick={() => setDocModal(null)}
+            className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white text-lg font-bold"
+            style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+            ✕
+          </button>
+          {/* Conteúdo sem card — adapta ao tamanho */}
+          <div
+            style={{ maxHeight: "95vh", maxWidth: "95vw" }}
             onClick={e => e.stopPropagation()}>
-            {/* Cabeçalho */}
-            <div className="flex items-center justify-between px-4 py-3 shrink-0">
-              <p className="text-white font-bold text-sm">{docModal.title}</p>
-              <button onClick={() => setDocModal(null)}
-                className="text-[#6b7280] hover:text-white text-xl leading-none">✕</button>
-            </div>
-            {/* Conteúdo — sem controles do browser */}
-            <div className="flex-1 flex items-center justify-center p-2 min-h-0 overflow-hidden">
-              {docModal.url.match(/\.(pdf)$/i) ? (
-                <iframe
-                  src={`${docModal.url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
-                  className="w-full h-full rounded"
-                  style={{ border: "none", minHeight: "82vh" }}
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={docModal.url}
-                  alt={docModal.title}
-                  style={{ maxHeight: "82vh", maxWidth: "100%", objectFit: "contain", borderRadius: 8 }}
-                />
-              )}
-            </div>
+            {docModal.url.match(/\.(pdf)$/i) ? (
+              <iframe
+                src={`${docModal.url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                style={{ border: "none", display: "block", width: "min(640px, 90vw)", height: "90vh", borderRadius: 12 }}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={docModal.url}
+                alt={docModal.title}
+                style={{ display: "block", maxHeight: "95vh", maxWidth: "95vw", objectFit: "contain", borderRadius: 12 }}
+              />
+            )}
           </div>
         </div>
       )}
