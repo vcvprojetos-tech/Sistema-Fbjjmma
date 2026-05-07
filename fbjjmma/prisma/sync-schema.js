@@ -1,14 +1,13 @@
-// Script de sincronização de schema — usado no deploy quando DATABASE_URL
-// está no pm2 e não nos arquivos .env
+// Script de sincronização de schema — usado no deploy
+// Tenta via pg client; se falhar por permissão, usa sudo -u postgres psql
 const { Client } = require("pg")
-const { execSync } = require("child_process")
+const { execSync, spawnSync } = require("child_process")
 const path = require("path")
 const fs = require("fs")
 
 function findDatabaseUrl() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL
 
-  // Tenta obter do pm2 (onde a DATABASE_URL fica quando configurada via ecosystem.config.js)
   try {
     const list = JSON.parse(
       execSync("pm2 jlist", { stdio: ["pipe", "pipe", "ignore"] }).toString()
@@ -17,12 +16,7 @@ function findDatabaseUrl() {
     if (app?.pm2_env?.DATABASE_URL) return app.pm2_env.DATABASE_URL
   } catch (_) {}
 
-  // Tenta ecosystem.config.js em locais comuns
-  const configPaths = [
-    "./ecosystem.config.js",
-    "../ecosystem.config.js",
-    "./fbjjmma/ecosystem.config.js",
-  ]
+  const configPaths = ["./ecosystem.config.js", "../ecosystem.config.js"]
   for (const p of configPaths) {
     try {
       const full = path.resolve(p)
@@ -41,30 +35,65 @@ function findDatabaseUrl() {
   return null
 }
 
-const dbUrl = findDatabaseUrl()
-if (!dbUrl) {
-  console.error("Erro: DATABASE_URL não encontrada em nenhuma fonte.")
-  console.error("Fontes tentadas: variável de ambiente, pm2, ecosystem.config.js")
-  process.exit(1)
+const alterations = [
+  `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "pesoDoc" TEXT`,
+  `ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "callTimes" JSONB`,
+]
+
+async function syncViaPgClient(dbUrl) {
+  const client = new Client({ connectionString: dbUrl })
+  await client.connect()
+  try {
+    for (const sql of alterations) {
+      await client.query(sql)
+      console.log("OK:", sql)
+    }
+  } finally {
+    await client.end().catch(() => {})
+  }
 }
 
-const client = new Client({ connectionString: dbUrl })
+function syncViaSudoPsql(dbUrl) {
+  const url = new URL(dbUrl)
+  const dbName = url.pathname.slice(1)
+  const sql = alterations.join("; ") + ";"
+
+  console.log(`Tentando sudo -u postgres psql -d ${dbName} ...`)
+  const result = spawnSync(
+    "sudo",
+    ["-n", "-u", "postgres", "psql", "-d", dbName, "-c", sql],
+    { stdio: "inherit" }
+  )
+
+  if (result.status !== 0) {
+    throw new Error(
+      `sudo psql falhou (código ${result.status}). ` +
+        `Execute manualmente:\n  sudo -u postgres psql -d ${dbName} -c "${sql}"`
+    )
+  }
+}
 
 async function main() {
-  await client.connect()
-  console.log("Conectado ao banco. Sincronizando schema...")
-
-  const alterations = [
-    `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "pesoDoc" TEXT`,
-    `ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "callTimes" JSONB`,
-  ]
-
-  for (const sql of alterations) {
-    await client.query(sql)
-    console.log("OK:", sql)
+  const dbUrl = findDatabaseUrl()
+  if (!dbUrl) {
+    console.warn("⚠  DATABASE_URL não encontrada — sync de schema ignorado.")
+    return
   }
 
-  console.log("Schema sincronizado com sucesso.")
+  console.log("Conectado ao banco. Sincronizando schema...")
+
+  try {
+    await syncViaPgClient(dbUrl)
+    console.log("Schema sincronizado via pg client.")
+  } catch (e) {
+    if (e.message.includes("owner") || e.message.includes("permission denied")) {
+      console.warn("Usuário sem permissão DDL. Tentando sudo psql...")
+      syncViaSudoPsql(dbUrl)
+      console.log("Schema sincronizado via sudo psql.")
+    } else {
+      throw e
+    }
+  }
 }
 
 main()
@@ -73,4 +102,3 @@ main()
     console.error("Erro ao sincronizar schema:", e.message)
     process.exit(1)
   })
-  .finally(() => client.end().catch(() => {}))
