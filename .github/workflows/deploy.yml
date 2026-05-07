@@ -16,9 +16,10 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
+            set -e
             cd /var/www/fbjjmma
             git pull
             cd fbjjmma
             npm run build
-            npx prisma migrate deploy
+            npx prisma db push
             pm2 restart fbjjmma
