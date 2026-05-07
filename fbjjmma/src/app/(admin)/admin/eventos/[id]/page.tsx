@@ -62,6 +62,7 @@ type Tab =
   | "chaves"
   | "resultado"
   | "tatames"
+  | "operacoes"
 
 interface Event {
   id: string
@@ -809,6 +810,7 @@ export default function EventoDetailPage() {
     { key: "chaves", label: "CHAVES" },
     { key: "resultado", label: "RESULTADO" },
     { key: "tatames", label: "TATAMES" },
+    { key: "operacoes", label: "OPERAÇÕES" },
   ]
 
 
@@ -1816,101 +1818,6 @@ export default function EventoDetailPage() {
       {tab === "tatames" && (
         <div className="space-y-6">
 
-          {/* Painel TV */}
-          <div className="rounded-lg border p-4"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <a
-                href={`/painel/${id}?painel=1`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#dc2626" }}
-              >
-                Abrir Painel 1 (1ª metade)
-              </a>
-              <a
-                href={`/painel/${id}?painel=2`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#b91c1c" }}
-              >
-                Abrir Painel 2 (2ª metade)
-              </a>
-              <a
-                href={`/painel/${id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
-                style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}
-              >
-                Painel Completo
-              </a>
-            </div>
-          </div>
-
-          {/* Painel de Premiação */}
-          <div className="rounded-lg border p-4"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Premiação</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <a
-                href={`/painel-premiacao/${id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ backgroundColor: "#92400e" }}
-              >
-                Abrir Painel de Premiação
-              </a>
-            </div>
-          </div>
-
-          {/* Backup de chaves finalizadas */}
-          <div className="rounded-lg border p-4"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-semibold text-sm">Backup das Chaves Finalizadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">
-                  Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
-                </p>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <a
-                  href={`/admin/eventos/${id}/backup-visual`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                  style={{ backgroundColor: "#0f766e" }}
-                >
-                  <Download className="w-4 h-4" />
-                  Ver / Imprimir Chaves
-                </a>
-                <a
-                  href={`/api/admin/eventos/${id}/backup`}
-                  download
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}
-                >
-                  JSON
-                </a>
-              </div>
-            </div>
-          </div>
-
           {/* Painel de stats das chaves por tatame */}
           {brackets.length > 0 && (
             <div className="flex gap-3 flex-wrap">
@@ -1992,31 +1899,6 @@ export default function EventoDetailPage() {
                 })}
               </div>
             )}
-          </div>
-
-          {/* Link Coordenador de Premiação */}
-          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
-            <div className="flex items-center gap-2">
-              <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
-            </div>
-            <p className="text-xs text-[#6b7280]">Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--card)" }}>
-              <span className="text-xs text-[#9ca3af] flex-1 truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}</span>
-              <button
-                className="text-xs text-[#a78bfa] hover:text-white font-semibold shrink-0 transition-colors"
-                onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/premiacao/${id}`)}
-              >
-                Copiar
-              </button>
-            </div>
-            <a
-              href={`/premiacao/${id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block text-xs text-[#a78bfa] underline hover:text-white"
-            >
-              Abrir página de premiação →
-            </a>
           </div>
 
           {/* Bracket assignment list */}
@@ -2254,6 +2136,103 @@ export default function EventoDetailPage() {
               )
             })()}
           </div>
+        </div>
+      )}
+
+      {/* TAB: OPERAÇÕES */}
+      {tab === "operacoes" && (
+        <div className="space-y-6">
+
+          {/* Painel de Chamadas */}
+          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <a href={`/painel/${id}?painel=1`} target="_blank" rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: "#dc2626" }}>
+                Abrir Painel 1 (1ª metade)
+              </a>
+              <a href={`/painel/${id}?painel=2`} target="_blank" rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: "#b91c1c" }}>
+                Abrir Painel 2 (2ª metade)
+              </a>
+              <a href={`/painel/${id}`} target="_blank" rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                Painel Completo
+              </a>
+            </div>
+          </div>
+
+          {/* Painel de Premiação */}
+          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-white font-semibold text-sm">Painel de Premiação</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <a href={`/painel-premiacao/${id}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: "#92400e" }}>
+                Abrir Painel de Premiação
+              </a>
+            </div>
+          </div>
+
+          {/* Backup das Chaves Finalizadas */}
+          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-semibold text-sm">Backup das Chaves Finalizadas</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">
+                  Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
+                </p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: "#0f766e" }}>
+                  <Download className="w-4 h-4" />
+                  Ver / Imprimir Chaves
+                </a>
+                <a href={`/api/admin/eventos/${id}/backup`} download
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                  JSON
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Link Coordenador de Premiação */}
+          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
+            <div className="flex items-center gap-2">
+              <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
+            </div>
+            <p className="text-xs text-[#6b7280]">Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
+            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--card)" }}>
+              <span className="text-xs text-[#9ca3af] flex-1 truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}</span>
+              <button
+                className="text-xs text-[#a78bfa] hover:text-white font-semibold shrink-0 transition-colors"
+                onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/premiacao/${id}`)}
+              >
+                Copiar
+              </button>
+            </div>
+            <a href={`/premiacao/${id}`} target="_blank" rel="noopener noreferrer"
+              className="inline-block text-xs text-[#a78bfa] underline hover:text-white">
+              Abrir página de premiação →
+            </a>
+          </div>
+
         </div>
       )}
 
