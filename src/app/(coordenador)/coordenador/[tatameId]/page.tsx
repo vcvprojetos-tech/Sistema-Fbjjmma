@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams } from "next/navigation"
 import { RefreshCw, AlertCircle, ChevronRight, Trophy } from "lucide-react"
 import Link from "next/link"
@@ -312,6 +312,28 @@ export default function TatamePage() {
     }
   }, [load, getPin])
 
+  // Auto-avança atletas que já venceram um round anterior (presença já confirmada)
+  const autoAdvancedRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (!tatame || actionLoading) return
+    for (const b of tatame.brackets) {
+      if (b.positions.length <= 1) continue
+      for (const m of b.matches) {
+        if (m.endedAt || m.position2Id !== null || !m.position1Id) continue
+        if (autoAdvancedRef.current.has(m.id)) continue
+        const jaPresente = b.matches.some(prev =>
+          prev.endedAt && prev.position2Id !== null && prev.winnerId === m.position1Id
+        )
+        if (jaPresente) {
+          autoAdvancedRef.current.add(m.id)
+          declararVencedor(b.id, m.id, m.position1Id, false)
+          return
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tatame])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -377,7 +399,13 @@ export default function TatamePage() {
   const soloMatches = groupBrackets.flatMap(b =>
     b.matches
       .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
-      .map(m => ({ ...m, _bracketId: b.id, _isMidBracket: b.positions.length > 1 }))
+      .map(m => ({
+        ...m,
+        _bracketId: b.id,
+        _isMidBracket: b.positions.length > 1,
+        // Atleta já confirmou presença em round anterior (venceu uma partida real)
+        _alreadyPresent: b.matches.some(prev => prev.endedAt && prev.position2Id !== null && prev.winnerId === m.position1Id),
+      }))
   )
 
   // Para exibir progresso: total de partidas no grupo
@@ -935,12 +963,15 @@ export default function TatamePage() {
                         </div>
                         <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
                           <button
-                            onClick={() => togglePresent(match.id, match._bracketId, "p1", p1Present)}
+                            onClick={() => {
+                              if (isMid) declararVencedor(match._bracketId, match.id, match.position1Id!, false)
+                              else togglePresent(match.id, match._bracketId, "p1", p1Present)
+                            }}
                             disabled={actionLoading}
                             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
-                            style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                            style={{ backgroundColor: p1Present || isMid ? "#15803d" : "#222", color: "var(--foreground)" }}
                           >
-                            {p1Present ? "✓" : "1"}
+                            {p1Present || isMid ? "✓" : "1"}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
@@ -949,14 +980,16 @@ export default function TatamePage() {
                           <span className="text-xs text-[#6b7280]">TAP</span>
                         </div>
                         <div className="flex gap-2 p-3">
+                          {!isMid && (
                           <button
                             onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
-                            disabled={actionLoading || (isMid && !p1Present)}
+                            disabled={actionLoading || !p1Present}
                             className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
                             style={{ backgroundColor: "#15803d" }}
                           >
-                            {isMid ? "▶ Avançar" : "✓ Campeão"}
+                            ✓ Campeão
                           </button>
+                          )}
                           {callMenu?.matchId !== match.id && (
                             <button
                               onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
