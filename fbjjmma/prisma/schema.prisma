@@ -214,6 +214,7 @@ model Event {
   isVisible            Boolean     @default(false)
   banner               String?
   schedule             String?
+  pesoDoc              String?
   about                String?
   paymentInfo          String?
   prize                String?

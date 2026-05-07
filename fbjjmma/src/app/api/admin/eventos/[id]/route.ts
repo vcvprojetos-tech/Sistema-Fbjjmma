@@ -69,8 +69,20 @@ export async function PUT(
         data.schedule = `/uploads/eventos/${filename}`
       }
 
+      // Handle pesoDoc upload
+      const pesoDocFile = formData.get("pesoDoc") as File | null
+      if (pesoDocFile && pesoDocFile.size > 0) {
+        const bytes = await pesoDocFile.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const filename = `${Date.now()}-pesodoc-${pesoDocFile.name.replace(/\s/g, "_")}`
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "eventos")
+        await mkdir(uploadDir, { recursive: true })
+        await writeFile(path.join(uploadDir, filename), buffer)
+        data.pesoDoc = `/uploads/eventos/${filename}`
+      }
+
       for (const [key, value] of formData.entries()) {
-        if (key !== "banner" && key !== "schedule") {
+        if (key !== "banner" && key !== "schedule" && key !== "pesoDoc") {
           data[key] = value
         }
       }
@@ -109,6 +121,7 @@ export async function PUT(
 
     if (data.banner) updateData.banner = data.banner
     if (data.schedule) updateData.schedule = data.schedule
+    if (data.pesoDoc) updateData.pesoDoc = data.pesoDoc
 
     const event = await prisma.event.update({
       where: { id },

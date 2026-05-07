@@ -86,6 +86,7 @@ interface Event {
   isVisible: boolean
   banner: string | null
   schedule: string | null
+  pesoDoc: string | null
   about: string | null
   paymentInfo: string | null
   prize: string | null
@@ -2273,6 +2274,106 @@ export default function EventoDetailPage() {
                   style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
                   JSON
                 </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Documentos para Coordenadores */}
+          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <p className="text-white font-semibold text-sm mb-1">Documentos para Coordenadores</p>
+            <p className="text-[#6b7280] text-xs mb-4">Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Cronograma */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
+                <p className="text-white text-xs font-semibold">📅 Cronograma do Evento</p>
+                {event?.schedule ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.schedule} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-[#60a5fa] underline truncate flex-1">
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-[#4ade80] text-xs">✓ Anexado</span>
+                  </div>
+                ) : (
+                  <p className="text-[#6b7280] text-xs">Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold text-white"
+                    style={{ backgroundColor: "#1d4ed8" }}>
+                    {event?.schedule ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("schedule", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-[#6b7280] text-xs">PDF, PNG ou JPG</span>
+                </label>
+              </div>
+              {/* Tabela de Peso */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
+                <p className="text-white text-xs font-semibold">⚖️ Tabela de Peso</p>
+                {event?.pesoDoc ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.pesoDoc} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-[#60a5fa] underline truncate flex-1">
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-[#4ade80] text-xs">✓ Anexado</span>
+                  </div>
+                ) : (
+                  <p className="text-[#6b7280] text-xs">Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold text-white"
+                    style={{ backgroundColor: "#1d4ed8" }}>
+                    {event?.pesoDoc ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("pesoDoc", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-[#6b7280] text-xs">PDF, PNG ou JPG</span>
+                </label>
               </div>
             </div>
           </div>

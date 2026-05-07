@@ -78,7 +78,7 @@ interface TatameData {
   id: string
   name: string
   pin: string
-  event: { id: string; name: string; status: string }
+  event: { id: string; name: string; status: string; schedule: string | null; pesoDoc: string | null }
   brackets: BracketData[]
   operations: { user: { name: string }; startedAt: string }[]
 }
@@ -179,6 +179,7 @@ export default function TatamePage() {
   const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
+  const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -634,6 +635,25 @@ export default function TatamePage() {
             <span className="text-xs text-[#4ade80] hidden sm:inline">
               · Op: {operador.user.name}
             </span>
+          )}
+          {/* Botões de consulta rápida */}
+          {tatame.event.schedule && (
+            <button
+              onClick={() => setDocModal({ title: "Cronograma do Evento", url: tatame.event.schedule! })}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
+              style={{ backgroundColor: "#1d4ed820", color: "#60a5fa", border: "1px solid #1d4ed840" }}
+            >
+              📅 Cronograma
+            </button>
+          )}
+          {tatame.event.pesoDoc && (
+            <button
+              onClick={() => setDocModal({ title: "Tabela de Peso", url: tatame.event.pesoDoc! })}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
+              style={{ backgroundColor: "#78350f20", color: "#fbbf24", border: "1px solid #78350f40" }}
+            >
+              ⚖️ Tabela de Peso
+            </button>
           )}
         </div>
         <div className="flex items-center gap-4">
@@ -1353,6 +1373,40 @@ export default function TatamePage() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de consulta de documento (Cronograma / Tabela de Peso) */}
+      {docModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+          onClick={() => setDocModal(null)}>
+          <div className="w-full max-w-4xl rounded-2xl overflow-hidden flex flex-col"
+            style={{ backgroundColor: "var(--card-alt)", maxHeight: "90vh" }}
+            onClick={e => e.stopPropagation()}>
+            {/* Cabeçalho */}
+            <div className="flex items-center justify-between px-5 py-3 border-b shrink-0"
+              style={{ borderColor: "var(--border)" }}>
+              <p className="text-white font-bold text-sm">{docModal.title}</p>
+              <button onClick={() => setDocModal(null)}
+                className="text-[#6b7280] hover:text-white text-lg leading-none">✕</button>
+            </div>
+            {/* Conteúdo */}
+            <div className="flex-1 overflow-auto p-2 min-h-0">
+              {docModal.url.match(/\.(pdf)$/i) ? (
+                <iframe src={docModal.url} className="w-full rounded" style={{ height: "75vh", border: "none" }} />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={docModal.url} alt={docModal.title} className="max-w-full mx-auto rounded" />
+              )}
+            </div>
+            <div className="px-5 py-3 shrink-0 border-t" style={{ borderColor: "var(--border)" }}>
+              <a href={docModal.url} target="_blank" rel="noopener noreferrer"
+                className="text-xs text-[#60a5fa] underline">
+                Abrir em nova aba
+              </a>
+            </div>
           </div>
         </div>
       )}
