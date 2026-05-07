@@ -106,24 +106,24 @@ function getPodium(b: BracketInfo): { pos: BPos; place: number }[] {
   const champPos = champId ? posMap.get(champId) : undefined
   const vicePos = viceId ? posMap.get(viceId) : undefined
 
-  const thirdPos = b.positions.find(p =>
-    p.id !== champPos?.id && p.id !== vicePos?.id && p.registration !== null &&
-    b.matches.some(m => (m.position1Id === p.id || m.position2Id === p.id) && m.endedAt) &&
-    !b.matches.some(m => m.round === maxRound && (m.position1Id === p.id || m.position2Id === p.id))
-  )
-
   const result: { pos: BPos; place: number }[] = []
   if (champPos) result.push({ pos: champPos, place: 1 })
   // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
   if (vicePos && !finalMatch.isWO) result.push({ pos: vicePos, place: 2 })
-  if (thirdPos) {
-    // Se o candidato ao 3° foi eliminado por W.O. em alguma partida, não recebe colocação
-    const eliminatedByWO = b.matches.some(m =>
-      m.isWO && m.endedAt && m.winnerId !== thirdPos.id &&
-      (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
-    )
-    if (!eliminatedByWO) result.push({ pos: thirdPos, place: 3 })
+
+  // 3° lugar: loser da semifinal do campeão — mesmo algoritmo do BracketView
+  if (maxRound >= 2) {
+    const semiRound = maxRound - 1
+    const champSemi = realMatches.find(m => m.round === semiRound && m.winnerId === champId && !m.isWO)
+    const viceSemi = realMatches.find(m => m.round === semiRound && m.winnerId === viceId && !m.isWO)
+    const semi = champSemi ?? viceSemi
+    if (semi) {
+      const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
+      const thirdPos = loserId ? posMap.get(loserId) : undefined
+      if (thirdPos?.registration) result.push({ pos: thirdPos, place: 3 })
+    }
   }
+
   return result
 }
 
