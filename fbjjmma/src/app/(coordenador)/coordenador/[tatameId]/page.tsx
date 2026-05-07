@@ -321,7 +321,7 @@ export default function TatamePage() {
       for (const m of b.matches) {
         if (m.endedAt || m.position2Id !== null || !m.position1Id) continue
         if (autoAdvancedRef.current.has(m.id)) continue
-        const jaPresente = b.matches.some(prev =>
+        const jaPresente = m.p1CheckedIn || b.matches.some(prev =>
           prev.endedAt && prev.position2Id !== null && prev.winnerId === m.position1Id
         )
         if (jaPresente) {
@@ -969,9 +969,9 @@ export default function TatamePage() {
                             }}
                             disabled={actionLoading}
                             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
-                            style={{ backgroundColor: p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                            style={{ backgroundColor: (!isMid && p1Present) ? "#15803d" : "#222", color: "var(--foreground)" }}
                           >
-                            {p1Present ? "✓" : "1"}
+                            {(!isMid && p1Present) ? "✓" : "1"}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
