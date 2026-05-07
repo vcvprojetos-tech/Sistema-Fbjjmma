@@ -55,7 +55,7 @@ async function main() {
   console.log("Conectado ao banco. Sincronizando schema...")
 
   const alterations = [
-    `ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "pesoDoc" TEXT`,
+    `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "pesoDoc" TEXT`,
     `ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "callTimes" JSONB`,
   ]
 
