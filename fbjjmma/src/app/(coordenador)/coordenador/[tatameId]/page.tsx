@@ -1377,33 +1377,34 @@ export default function TatamePage() {
         </div>
       )}
 
-      {/* Modal de consulta de documento (Cronograma / Tabela de Peso) */}
+      {/* Modal de consulta rápida de documento (Cronograma / Tabela de Peso) */}
       {docModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.92)" }}
+          style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
           onClick={() => setDocModal(null)}>
-          {/* Botão fechar flutuante */}
-          <button
-            onClick={() => setDocModal(null)}
-            className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white text-lg font-bold"
-            style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
-            ✕
-          </button>
-          {/* Conteúdo sem card — adapta ao tamanho */}
           <div
-            style={{ maxHeight: "95vh", maxWidth: "95vw" }}
+            className="rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            style={{ maxHeight: "75vh", maxWidth: "min(420px, 92vw)", backgroundColor: "var(--card-alt)" }}
             onClick={e => e.stopPropagation()}>
+            {/* Cabeçalho compacto */}
+            <div className="flex items-center justify-between px-3 py-2 shrink-0"
+              style={{ backgroundColor: "rgba(0,0,0,0.35)" }}>
+              <span className="text-white font-semibold text-xs">{docModal.title}</span>
+              <button onClick={() => setDocModal(null)}
+                className="text-[#9ca3af] hover:text-white text-base leading-none ml-3">✕</button>
+            </div>
+            {/* Imagem / PDF sem margens internas */}
             {docModal.url.match(/\.(pdf)$/i) ? (
               <iframe
                 src={`${docModal.url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
-                style={{ border: "none", display: "block", width: "min(640px, 90vw)", height: "90vh", borderRadius: 12 }}
+                style={{ border: "none", display: "block", width: "min(420px, 92vw)", height: "65vh" }}
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={docModal.url}
                 alt={docModal.title}
-                style={{ display: "block", maxHeight: "95vh", maxWidth: "95vw", objectFit: "contain", borderRadius: 12 }}
+                style={{ display: "block", maxHeight: "68vh", maxWidth: "min(420px, 92vw)", objectFit: "contain" }}
               />
             )}
           </div>
