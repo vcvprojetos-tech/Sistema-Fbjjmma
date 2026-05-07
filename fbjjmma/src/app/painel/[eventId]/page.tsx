@@ -133,7 +133,7 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
           if (!seen.has(key)) {
             seen.add(key)
             const allCalls = m.callTimes ?? []
-            const p2Calls = allCalls.filter(c => c.pos === "p2")
+            const p2Calls = allCalls.filter(c => c.pos === "p2" || c.pos == null)
             entries.push({
               key, name: p2Name,
               team: getTeam(m.position2),
