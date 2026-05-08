@@ -897,7 +897,7 @@ export default function TatamePage() {
                                 style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
                                 title={p1Present ? "Marcar como ausente" : "Marcar como presente"}
                               >
-                                {(isDone && winnerIsP1) || p1Present ? "✓" : "1"}
+                                {(isDone && winnerIsP1) || p1Present ? "✓" : (p1?.position ?? "1")}
                               </button>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
@@ -932,7 +932,7 @@ export default function TatamePage() {
                                 style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : p2Present ? "#15803d" : "#222", color: "var(--foreground)" }}
                                 title={p2Present ? "Marcar como ausente" : "Marcar como presente"}
                               >
-                                {(isDone && winnerIsP2) || p2Present ? "✓" : "2"}
+                                {(isDone && winnerIsP2) || p2Present ? "✓" : (p2?.position ?? "2")}
                               </button>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-white text-xs truncate">{p2Name !== "BYE" ? p2Name : "— BYE —"}</p>
@@ -1076,7 +1076,7 @@ export default function TatamePage() {
                             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
                             style={{ backgroundColor: (!isMid && p1Present) ? "#15803d" : "#222", color: "var(--foreground)" }}
                           >
-                            {(!isMid && p1Present) ? "✓" : "1"}
+                            {(!isMid && p1Present) ? "✓" : (p1?.position ?? "1")}
                           </button>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
