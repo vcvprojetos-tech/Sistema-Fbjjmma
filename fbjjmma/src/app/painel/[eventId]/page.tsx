@@ -344,7 +344,7 @@ export default function PainelPage() {
                 <div key={tatame.id}>
                   {/* Cabeçalho do tatame */}
                   <div style={{ height: COL_HEAD_H, marginBottom: COL_HEAD_MB, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", borderBottom: `3px solid ${color}` }}>
-                    <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em" }}>Tatame {num}</div>
+                    <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em", textTransform: "uppercase" }}>Tatame {num}</div>
                     {op && <div style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>{op}</div>}
                   </div>
 
