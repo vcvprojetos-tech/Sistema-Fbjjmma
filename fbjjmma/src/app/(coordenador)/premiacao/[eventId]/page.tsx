@@ -159,8 +159,14 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   } else if (maxRound > 1) {
     if (positions.length === 3) {
       const thirdPos = positions.find((p) => p.id !== firstPos?.id && p.id !== secondPos?.id)
-      if (thirdPos?.registration)
-        placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
+      if (thirdPos?.registration) {
+        const eliminatedByWO = matches.some(m =>
+          m.isWO && m.endedAt && m.winnerId !== thirdPos.id &&
+          (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
+        )
+        if (!eliminatedByWO)
+          placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
+      }
     } else {
       const champSemi = realMatches.find(
         (m) => m.round === maxRound - 1 && m.winnerId === finalMatch.winnerId
