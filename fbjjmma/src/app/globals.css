@@ -20,24 +20,24 @@
   --accent-foreground: #ffffff;
 }
 
-/* ── Modo claro ────────────────────────────────────────────────────────────── */
+/* ── Modo claro (paleta GitHub) ────────────────────────────────────────────── */
 .light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #ffffff;
+  --foreground: #1f2328;
   --card: #ffffff;
-  --card-alt: #f1f5f9;
-  --card-foreground: #0f172a;
+  --card-alt: #f6f8fa;
+  --card-foreground: #1f2328;
   --primary: #dc2626;
   --primary-foreground: #ffffff;
-  --muted: #64748b;
-  --muted-foreground: #475569;
-  --border: #e2e8f0;
-  --border-alt: #cbd5e1;
-  --input: #f8fafc;
+  --muted: #656d76;
+  --muted-foreground: #656d76;
+  --border: #d0d7de;
+  --border-alt: #afb8c1;
+  --input: #ffffff;
   --ring: #dc2626;
   --destructive: #dc2626;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --accent: #f6f8fa;
+  --accent-foreground: #1f2328;
 }
 
 @theme inline {
@@ -103,6 +103,15 @@ body {
 .light .border-\[\#222222\] {
   border-color: var(--border) !important;
 }
+.light .bg-\[\#111111\] {
+  background-color: var(--card) !important;
+}
+.light .bg-\[\#0a0a0a\] {
+  background-color: var(--card-alt) !important;
+}
+.light .border-\[\#333333\] {
+  border-color: var(--border) !important;
+}
 .light .divide-y > * {
   border-color: var(--border) !important;
 }
@@ -127,7 +136,7 @@ body {
 .light input:-webkit-autofill,
 .light input:-webkit-autofill:hover,
 .light input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
-  -webkit-text-fill-color: #0f172a !important;
-  caret-color: #0f172a;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #1f2328 !important;
+  caret-color: #1f2328;
 }

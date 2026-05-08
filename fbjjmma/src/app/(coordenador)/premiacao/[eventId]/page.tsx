@@ -435,7 +435,7 @@ export default function PremiacaoPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar atleta..."
               className="pl-8 pr-7 py-1.5 rounded-lg text-xs outline-none w-40"
-              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff" }}
+              style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-2 text-[#6b7280] hover:text-white">
@@ -611,28 +611,27 @@ export default function PremiacaoPage() {
                 <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho */}
                   <div
-                    className="rounded-xl border p-4"
-                    style={{
-                      backgroundColor: selectedBracket.status === "PREMIADA" ? "#0d0d1a" : "#111",
-                      borderColor: selectedBracket.status === "PREMIADA" ? "#4a1d9650" : "#222",
-                    }}
+                    className="rounded-xl border p-3"
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[#6b7280] text-xs">Chave #{selectedBracket.bracketNumber}</p>
-                        <p className="text-white font-bold text-lg leading-tight mt-0.5">{catLabel(selectedBracket)}</p>
-                        {!selectedBracket.isAbsolute && (
-                          <p className="text-[#4b5563] text-sm mt-0.5">
-                            até {selectedBracket.weightCategory.maxWeight === 999 ? "∞" : `${selectedBracket.weightCategory.maxWeight}kg`}
-                          </p>
-                        )}
-                      </div>
-                      {selectedBracket.status === "PREMIADA" && (
-                        <span className="text-xs px-2 py-1 rounded-full font-semibold shrink-0" style={{ backgroundColor: "#4a1d9640", color: "#a78bfa" }}>
-                          Premiada
-                        </span>
-                      )}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className="text-[#6b7280] text-xs">Chave #{selectedBracket.bracketNumber}</p>
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
+                        style={{
+                          backgroundColor: selectedBracket.status === "PREMIADA" ? "#4a1d9640" : "#78350f40",
+                          color: selectedBracket.status === "PREMIADA" ? "#a78bfa" : "#fbbf24",
+                        }}
+                      >
+                        {selectedBracket.status === "PREMIADA" ? "Premiada" : "Finalizada"}
+                      </span>
                     </div>
+                    <p className="text-white font-bold text-xs leading-tight truncate">{catLabel(selectedBracket)}</p>
+                    {!selectedBracket.isAbsolute && (
+                      <p className="text-[#4b5563] text-xs mt-0.5">
+                        até {selectedBracket.weightCategory.maxWeight === 999 ? "∞" : `${selectedBracket.weightCategory.maxWeight}kg`}
+                      </p>
+                    )}
                   </div>
 
                   {/* Colocações */}
@@ -659,37 +658,39 @@ export default function PremiacaoPage() {
                           return (
                             <div
                               key={pl.positionId}
-                              className="flex items-center gap-4 rounded-xl px-4 py-4"
-                              style={{ backgroundColor: cfg.bg, border: `1px solid ${cfg.color}25` }}
+                              className="rounded-xl overflow-hidden border"
+                              style={{ borderColor: `${cfg.color}25`, backgroundColor: cfg.bg }}
                             >
-                              <span className="text-3xl shrink-0">{cfg.icon}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-base font-bold leading-snug" style={{ color: awarded ? "#4ade80" : "#f9fafb" }}>{regName}</p>
-                                {teamName && <p className="text-sm text-[#6b7280] leading-snug">{teamName}</p>}
-                                <p className="text-xs font-semibold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
-                              </div>
-                              {awarded ? (
-                                <div className="flex flex-col items-center gap-1 text-[#4ade80] shrink-0">
-                                  <CheckCircle2 className="h-6 w-6" />
-                                  <span className="text-xs font-bold">Premiado</span>
+                              <div className="px-3 py-2.5 flex items-center gap-3">
+                                <span className="text-xl shrink-0">{cfg.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold truncate" style={{ color: awarded ? "#4ade80" : "#f9fafb" }}>{regName}</p>
+                                  {teamName && <p className="text-xs text-[#6b7280] truncate">{teamName}</p>}
+                                  <p className="text-[10px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</p>
                                 </div>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    if (pl.place === 1 && pl.sourceBracket.isAbsolute) {
-                                      setPixModal({ bracket: pl.sourceBracket, placement: pl })
-                                      setPixValue(pl.registration?.prizePix ?? "")
-                                    } else {
-                                      handlePremiar(pl.sourceBracket, pl)
-                                    }
-                                  }}
-                                  disabled={isAwardingNow || !pl.registration}
-                                  className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
-                                  style={{ backgroundColor: "#dc2626", color: "var(--foreground)" }}
-                                >
-                                  {isAwardingNow ? "..." : "Premiar"}
-                                </button>
-                              )}
+                                {awarded ? (
+                                  <div className="flex flex-col items-center gap-0.5 text-[#4ade80] shrink-0">
+                                    <CheckCircle2 className="h-5 w-5" />
+                                    <span className="text-[10px] font-bold">Premiado</span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      if (pl.place === 1 && pl.sourceBracket.isAbsolute) {
+                                        setPixModal({ bracket: pl.sourceBracket, placement: pl })
+                                        setPixValue(pl.registration?.prizePix ?? "")
+                                      } else {
+                                        handlePremiar(pl.sourceBracket, pl)
+                                      }
+                                    }}
+                                    disabled={isAwardingNow || !pl.registration}
+                                    className="px-4 py-2 rounded-lg font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                                    style={{ backgroundColor: "#dc2626", color: "#fff" }}
+                                  >
+                                    {isAwardingNow ? "..." : "Premiar"}
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           )
                         })}
