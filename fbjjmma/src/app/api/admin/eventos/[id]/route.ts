@@ -120,8 +120,10 @@ export async function PUT(
     }
 
     if (data.banner) updateData.banner = data.banner
-    if (data.schedule) updateData.schedule = data.schedule
-    if (data.pesoDoc) updateData.pesoDoc = data.pesoDoc
+    if (data.removeSchedule === "true") updateData.schedule = null
+    else if (data.schedule) updateData.schedule = data.schedule
+    if (data.removePesoDoc === "true") updateData.pesoDoc = null
+    else if (data.pesoDoc) updateData.pesoDoc = data.pesoDoc
 
     const event = await prisma.event.update({
       where: { id },

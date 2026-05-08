@@ -320,6 +320,27 @@ export default function EventoDetailPage() {
   const [event, setEvent] = useState<Event | null>(null)
   const [eventLoading, setEventLoading] = useState(true)
 
+  async function removeDoc(field: "schedule" | "pesoDoc") {
+    if (!event) return
+    const fd = new FormData()
+    fd.append(field === "schedule" ? "removeSchedule" : "removePesoDoc", "true")
+    fd.append("name", event.name); fd.append("typeId", event.typeId)
+    fd.append("state", event.state); fd.append("city", event.city)
+    fd.append("location", event.location); fd.append("date", event.date)
+    fd.append("registrationDeadline", event.registrationDeadline)
+    fd.append("correctionDeadline", event.correctionDeadline)
+    fd.append("paymentDeadline", event.paymentDeadline)
+    fd.append("checkinRelease", event.checkinRelease)
+    fd.append("bracketRelease", event.bracketRelease)
+    fd.append("weightTableId", event.weightTableId)
+    fd.append("value", String(event.value))
+    fd.append("hasAbsolute", String(event.hasAbsolute))
+    fd.append("registrationOpen", String(event.registrationOpen))
+    fd.append("isVisible", String(event.isVisible))
+    const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+    if (res.ok) { const updated = await res.json(); setEvent(updated) }
+  }
+
   // Valores tab
   const [valoresData, setValoresData] = useState<CategoryValue[]>([])
   const [valoresLoading, setValoresLoading] = useState(false)
@@ -2293,6 +2314,10 @@ export default function EventoDetailPage() {
                       Ver arquivo atual
                     </a>
                     <span className="text-[#4ade80] text-xs">✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover o cronograma?")) removeDoc("schedule") }}
+                      className="text-[#ef4444] hover:text-[#dc2626] text-xs font-bold ml-1"
+                      title="Remover">✕</button>
                   </div>
                 ) : (
                   <p className="text-[#6b7280] text-xs">Nenhum arquivo anexado</p>
@@ -2339,6 +2364,10 @@ export default function EventoDetailPage() {
                       Ver arquivo atual
                     </a>
                     <span className="text-[#4ade80] text-xs">✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover a tabela de peso?")) removeDoc("pesoDoc") }}
+                      className="text-[#ef4444] hover:text-[#dc2626] text-xs font-bold ml-1"
+                      title="Remover">✕</button>
                   </div>
                 ) : (
                   <p className="text-[#6b7280] text-xs">Nenhum arquivo anexado</p>
