@@ -182,11 +182,31 @@ export default function TatamePage() {
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
+  const [undoLoading, setUndoLoading] = useState(false)
 
   const enterFullscreen = useCallback(() => {
     document.documentElement.requestFullscreen?.().catch(() => {})
     setShowOverlay(false)
   }, [])
+
+  const desfazerResultado = useCallback(async (bracketId: string) => {
+    if (!confirm("Desfazer o último resultado registrado nesta chave?")) return
+    setUndoLoading(true)
+    setError("")
+    try {
+      const res = await fetch(`/api/coordenador/chave/${bracketId}/undo`, {
+        method: "POST",
+        headers: { "x-tatame-pin": getPin() },
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? "Erro ao desfazer resultado."); return }
+      await load(true)
+    } catch {
+      setError("Erro ao desfazer resultado.")
+    } finally {
+      setUndoLoading(false)
+    }
+  }, [getPin, load])
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
@@ -777,23 +797,37 @@ export default function TatamePage() {
                   <div className="rounded-xl border p-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
-                      <span
-                        className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
-                        style={{
-                          backgroundColor:
-                            bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
-                            bracket.status === "FINALIZADA" ? "#14532d60" :
-                            bracket.status === "PREMIADA" ? "#4a1d9660" : "#1a1a1a",
-                          color:
-                            bracket.status === "EM_ANDAMENTO" ? "#fbbf24" :
-                            bracket.status === "FINALIZADA" ? "#4ade80" :
-                            bracket.status === "PREMIADA" ? "#a78bfa" : "#6b7280",
-                        }}
-                      >
-                        {bracket.status === "EM_ANDAMENTO" ? "Em Andamento" :
-                         bracket.status === "FINALIZADA" ? "Finalizada" :
-                         bracket.status === "PREMIADA" ? "Premiada" : "Aguardando"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {(bracket.status === "EM_ANDAMENTO" || bracket.status === "FINALIZADA") &&
+                          bracket.matches.some(m => m.endedAt !== null && m.position2Id !== null) && (
+                          <button
+                            onClick={() => desfazerResultado(bracket.id)}
+                            disabled={undoLoading || actionLoading}
+                            title="Desfazer último resultado"
+                            className="text-[10px] px-2 py-0.5 rounded font-semibold transition-colors disabled:opacity-40"
+                            style={{ backgroundColor: "#78350f40", color: "#fb923c", border: "1px solid #78350f60" }}
+                          >
+                            ↩ Desfazer
+                          </button>
+                        )}
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
+                          style={{
+                            backgroundColor:
+                              bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
+                              bracket.status === "FINALIZADA" ? "#14532d60" :
+                              bracket.status === "PREMIADA" ? "#4a1d9660" : "#1a1a1a",
+                            color:
+                              bracket.status === "EM_ANDAMENTO" ? "#fbbf24" :
+                              bracket.status === "FINALIZADA" ? "#4ade80" :
+                              bracket.status === "PREMIADA" ? "#a78bfa" : "#6b7280",
+                          }}
+                        >
+                          {bracket.status === "EM_ANDAMENTO" ? "Em Andamento" :
+                           bracket.status === "FINALIZADA" ? "Finalizada" :
+                           bracket.status === "PREMIADA" ? "Premiada" : "Aguardando"}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-white font-bold text-xs leading-tight whitespace-nowrap overflow-hidden">{catLabel(bracket)}</p>
                     {!bracket.isAbsolute && (
