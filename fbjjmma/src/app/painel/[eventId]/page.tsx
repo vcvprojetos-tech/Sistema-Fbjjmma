@@ -343,9 +343,12 @@ export default function PainelPage() {
               return (
                 <div key={tatame.id}>
                   {/* Cabeçalho do tatame */}
-                  <div style={{ height: COL_HEAD_H, marginBottom: COL_HEAD_MB, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "space-between", paddingTop: 6, paddingBottom: 6, borderBottom: `3px solid ${color}` }}>
-                    <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em", textTransform: "uppercase" }}>Tatame {num}</div>
-                    {op && <div style={{ color: "#64748b", fontSize: 13 }}>{op}</div>}
+                  <div style={{ height: COL_HEAD_H, marginBottom: COL_HEAD_MB, textAlign: "center", display: "flex", flexDirection: "column" }}>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", paddingTop: 4, paddingBottom: 10 }}>
+                      <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em", textTransform: "uppercase" }}>Tatame {num}</div>
+                      {op && <div style={{ color: "#64748b", fontSize: 13 }}>{op}</div>}
+                    </div>
+                    <div style={{ height: 3, backgroundColor: color, borderRadius: 2 }} />
                   </div>
 
                   {/* Lista de nomes: 10 slots de altura fixa */}
