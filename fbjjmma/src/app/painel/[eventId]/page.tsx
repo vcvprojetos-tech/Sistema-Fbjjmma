@@ -159,35 +159,29 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
 }
 
 function rowBg(calls: number) {
-  if (calls >= 3) return "#fef2f2"
-  if (calls === 2) return "#fefce8"
-  if (calls === 1) return "#eff6ff"
+  if (calls >= 3) return "#dc2626"
+  if (calls === 2) return "#d97706"
+  if (calls === 1) return "#2563eb"
   return "#ffffff"
 }
 function rowBorder(calls: number) {
-  if (calls >= 3) return "#fecaca"
-  if (calls === 2) return "#fde68a"
-  if (calls === 1) return "#bfdbfe"
-  return "#e2e8f0"
-}
-function rowTextName(calls: number) {
   if (calls >= 3) return "#b91c1c"
   if (calls === 2) return "#b45309"
   if (calls === 1) return "#1d4ed8"
-  return "#1e293b"
+  return "#e2e8f0"
+}
+function rowTextName(calls: number) {
+  return calls >= 1 ? "#ffffff" : "#1e293b"
 }
 function rowTextSub(calls: number) {
-  if (calls >= 3) return "#ef4444"
-  if (calls === 2) return "#d97706"
-  if (calls === 1) return "#60a5fa"
-  return "#64748b"
+  return calls >= 1 ? "rgba(255,255,255,0.85)" : "#64748b"
 }
 
 const LEGEND = [
-  { bg: "#ffffff", border: "#e2e8f0", text: "#1e293b", label: "Aguardando" },
-  { bg: "#eff6ff", border: "#bfdbfe", text: "#1d4ed8", label: "1ª Chamada" },
-  { bg: "#fefce8", border: "#fde68a", text: "#b45309", label: "2ª Chamada" },
-  { bg: "#fef2f2", border: "#fecaca", text: "#b91c1c", label: "3ª Chamada" },
+  { bg: "#ffffff", border: "#cbd5e1", text: "#1e293b", label: "Aguardando" },
+  { bg: "#2563eb", border: "#1d4ed8", text: "#ffffff", label: "1ª Chamada" },
+  { bg: "#d97706", border: "#b45309", text: "#ffffff", label: "2ª Chamada" },
+  { bg: "#dc2626", border: "#b91c1c", text: "#ffffff", label: "3ª Chamada" },
 ]
 
 export default function PainelPage() {
@@ -322,11 +316,11 @@ export default function PainelPage() {
         <div style={{ padding: `${TOPBAR_MB}px ${OUTER_PAD_H}px ${OUTER_PAD_B}px` }}>
 
         {/* Legenda */}
-        <div style={{ height: LEGEND_H, marginBottom: LEGEND_MB, display: "flex", alignItems: "center", gap: 24, borderBottom: "1px solid #cbd5e1" }}>
+        <div style={{ height: LEGEND_H, marginBottom: LEGEND_MB, display: "flex", alignItems: "center", gap: 24, backgroundColor: "#e2e8f0", borderRadius: 8, padding: "0 16px", border: "1px solid #cbd5e1" }}>
           {LEGEND.map(l => (
             <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3, border: `1px solid ${l.border}` }} />
-              <span style={{ color: l.text, fontSize: 14, fontWeight: 600 }}>{l.label}</span>
+              <div style={{ width: 16, height: 16, backgroundColor: l.bg, borderRadius: 4, border: `1px solid ${l.border}` }} />
+              <span style={{ color: "#1e293b", fontSize: 14, fontWeight: 600 }}>{l.label}</span>
             </div>
           ))}
         </div>
