@@ -232,6 +232,7 @@ export default function PremiacaoPage() {
   const [pixModal, setPixModal] = useState<{ bracket: BracketData; placement: Placement } | null>(null)
   const [pixValue, setPixValue] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [sideTab, setSideTab] = useState<"aguardando" | "premiadas">("aguardando")
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -467,18 +468,38 @@ export default function PremiacaoPage() {
       ) : (
         <div className="flex flex-1 overflow-hidden">
 
-          {/* Coluna esquerda — Busca ou Aguardando premiação */}
-          <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
-            {searchQuery ? (
-              <>
-                <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-                  <span className="text-xs font-bold text-[#3b82f6] uppercase tracking-wider flex items-center gap-1.5">
-                    <Search className="h-3 w-3" />
-                    Resultados ({brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length})
-                  </span>
-                </div>
-                {brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
+          {/* Coluna esquerda — Abas Aguardando/Premiadas */}
+          <div className="w-64 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)" }}>
+            {/* Abas */}
+            <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
+              <button
+                onClick={() => setSideTab("aguardando")}
+                className="flex-1 py-2 text-xs font-bold transition-colors"
+                style={{
+                  color: sideTab === "aguardando" ? "#fbbf24" : "#6b7280",
+                  borderBottom: sideTab === "aguardando" ? "2px solid #fbbf24" : "2px solid transparent",
+                  backgroundColor: "var(--background)",
+                }}
+              >
+                Aguardando ({pendentes.length})
+              </button>
+              <button
+                onClick={() => setSideTab("premiadas")}
+                className="flex-1 py-2 text-xs font-bold transition-colors"
+                style={{
+                  color: sideTab === "premiadas" ? "#a78bfa" : "#6b7280",
+                  borderBottom: sideTab === "premiadas" ? "2px solid #a78bfa" : "2px solid transparent",
+                  backgroundColor: "var(--background)",
+                }}
+              >
+                Premiadas ({premiadas.length})
+              </button>
+            </div>
+            {/* Conteúdo da aba */}
+            <div className="flex-1 overflow-y-auto">
+              {searchQuery ? (
+                brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
                     <p className="text-[#6b7280] text-xs">Nenhum atleta encontrado.</p>
                   </div>
                 ) : (
@@ -504,7 +525,6 @@ export default function PremiacaoPage() {
                             {isAwarded && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#4a1d9640", color: "#a78bfa" }}>PREMIADA</span>}
                           </div>
                           <p className="text-sm font-medium leading-tight truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
-                          {/* Destacar nomes que batem com a busca */}
                           <div className="flex flex-col gap-0.5 mt-1">
                             {b.positions.filter(p => {
                               const name = p.registration?.athlete?.user.name ?? p.registration?.guestName ?? ""
@@ -519,82 +539,109 @@ export default function PremiacaoPage() {
                       )
                     })}
                   </div>
-                )}
-              </>
-            ) : (
-            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-              <span className="text-xs font-bold text-[#fbbf24] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#fbbf24] inline-block animate-pulse" />
-                Aguardando ({pendentes.length})
-              </span>
-            </div>
-            )}
-
-            {!searchQuery && pendentes.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
-                <CheckCircle2 className="h-8 w-8 text-[#4ade80]" />
-                <p className="text-[#4ade80] text-xs font-medium">Todas premiadas!</p>
-              </div>
-            ) : !searchQuery && (
-              <div className="flex flex-col">
-                {(() => {
-                  const rendered: React.ReactNode[] = []
-                  const seenGroups = new Set<string>()
-                  for (const b of pendentes) {
-                    if (b.bracketGroupId) {
-                      if (seenGroups.has(b.bracketGroupId)) continue
-                      seenGroups.add(b.bracketGroupId)
-                      const groupBrackets = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
-                      const allPlacements = groupBrackets.flatMap(x => computePlacements(x, brackets))
-                      const awardedCount = allPlacements.filter(pl => pl.registration?.awarded).length
-                      const isSelected = groupBrackets.some(x => x.id === selectedId)
-                      const label = catLabel(b).replace(" (Sub-chave)", "").replace("🏆 Grande Final — ", "")
-                      rendered.push(
-                        <button
-                          key={b.bracketGroupId}
-                          onClick={() => setSelectedId(groupBrackets[0].id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
-                          style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: isSelected ? "#1a0a00" : "transparent",
-                            borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
-                          }}
-                        >
-                          <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
-                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{label}</p>
-                          {allPlacements.length > 0 && (
-                            <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{allPlacements.length} premiado(s)</p>
-                          )}
-                        </button>
-                      )
-                    } else {
+                )
+              ) : sideTab === "aguardando" ? (
+                pendentes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
+                    <CheckCircle2 className="h-8 w-8 text-[#4ade80]" />
+                    <p className="text-[#4ade80] text-xs font-medium">Todas premiadas!</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {(() => {
+                      const rendered: React.ReactNode[] = []
+                      const seenGroups = new Set<string>()
+                      for (const b of pendentes) {
+                        if (b.bracketGroupId) {
+                          if (seenGroups.has(b.bracketGroupId)) continue
+                          seenGroups.add(b.bracketGroupId)
+                          const groupBrackets = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
+                          const allPlacements = groupBrackets.flatMap(x => computePlacements(x, brackets))
+                          const awardedCount = allPlacements.filter(pl => pl.registration?.awarded).length
+                          const isSelected = groupBrackets.some(x => x.id === selectedId)
+                          const label = catLabel(b).replace(" (Sub-chave)", "").replace("🏆 Grande Final — ", "")
+                          rendered.push(
+                            <button
+                              key={b.bracketGroupId}
+                              onClick={() => setSelectedId(groupBrackets[0].id)}
+                              className="w-full text-left px-3 py-3 border-b transition-colors"
+                              style={{
+                                borderColor: "var(--border)",
+                                backgroundColor: isSelected ? "#1a0a00" : "transparent",
+                                borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                              }}
+                            >
+                              <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
+                              <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{label}</p>
+                              {allPlacements.length > 0 && (
+                                <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{allPlacements.length} premiado(s)</p>
+                              )}
+                            </button>
+                          )
+                        } else {
+                          const isSelected = b.id === selectedId
+                          const placements = computePlacements(b, brackets)
+                          const awardedCount = placements.filter((pl) => pl.registration?.awarded).length
+                          rendered.push(
+                            <button
+                              key={b.id}
+                              onClick={() => setSelectedId(b.id)}
+                              className="w-full text-left px-3 py-3 border-b transition-colors"
+                              style={{
+                                borderColor: "var(--border)",
+                                backgroundColor: isSelected ? "#1a0a00" : "transparent",
+                                borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                              }}
+                            >
+                              <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
+                              <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
+                              {placements.length > 0 && (
+                                <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
+                              )}
+                            </button>
+                          )
+                        }
+                      }
+                      return rendered
+                    })()}
+                  </div>
+                )
+              ) : (
+                premiadas.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
+                    <p className="text-[#4b5563] text-xs">Nenhuma chave premiada ainda.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {premiadas.map((b) => {
                       const isSelected = b.id === selectedId
                       const placements = computePlacements(b, brackets)
-                      const awardedCount = placements.filter((pl) => pl.registration?.awarded).length
-                      rendered.push(
+                      return (
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
                           className="w-full text-left px-3 py-3 border-b transition-colors"
                           style={{
                             borderColor: "var(--border)",
-                            backgroundColor: isSelected ? "#1a0a00" : "transparent",
-                            borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                            backgroundColor: isSelected ? "#0d0d1a" : "transparent",
+                            borderLeft: isSelected ? "3px solid #a78bfa" : "3px solid transparent",
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
+                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "#a78bfa" }}>{catLabel(b)}</p>
                           {placements.length > 0 && (
-                            <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <CheckCircle2 className="h-3 w-3 text-[#4ade80]" />
+                              <p className="text-xs text-[#4ade80]">{placements.length} premiado(s)</p>
+                            </div>
                           )}
                         </button>
                       )
-                    }
-                  }
-                  return rendered
-                })()}
-              </div>
-            )}
+                    })}
+                  </div>
+                )
+              )}
+            </div>
           </div>
 
           {/* Centro — Detalhe da chave selecionada */}
@@ -608,7 +655,7 @@ export default function PremiacaoPage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Colocações — coluna fixa esquerda */}
-                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div className="w-[26rem] shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho */}
                   <div
                     className="rounded-xl border p-3"
@@ -753,49 +800,6 @@ export default function PremiacaoPage() {
             )}
           </div>
 
-          {/* Coluna direita — Premiadas */}
-          <div className="w-56 shrink-0 flex flex-col border-l overflow-y-auto" style={{ borderColor: "var(--border)" }}>
-            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-              <span className="text-xs font-bold text-[#a78bfa] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] inline-block" />
-                Premiadas ({premiadas.length})
-              </span>
-            </div>
-
-            {premiadas.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
-                <p className="text-[#4b5563] text-xs">Nenhuma chave premiada ainda.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {premiadas.map((b) => {
-                  const isSelected = b.id === selectedId
-                  const placements = computePlacements(b, brackets)
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => setSelectedId(b.id)}
-                      className="w-full text-left px-3 py-3 border-b transition-colors"
-                      style={{
-                        borderColor: "var(--border)",
-                        backgroundColor: isSelected ? "#0d0d1a" : "transparent",
-                        borderLeft: isSelected ? "3px solid #a78bfa" : "3px solid transparent",
-                      }}
-                    >
-                      <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                      <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "#a78bfa" }}>{catLabel(b)}</p>
-                      {placements.length > 0 && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <CheckCircle2 className="h-3 w-3 text-[#4ade80]" />
-                          <p className="text-xs text-[#4ade80]">{placements.length} premiado(s)</p>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
 
         </div>
       )}
