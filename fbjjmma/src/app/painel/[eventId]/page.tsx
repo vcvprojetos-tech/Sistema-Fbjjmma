@@ -279,7 +279,7 @@ export default function PainelPage() {
 
       {!showOverlay && (
         <button onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
-          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#64748b", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
+          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "#e2e8f0", border: "1px solid #cbd5e1", borderRadius: 8, color: "#475569", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
           {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
         </button>
       )}
@@ -294,19 +294,19 @@ export default function PainelPage() {
         fontFamily: "system-ui, sans-serif",
       }}>
 
-        {/* Topbar — escuro */}
-        <div style={{ height: TOPBAR_H + TOPBAR_MB, backgroundColor: "#0f172a", display: "flex", alignItems: "center", justifyContent: "space-between", padding: `0 ${OUTER_PAD_H}px` }}>
+        {/* Topbar */}
+        <div style={{ height: TOPBAR_H + TOPBAR_MB, backgroundColor: "#ffffff", borderBottom: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "space-between", padding: `0 ${OUTER_PAD_H}px` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo2.png" alt="FBJJMMA" style={{ width: 34, height: 34, objectFit: "contain" }} />
             <div>
-              <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: 18 }}>{event.name}</div>
-              <div style={{ color: "#94a3b8", fontSize: 12 }}>Painel de Chamadas — Área de Pesagem</div>
+              <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 18 }}>{event.name}</div>
+              <div style={{ color: "#64748b", fontSize: 12 }}>Painel de Chamadas — Área de Pesagem</div>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ color: "#64748b", fontSize: 11 }}>Última atualização</div>
-            <div style={{ color: "#94a3b8", fontSize: 14, fontFamily: "monospace" }}>
+            <div style={{ color: "#94a3b8", fontSize: 11 }}>Última atualização</div>
+            <div style={{ color: "#475569", fontSize: 14, fontFamily: "monospace" }}>
               {lastUpdate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </div>
           </div>
