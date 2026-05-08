@@ -686,7 +686,7 @@ export default function TatamePage() {
           )}
           {tatame.event.pesoDoc && (
             <button
-              onClick={() => openDoc("Tabela de Peso", tatame.event.pesoDoc!)}
+              onClick={() => setDocModal({ title: "Tabela de Peso", url: tatame.event.pesoDoc! })}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
               style={{ backgroundColor: "#78350f20", color: "#fbbf24", border: "1px solid #78350f40" }}
             >
