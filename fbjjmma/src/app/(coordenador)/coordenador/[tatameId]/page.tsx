@@ -180,13 +180,19 @@ export default function TatamePage() {
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
-  function openDoc(title: string, url: string) {
-    if (url.match(/\.(pdf)$/i)) {
-      window.open(url, "_blank", "noopener")
-    } else {
-      setDocModal({ title, url })
-    }
-  }
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showOverlay, setShowOverlay] = useState(true)
+
+  const enterFullscreen = useCallback(() => {
+    document.documentElement.requestFullscreen?.().catch(() => {})
+    setShowOverlay(false)
+  }, [])
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener("fullscreenchange", onChange)
+    return () => document.removeEventListener("fullscreenchange", onChange)
+  }, [])
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -626,6 +632,31 @@ export default function TatamePage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
+
+      {/* Overlay de entrada em tela cheia */}
+      {showOverlay && (
+        <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0a0a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo2.png" alt="FBJJMMA" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
+          <div style={{ color: "#ffffff", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>
+            {tatame.name}
+          </div>
+          <div style={{ color: "#6b7280", fontSize: "0.95rem", marginBottom: 32 }}>{tatame.event.name}</div>
+          <div style={{ backgroundColor: "#1a1a1a", border: "2px solid #dc2626", borderRadius: 12, padding: "16px 40px", color: "#fca5a5", fontSize: "1.1rem", fontWeight: 700 }}>
+            Pressione OK para abrir em Tela Cheia
+          </div>
+        </div>
+      )}
+
+      {/* Botão de tela cheia (visível após fechar overlay) */}
+      {!showOverlay && (
+        <button
+          onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
+          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
+          {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
+        </button>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-3">
@@ -646,7 +677,7 @@ export default function TatamePage() {
           {/* Botões de consulta rápida */}
           {tatame.event.schedule && (
             <button
-              onClick={() => openDoc("Cronograma do Evento", tatame.event.schedule!)}
+              onClick={() => setDocModal({ title: "Cronograma do Evento", url: tatame.event.schedule! })}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
               style={{ backgroundColor: "#1d4ed820", color: "#60a5fa", border: "1px solid #1d4ed840" }}
             >
