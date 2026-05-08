@@ -957,11 +957,11 @@ export default function TatamePage() {
                                     <div className="flex gap-2">
                                       <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p2.id, absenteeName: p1Name, absentPosition: "p1" })} disabled={actionLoading}
                                         className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                        W.O. — {p1Name.split(" ")[0]}
+                                        Opções — {p1Name.split(" ")[0]}
                                       </button>
                                       <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p1.id, absenteeName: p2Name, absentPosition: "p2" })} disabled={actionLoading}
                                         className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
-                                        W.O. — {p2Name.split(" ")[0]}
+                                        Opções — {p2Name.split(" ")[0]}
                                       </button>
                                     </div>
                                     <button onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
