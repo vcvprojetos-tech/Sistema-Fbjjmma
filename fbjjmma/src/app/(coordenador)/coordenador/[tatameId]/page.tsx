@@ -1422,7 +1422,7 @@ export default function TatamePage() {
           onClick={() => setDocModal(null)}>
           <div
             className="rounded-2xl overflow-hidden shadow-2xl flex flex-col"
-            style={{ maxWidth: "min(92vw, 1100px)", maxHeight: "90vh", backgroundColor: "transparent" }}
+            style={{ maxWidth: "min(80vw, 720px)", maxHeight: "85vh", backgroundColor: "transparent" }}
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-3 py-2 shrink-0"
               style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: "1rem 1rem 0 0" }}>
@@ -1434,7 +1434,7 @@ export default function TatamePage() {
             <img
               src={docModal.url}
               alt={docModal.title}
-              style={{ display: "block", maxWidth: "min(92vw, 1100px)", maxHeight: "85vh", width: "auto", height: "auto" }}
+              style={{ display: "block", maxWidth: "min(80vw, 720px)", maxHeight: "78vh", width: "auto", height: "auto" }}
             />
           </div>
         </div>
