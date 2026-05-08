@@ -189,25 +189,6 @@ export default function TatamePage() {
     setShowOverlay(false)
   }, [])
 
-  const desfazerResultado = useCallback(async (bracketId: string) => {
-    if (!confirm("Desfazer o último resultado registrado nesta chave?")) return
-    setUndoLoading(true)
-    setError("")
-    try {
-      const res = await fetch(`/api/coordenador/chave/${bracketId}/undo`, {
-        method: "POST",
-        headers: { "x-tatame-pin": getPin() },
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? "Erro ao desfazer resultado."); return }
-      await load(true)
-    } catch {
-      setError("Erro ao desfazer resultado.")
-    } finally {
-      setUndoLoading(false)
-    }
-  }, [getPin, load])
-
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener("fullscreenchange", onChange)
@@ -232,6 +213,25 @@ export default function TatamePage() {
       setRefreshing(false)
     }
   }, [tatameId, getPin])
+
+  const desfazerResultado = useCallback(async (bracketId: string) => {
+    if (!confirm("Desfazer o último resultado registrado nesta chave?")) return
+    setUndoLoading(true)
+    setError("")
+    try {
+      const res = await fetch(`/api/coordenador/chave/${bracketId}/undo`, {
+        method: "POST",
+        headers: { "x-tatame-pin": getPin() },
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? "Erro ao desfazer resultado."); return }
+      await load(true)
+    } catch {
+      setError("Erro ao desfazer resultado.")
+    } finally {
+      setUndoLoading(false)
+    }
+  }, [getPin, load])
 
   useEffect(() => { load() }, [load])
 
