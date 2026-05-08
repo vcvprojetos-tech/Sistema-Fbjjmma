@@ -37,6 +37,21 @@ const PADDING = 10
 const POS_LABEL_W = 16 // space for position number label beside athlete card
 const LINE_COLOR = "#555"
 
+// ThreeAthleteBracket — constantes de layout no nível de módulo (evita inline components)
+const T3_PAD = 22
+const T3_CW = 140
+const T3_CH = 44
+const T3_VG = 6
+const T3_DROP_GAP = 60
+const T3_BLX = T3_PAD + T3_CW          // = 162
+const T3_RBX = T3_BLX + 10              // = 172
+const T3_RBW = 32
+const T3_RBH = 20
+const T3_PBLX = T3_RBX + T3_RBW + 8    // = 212
+const T3_FX = T3_PBLX + 8               // = 220
+const T3_FBW = 80
+const T3_FBH = 44
+
 const AGE_GROUP_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
   INFANTIL_B: "Infantil B", INFANTO_JUVENIL_A: "Infanto Juvenil A",
@@ -436,8 +451,10 @@ function ThreeAthleteBracket({
   }
 
   const champion = finalWinnerId ? posIdMap3.get(finalWinnerId)?.registration ?? null : null
-  const runnerUp = finalLoserId ? posIdMap3.get(finalLoserId)?.registration ?? null : null
-  const thirdPlace = m2LoserId ? posIdMap3.get(m2LoserId)?.registration ?? null : null
+  // Se a final terminou por W.O., o perdedor foi desclassificado — sem 2° lugar
+  const runnerUp = (finalLoserId && !mFinal?.isWO) ? posIdMap3.get(finalLoserId)?.registration ?? null : null
+  // Se o perdedor do R2 foi eliminado por W.O., não recebe 3° lugar
+  const thirdPlace = (m2LoserId && !m2?.isWO) ? posIdMap3.get(m2LoserId)?.registration ?? null : null
 
   const bracketTitle = [
     weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
@@ -890,7 +907,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const firstPlaceReg = finalWinnerId
     ? posIdMap.get(finalWinnerId)?.registration ?? null
     : null
-  const secondPosId = (finalMatch && finalWinnerId)
+  const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO)
     ? (finalWinnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id)
     : null
   const secondPlaceReg = secondPosId ? posIdMap.get(secondPosId)?.registration ?? null : null
