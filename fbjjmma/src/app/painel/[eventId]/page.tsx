@@ -159,23 +159,35 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
 }
 
 function rowBg(calls: number) {
-  if (calls >= 3) return "#7f1d1d"
-  if (calls === 2) return "#7c2d12"
-  if (calls === 1) return "#713f12"
-  return "#1e3a5f"
+  if (calls >= 3) return "#fef2f2"
+  if (calls === 2) return "#fefce8"
+  if (calls === 1) return "#eff6ff"
+  return "#ffffff"
 }
-function rowText(calls: number) {
+function rowBorder(calls: number) {
   if (calls >= 3) return "#fecaca"
-  if (calls === 2) return "#fed7aa"
-  if (calls === 1) return "#fde68a"
-  return "#bfdbfe"
+  if (calls === 2) return "#fde68a"
+  if (calls === 1) return "#bfdbfe"
+  return "#e2e8f0"
+}
+function rowTextName(calls: number) {
+  if (calls >= 3) return "#b91c1c"
+  if (calls === 2) return "#b45309"
+  if (calls === 1) return "#1d4ed8"
+  return "#1e293b"
+}
+function rowTextSub(calls: number) {
+  if (calls >= 3) return "#ef4444"
+  if (calls === 2) return "#d97706"
+  if (calls === 1) return "#60a5fa"
+  return "#64748b"
 }
 
 const LEGEND = [
-  { bg: "#1e3a5f", label: "Aguardando" },
-  { bg: "#713f12", label: "1ª Chamada" },
-  { bg: "#7c2d12", label: "2ª Chamada" },
-  { bg: "#7f1d1d", label: "3ª Chamada" },
+  { bg: "#ffffff", border: "#e2e8f0", text: "#1e293b", label: "Aguardando" },
+  { bg: "#eff6ff", border: "#bfdbfe", text: "#1d4ed8", label: "1ª Chamada" },
+  { bg: "#fefce8", border: "#fde68a", text: "#b45309", label: "2ª Chamada" },
+  { bg: "#fef2f2", border: "#fecaca", text: "#b91c1c", label: "3ª Chamada" },
 ]
 
 export default function PainelPage() {
@@ -236,8 +248,8 @@ export default function PainelPage() {
   }, [fetchData])
 
   if (!data) return (
-    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0a0f1a" }}>
-      <p style={{ color: "#475569" }}>Carregando painel...</p>
+    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f0f4f8" }}>
+      <p style={{ color: "#64748b" }}>Carregando painel...</p>
     </div>
   )
 
@@ -258,10 +270,10 @@ export default function PainelPage() {
     <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#0a0f1a", overflow: "hidden", position: "relative" }}>
 
       {showOverlay && (
-        <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0f1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#f0f4f8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo2.png" alt="FBJJMMA" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
-          <div style={{ color: "#f1f5f9", fontSize: "1.5rem", fontWeight: 900, marginBottom: 12 }}>
+          <div style={{ color: "#1e293b", fontSize: "1.5rem", fontWeight: 900, marginBottom: 12 }}>
             Painel de Chamadas{painelNum ? ` — Painel ${painelNum}` : ""}
           </div>
           <div style={{ color: "#64748b", fontSize: "1rem", marginBottom: 32 }}>Área de Pesagem</div>
@@ -283,36 +295,38 @@ export default function PainelPage() {
         transform: `scaleX(${scaleX}) scaleY(${scaleY})`,
         transformOrigin: "top left",
         position: "absolute", top: 0, left: 0,
-        backgroundColor: "#0a0f1a",
-        padding: `${OUTER_PAD_T}px ${OUTER_PAD_H}px ${OUTER_PAD_B}px`,
+        backgroundColor: "#f0f4f8",
         boxSizing: "border-box",
         fontFamily: "system-ui, sans-serif",
       }}>
 
-        {/* Topbar */}
-        <div style={{ height: TOPBAR_H, marginBottom: TOPBAR_MB, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Topbar — escuro */}
+        <div style={{ height: TOPBAR_H + TOPBAR_MB, backgroundColor: "#0f172a", display: "flex", alignItems: "center", justifyContent: "space-between", padding: `0 ${OUTER_PAD_H}px` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo2.png" alt="FBJJMMA" style={{ width: 38, height: 38, objectFit: "contain" }} />
+            <img src="/logo2.png" alt="FBJJMMA" style={{ width: 34, height: 34, objectFit: "contain" }} />
             <div>
-              <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: 20 }}>{event.name}</div>
-              <div style={{ color: "#64748b", fontSize: 13 }}>Painel de Chamadas — Área de Pesagem</div>
+              <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: 18 }}>{event.name}</div>
+              <div style={{ color: "#94a3b8", fontSize: 12 }}>Painel de Chamadas — Área de Pesagem</div>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ color: "#475569", fontSize: 11 }}>Última atualização</div>
-            <div style={{ color: "#64748b", fontSize: 15, fontFamily: "monospace" }}>
+            <div style={{ color: "#64748b", fontSize: 11 }}>Última atualização</div>
+            <div style={{ color: "#94a3b8", fontSize: 14, fontFamily: "monospace" }}>
               {lastUpdate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </div>
           </div>
         </div>
 
+        {/* Área de conteúdo com padding */}
+        <div style={{ padding: `${TOPBAR_MB}px ${OUTER_PAD_H}px ${OUTER_PAD_B}px` }}>
+
         {/* Legenda */}
-        <div style={{ height: LEGEND_H, marginBottom: LEGEND_MB, display: "flex", alignItems: "center", gap: 24, borderBottom: "1px solid #1e293b" }}>
+        <div style={{ height: LEGEND_H, marginBottom: LEGEND_MB, display: "flex", alignItems: "center", gap: 24, borderBottom: "1px solid #cbd5e1" }}>
           {LEGEND.map(l => (
-            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3 }} />
-              <span style={{ color: "#64748b", fontSize: 15 }}>{l.label}</span>
+            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3, border: `1px solid ${l.border}` }} />
+              <span style={{ color: l.text, fontSize: 14, fontWeight: 600 }}>{l.label}</span>
             </div>
           ))}
         </div>
@@ -320,8 +334,8 @@ export default function PainelPage() {
         {tatames.length === 0 ? (
           <div style={{ height: SLOTS_AREA_H + COL_HEAD_H + COL_HEAD_MB, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#1e293b", fontSize: 60, marginBottom: 10 }}>📋</div>
-              <div style={{ color: "#475569", fontSize: 24 }}>Nenhum tatame ativo no momento</div>
+              <div style={{ color: "#cbd5e1", fontSize: 60, marginBottom: 10 }}>📋</div>
+              <div style={{ color: "#94a3b8", fontSize: 24 }}>Nenhum tatame ativo no momento</div>
             </div>
           </div>
         ) : (
@@ -335,16 +349,16 @@ export default function PainelPage() {
               return (
                 <div key={tatame.id}>
                   {/* Cabeçalho do tatame */}
-                  <div style={{ height: COL_HEAD_H, marginBottom: COL_HEAD_MB, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", borderBottom: `4px solid ${color}` }}>
-                    <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em" }}>Tatame {num}</div>
-                    {op && <div style={{ color: "#64748b", fontSize: 14, marginTop: 2 }}>{op}</div>}
+                  <div style={{ height: COL_HEAD_H, marginBottom: COL_HEAD_MB, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", borderBottom: `3px solid ${color}` }}>
+                    <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em" }}>Tatame {num}</div>
+                    {op && <div style={{ color: "#64748b", fontSize: 13, marginTop: 2 }}>{op}</div>}
                   </div>
 
                   {/* Lista de nomes: 10 slots de altura fixa */}
                   <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
                     {athletes.length === 0 ? (
                       <div style={{ height: SLOTS_AREA_H, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ color: "#1e293b", fontSize: 18 }}>Sem atletas pendentes</span>
+                        <span style={{ color: "#94a3b8", fontSize: 18 }}>Sem atletas pendentes</span>
                       </div>
                     ) : (
                       Array.from({ length: NAMES_PER_COL }).map((_, idx) => {
@@ -353,8 +367,8 @@ export default function PainelPage() {
                           return (
                             <div key={`empty-${idx}`} style={{
                               height: SLOT_H, borderRadius: 6,
-                              backgroundColor: "#0f172a",
-                              border: "1px dashed #1e293b",
+                              backgroundColor: "#e2e8f0",
+                              border: "1px dashed #cbd5e1",
                             }} />
                           )
                         }
@@ -366,28 +380,31 @@ export default function PainelPage() {
                             display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
                             overflow: "hidden",
                             borderLeft: `4px solid ${color}`,
+                            border: `1px solid ${rowBorder(a.calls)}`,
+                            borderLeftWidth: 4,
+                            borderLeftColor: color,
                           }}>
-                            <span style={{ color: rowText(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
+                            <span style={{ color: rowTextName(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
                               {idx + 1}
                             </span>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ color: rowText(a.calls), fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              <div style={{ color: rowTextName(a.calls), fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                 {a.name}
                               </div>
                               <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2 }}>
                                 {a.team && (
-                                  <span style={{ color: rowText(a.calls), opacity: 0.75, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  <span style={{ color: rowTextSub(a.calls), fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                     {a.team}
                                   </span>
                                 )}
-                                <span style={{ color: rowText(a.calls), opacity: 0.5, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>
+                                <span style={{ color: rowTextSub(a.calls), opacity: 0.7, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>
                                   {a.category}
                                 </span>
                               </div>
                             </div>
                             {a.calls > 0 && (
                               <div style={{ flexShrink: 0, textAlign: "right" }}>
-                                <div style={{ color: rowText(a.calls), fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+                                <div style={{ color: rowTextName(a.calls), fontSize: 13, fontWeight: 700 }}>
                                   {a.calls}ª chamada
                                 </div>
                                 {a.calls < 3 && a.lastCallAt && (() => {
@@ -396,7 +413,7 @@ export default function PainelPage() {
                                   const mins = Math.floor(remaining / 60000)
                                   const secs = Math.floor((remaining % 60000) / 1000)
                                   return (
-                                    <div style={{ color: rowText(a.calls), fontSize: 11, opacity: 0.75, marginTop: 1 }}>
+                                    <div style={{ color: rowTextSub(a.calls), fontSize: 11, marginTop: 1 }}>
                                       {a.calls + 1}ª em {mins}:{secs.toString().padStart(2, "0")}
                                     </div>
                                   )
@@ -413,6 +430,7 @@ export default function PainelPage() {
             })}
           </div>
         )}
+        </div>
       </div>
     </div>
   )
