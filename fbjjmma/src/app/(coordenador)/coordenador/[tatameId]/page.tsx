@@ -180,6 +180,13 @@ export default function TatamePage() {
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
+  function openDoc(title: string, url: string) {
+    if (url.match(/\.(pdf)$/i)) {
+      window.open(url, "_blank", "noopener")
+    } else {
+      setDocModal({ title, url })
+    }
+  }
 
   const getPin = useCallback(() => sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? "", [tatameId])
 
@@ -639,7 +646,7 @@ export default function TatamePage() {
           {/* Botões de consulta rápida */}
           {tatame.event.schedule && (
             <button
-              onClick={() => setDocModal({ title: "Cronograma do Evento", url: tatame.event.schedule! })}
+              onClick={() => openDoc("Cronograma do Evento", tatame.event.schedule!)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
               style={{ backgroundColor: "#1d4ed820", color: "#60a5fa", border: "1px solid #1d4ed840" }}
             >
@@ -648,7 +655,7 @@ export default function TatamePage() {
           )}
           {tatame.event.pesoDoc && (
             <button
-              onClick={() => setDocModal({ title: "Tabela de Peso", url: tatame.event.pesoDoc! })}
+              onClick={() => openDoc("Tabela de Peso", tatame.event.pesoDoc!)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
               style={{ backgroundColor: "#78350f20", color: "#fbbf24", border: "1px solid #78350f40" }}
             >
@@ -1377,40 +1384,27 @@ export default function TatamePage() {
         </div>
       )}
 
-      {/* Modal de consulta rápida de documento (Cronograma / Tabela de Peso) */}
+      {/* Modal de consulta rápida de documento (imagens — PDFs abrem em nova aba) */}
       {docModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
           onClick={() => setDocModal(null)}>
           <div
             className="rounded-2xl overflow-hidden shadow-2xl flex flex-col"
-            style={{
-              maxWidth: "min(92vw, 1100px)",
-              maxHeight: "90vh",
-              backgroundColor: docModal.url.match(/\.(pdf)$/i) ? "var(--card-alt)" : "transparent",
-            }}
+            style={{ maxWidth: "min(92vw, 1100px)", maxHeight: "90vh", backgroundColor: "transparent" }}
             onClick={e => e.stopPropagation()}>
-            {/* Cabeçalho compacto */}
             <div className="flex items-center justify-between px-3 py-2 shrink-0"
               style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: "1rem 1rem 0 0" }}>
               <span className="text-white font-semibold text-xs">{docModal.title}</span>
               <button onClick={() => setDocModal(null)}
                 className="text-[#9ca3af] hover:text-white text-base leading-none ml-3">✕</button>
             </div>
-            {/* Imagem / PDF sem margens internas */}
-            {docModal.url.match(/\.(pdf)$/i) ? (
-              <iframe
-                src={`${docModal.url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
-                style={{ border: "none", display: "block", width: "min(92vw, 1100px)", height: "82vh" }}
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={docModal.url}
-                alt={docModal.title}
-                style={{ display: "block", maxWidth: "min(92vw, 1100px)", maxHeight: "85vh", width: "auto", height: "auto" }}
-              />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={docModal.url}
+              alt={docModal.title}
+              style={{ display: "block", maxWidth: "min(92vw, 1100px)", maxHeight: "85vh", width: "auto", height: "auto" }}
+            />
           </div>
         </div>
       )}
