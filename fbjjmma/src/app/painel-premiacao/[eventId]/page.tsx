@@ -21,10 +21,10 @@ const NUM_COLS = 4
 const NAMES_PER_COL = 10
 const GAP = 4
 
-const MEDAL_COLORS: Record<number, { bg: string; border: string; text: string; label: string }> = {
-  1: { bg: "#b45309", border: "#92400e", text: "#ffffff", label: "1°" },
-  2: { bg: "#6b7280", border: "#4b5563", text: "#ffffff", label: "2°" },
-  3: { bg: "#92400e", border: "#78350f", text: "#ffffff", label: "3°" },
+const MEDAL_COLORS: Record<number, { bg: string; border: string; text: string; subText: string; label: string; emoji: string }> = {
+  1: { bg: "#fbbf24", border: "#d97706", text: "#1c1917", subText: "#44403c", label: "1°\nLugar", emoji: "🥇" },
+  2: { bg: "#e2e8f0", border: "#cbd5e1", text: "#1e293b", subText: "#475569", label: "2°\nLugar", emoji: "🥈" },
+  3: { bg: "#f97316", border: "#ea580c", text: "#ffffff", subText: "rgba(255,255,255,0.85)", label: "3°\nLugar", emoji: "🥉" },
 }
 
 interface Reg {
@@ -293,9 +293,9 @@ export default function PainelPremiacaoPage() {
         {/* Legenda */}
         <div style={{ height: LEGEND_H, marginBottom: 10, display: "flex", alignItems: "center", gap: 24, backgroundColor: "#e2e8f0", borderRadius: 8, padding: "0 18px" }}>
           {LEGEND.map(l => (
-            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3, border: `1px solid ${l.border}` }} />
-              <span style={{ color: "#475569", fontSize: 15, fontWeight: 600 }}>{l.label}</span>
+            <div key={l.emoji} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 18 }}>{l.emoji}</span>
+              <span style={{ color: "#475569", fontSize: 15, fontWeight: 600 }}>{l.label.replace("\n", " ")}</span>
             </div>
           ))}
           <span style={{ color: "#94a3b8", fontSize: 13, marginLeft: "auto" }}>
@@ -333,24 +333,30 @@ export default function PainelPremiacaoPage() {
                         height: SLOT_H,
                         backgroundColor: c.bg,
                         borderRadius: 6,
-                        display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
+                        display: "flex", alignItems: "center", gap: 10, padding: "0 14px",
                         overflow: "hidden",
                         borderLeft: `4px solid ${c.border}`,
                       }}>
-                        <span style={{ color: c.text, fontWeight: 900, fontSize: 20, width: 28, textAlign: "center", flexShrink: 0 }}>
-                          {c.label}
-                        </span>
+                        {/* Badge lugar */}
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 44, flexShrink: 0 }}>
+                          <span style={{ color: c.text, fontWeight: 900, fontSize: 15, lineHeight: 1.1, textAlign: "center", whiteSpace: "pre-line" }}>
+                            {c.label}
+                          </span>
+                        </div>
+                        {/* Emoji medalha */}
+                        <span style={{ fontSize: 26, flexShrink: 0 }}>{c.emoji}</span>
+                        {/* Info atleta */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ color: c.text, fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {a.name}
                           </div>
                           <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
                             {a.team && (
-                              <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              <span style={{ color: c.subText, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                 {a.team}
                               </span>
                             )}
-                            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <span style={{ color: c.subText, opacity: 0.7, fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
                               {a.category}
                             </span>
                           </div>
