@@ -92,10 +92,10 @@
   --hdr-pending: #4b5563;
   --hdr-op: #374151;
   /* Botões de chamada (modo claro) */
-  --call-2-bg: #fef3c7;
-  --call-2-color: #b45309;
-  --call-3-bg: #fee2e2;
-  --call-3-color: #dc2626;
+  --call-2-bg: #d97706;
+  --call-2-color: #ffffff;
+  --call-3-bg: #dc2626;
+  --call-3-color: #ffffff;
   /* Botões Cronograma e Tabela de Peso (modo claro) */
   --btn-sched-bg: #dbeafe;
   --btn-sched-fg: #1d4ed8;
