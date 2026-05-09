@@ -943,16 +943,30 @@ export default function TatamePage() {
                                 <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
                                 {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                               </div>
-                              {!isDone && p1Name !== "BYE" && (
-                                <button
-                                  onClick={() => bothPresent && !actionLoading && p1?.id && declararVencedor(match._bracketId, match.id, p1.id)}
-                                  disabled={!bothPresent || actionLoading}
-                                  className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
-                                  style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
-                                >
-                                  TAP
-                                </button>
-                              )}
+                              {!isDone && p1Name !== "BYE" && (() => {
+                                const p1Calls = calls.filter((c: CallTime) => c.pos === "p1" || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
+                                if (!p1Present && p1Calls.length > 0) {
+                                  return (
+                                    <div className="flex flex-col items-end gap-0 shrink-0">
+                                      {p1Calls.map((ct: CallTime) => (
+                                        <span key={ct.call} className="text-[9px] leading-tight font-semibold" style={{ color: "#f87171" }}>
+                                          {ct.call}ª {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )
+                                }
+                                return (
+                                  <button
+                                    onClick={() => bothPresent && !actionLoading && p1?.id && declararVencedor(match._bracketId, match.id, p1.id)}
+                                    disabled={!bothPresent || actionLoading}
+                                    className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
+                                    style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                  >
+                                    TAP
+                                  </button>
+                                )
+                              })()}
                             </div>
 
                             {/* VS */}
@@ -978,16 +992,30 @@ export default function TatamePage() {
                                 <p className="font-semibold text-white text-xs truncate">{p2Name !== "BYE" ? p2Name : "— BYE —"}</p>
                                 {getAthleteTeam(p2) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p2)}</p>}
                               </div>
-                              {!isDone && p2Name !== "BYE" && (
-                                <button
-                                  onClick={() => bothPresent && !actionLoading && p2?.id && declararVencedor(match._bracketId, match.id, p2.id)}
-                                  disabled={!bothPresent || actionLoading}
-                                  className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
-                                  style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
-                                >
-                                  TAP
-                                </button>
-                              )}
+                              {!isDone && p2Name !== "BYE" && (() => {
+                                const p2Calls = calls.filter((c: CallTime) => c.pos === "p2" || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
+                                if (!p2Present && p2Calls.length > 0) {
+                                  return (
+                                    <div className="flex flex-col items-end gap-0 shrink-0">
+                                      {p2Calls.map((ct: CallTime) => (
+                                        <span key={ct.call} className="text-[9px] leading-tight font-semibold" style={{ color: "#f87171" }}>
+                                          {ct.call}ª {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )
+                                }
+                                return (
+                                  <button
+                                    onClick={() => bothPresent && !actionLoading && p2?.id && declararVencedor(match._bracketId, match.id, p2.id)}
+                                    disabled={!bothPresent || actionLoading}
+                                    className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
+                                    style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                  >
+                                    TAP
+                                  </button>
+                                )
+                              })()}
                             </div>
 
                             {!isDone && p1?.id && p2?.id && (
