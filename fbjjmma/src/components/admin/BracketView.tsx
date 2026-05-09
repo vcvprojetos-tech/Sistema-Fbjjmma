@@ -193,7 +193,7 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
             <div key={e.key}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
-                <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
+                <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600 }}>{e.name}</span>
                 <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
               </div>
               {(e.calls.length > 0 || e.endedAt) && (
