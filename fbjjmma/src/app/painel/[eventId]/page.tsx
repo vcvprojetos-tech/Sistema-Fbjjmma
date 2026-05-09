@@ -42,7 +42,6 @@ const CONTENT_H =
   - COL_HEAD_H - COL_HEAD_MB
 
 const CALL_INTERVAL_MS = 5 * 60 * 1000
-const GRACE_MS = 30 * 1000 // 30s de graça após 3ª chamada antes de sumir
 
 interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
 interface MatchInfo {
@@ -118,7 +117,7 @@ function filterGroupsToFit(groups: BracketGroup[], maxH: number): BracketGroup[]
   return result
 }
 
-function getGroupsForTatame(tatame: TatameInfo, now: number): BracketGroup[] {
+function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
   const groups: BracketGroup[] = []
 
   const sorted = [...tatame.brackets].sort((a, b) => {
@@ -131,15 +130,10 @@ function getGroupsForTatame(tatame: TatameInfo, now: number): BracketGroup[] {
     const seen = new Set<string>()
 
     for (const m of b.matches) {
-      const allCalls = m.callTimes ?? []
-
-      if (m.endedAt) {
-        // Manter visível por GRACE_MS após a 3ª chamada
-        const call3 = allCalls.find(c => c.call === 3)
-        if (!call3 || now - new Date(call3.at).getTime() >= GRACE_MS) continue
-      }
-
+      if (m.endedAt) continue
       if (!m.position1) continue
+
+      const allCalls = m.callTimes ?? []
 
       const addAthlete = (
         pos: MatchInfo["position1"],
@@ -147,15 +141,12 @@ function getGroupsForTatame(tatame: TatameInfo, now: number): BracketGroup[] {
         checkedIn: boolean,
         callFilter: (c: CallTime) => boolean
       ) => {
+        if (checkedIn) return
         const name = getName(pos)
         if (name === "BYE") return
         const key = `${m.id}-${posKey}`
         if (seen.has(key)) return
         const posCalls = allCalls.filter(callFilter).sort((a, b) => a.call - b.call)
-        // Em período de graça: só mostrar quem tem 3ª chamada
-        if (m.endedAt && posCalls.length < 3) return
-        // Normal: só mostrar quem não fez check-in
-        if (!m.endedAt && checkedIn) return
         seen.add(key)
         athletes.push({
           key, name, team: getTeam(pos),
@@ -351,7 +342,7 @@ export default function PainelPage() {
                 const color = COL_COLORS[colIdx % COL_COLORS.length]
                 const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
                 const op = tatame.operations[0]?.user.name ?? ""
-                const groups = filterGroupsToFit(getGroupsForTatame(tatame, now), CONTENT_H)
+                const groups = filterGroupsToFit(getGroupsForTatame(tatame), CONTENT_H)
 
                 return (
                   <div key={tatame.id}>
