@@ -606,13 +606,13 @@ export default function TatamePage() {
                           className="w-full text-left px-3 py-3 border-b transition-colors"
                           style={{
                             borderColor: "var(--border)",
-                            backgroundColor: groupIsSelected ? (groupIsActive ? "#1a0d00" : "#0d0d1a") : "transparent",
+                            backgroundColor: groupIsSelected ? (groupIsActive ? "var(--selected-warm)" : "var(--selected-cool)") : "transparent",
                             borderLeft: groupIsSelected ? `3px solid ${groupIsActive ? "#fbbf24" : color}` : "3px solid transparent",
                           }}
                         >
                           <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {group.length} sub-chaves</p>
                           <p className="font-medium leading-tight mt-0.5 break-words"
-                            style={{ color: groupIsActive ? "#fbbf24" : "#e5e7eb", fontSize: "0.72rem" }}>
+                            style={{ color: groupIsActive ? "#fbbf24" : "var(--foreground)", fontSize: "0.72rem" }}>
                             {catLabel(b).replace(" (Sub-chave)", "")}
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
@@ -630,13 +630,13 @@ export default function TatamePage() {
                           className="w-full text-left px-3 py-3 border-b transition-colors"
                           style={{
                             borderColor: "var(--border)",
-                            backgroundColor: isSelected ? (isActive ? "#1a0d00" : "#0d0d1a") : "transparent",
+                            backgroundColor: isSelected ? (isActive ? "var(--selected-warm)" : "var(--selected-cool)") : "transparent",
                             borderLeft: isSelected ? `3px solid ${isActive ? "#fbbf24" : color}` : "3px solid transparent",
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
                           <p className="font-medium leading-tight mt-0.5 break-words"
-                            style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "#e5e7eb", fontSize: "0.72rem" }}>
+                            style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "var(--foreground)", fontSize: "0.72rem" }}>
                             {catLabel(b)}
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
@@ -908,7 +908,7 @@ export default function TatamePage() {
                         return (
                           <div key={match.id} className="rounded-xl border overflow-hidden"
                             style={{
-                              borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "#333",
+                              borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "var(--border-alt)",
                               backgroundColor: "var(--card)",
                             }}>
                             <div className="px-3 py-2 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -929,12 +929,12 @@ export default function TatamePage() {
 
                             {/* Atleta 1 */}
                             <div className="w-full px-4 py-3 flex items-center gap-3"
-                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "#111", borderBottom: "1px solid var(--border)" }}>
+                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "var(--surface-match)", borderBottom: "1px solid var(--border)" }}>
                               <button
                                 onClick={() => !isDone && p1Name !== "BYE" && togglePresent(match.id, match._bracketId, "p1", p1Present)}
                                 disabled={isDone || p1Name === "BYE"}
                                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
-                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : p1Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                                style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : p1Present ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
                                 title={p1Present ? "Marcar como ausente" : "Marcar como presente"}
                               >
                                 {(isDone && winnerIsP1) || p1Present ? "✓" : (p1?.position ?? "1")}
@@ -961,7 +961,7 @@ export default function TatamePage() {
                                     onClick={() => bothPresent && !actionLoading && p1?.id && declararVencedor(match._bracketId, match.id, p1.id)}
                                     disabled={!bothPresent || actionLoading}
                                     className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
-                                    style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                    style={{ color: bothPresent ? "#dc2626" : "var(--muted)", cursor: bothPresent ? "pointer" : "default" }}
                                   >
                                     TAP
                                   </button>
@@ -971,19 +971,19 @@ export default function TatamePage() {
 
                             {/* VS */}
                             <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
-                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "#222" }} />
-                              <span className="text-xs font-bold py-1" style={{ color: bothPresent && !isDone ? "#4ade80" : "#444" }}>VS</span>
-                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "#222" }} />
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "var(--border)" }} />
+                              <span className="text-xs font-bold py-1" style={{ color: bothPresent && !isDone ? "#4ade80" : "var(--muted)" }}>VS</span>
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "var(--border)" }} />
                             </div>
 
                             {/* Atleta 2 */}
                             <div className="w-full px-4 py-3 flex items-center gap-3"
-                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "#111" }}>
+                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "var(--surface-match)" }}>
                               <button
                                 onClick={() => !isDone && p2Name !== "BYE" && togglePresent(match.id, match._bracketId, "p2", p2Present)}
                                 disabled={isDone || p2Name === "BYE"}
                                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors disabled:cursor-default"
-                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : p2Present ? "#15803d" : "#222", color: "var(--foreground)" }}
+                                style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : p2Present ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
                                 title={p2Present ? "Marcar como ausente" : "Marcar como presente"}
                               >
                                 {(isDone && winnerIsP2) || p2Present ? "✓" : (p2?.position ?? "2")}
@@ -1010,7 +1010,7 @@ export default function TatamePage() {
                                     onClick={() => bothPresent && !actionLoading && p2?.id && declararVencedor(match._bracketId, match.id, p2.id)}
                                     disabled={!bothPresent || actionLoading}
                                     className="text-xs font-bold shrink-0 px-2 py-1 rounded transition-opacity"
-                                    style={{ color: bothPresent ? "#dc2626" : "#444", cursor: bothPresent ? "pointer" : "default" }}
+                                    style={{ color: bothPresent ? "#dc2626" : "var(--muted)", cursor: bothPresent ? "pointer" : "default" }}
                                   >
                                     TAP
                                   </button>
@@ -1059,7 +1059,7 @@ export default function TatamePage() {
                                                       onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
                                                       disabled={!canCall || !!callLoading || actionLoading}
                                                       className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                                      style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                                      style={{ backgroundColor: done ? "#15803d" : "var(--surface-button)", color: done ? "#4ade80" : "var(--muted-foreground)" }}
                                                     >
                                                       {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
                                                     </button>
@@ -1171,7 +1171,7 @@ export default function TatamePage() {
                             }}
                             disabled={actionLoading}
                             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-colors"
-                            style={{ backgroundColor: (!isMid && p1Present) ? "#15803d" : "#222", color: "var(--foreground)" }}
+                            style={{ backgroundColor: (!isMid && p1Present) ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
                           >
                             {(!isMid && p1Present) ? "✓" : (p1?.position ?? "1")}
                           </button>
@@ -1223,7 +1223,7 @@ export default function TatamePage() {
                                               onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
                                               disabled={!canCall || !!callLoading || actionLoading}
                                               className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                              style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                              style={{ backgroundColor: done ? "#15803d" : "var(--surface-button)", color: done ? "#4ade80" : "var(--muted-foreground)" }}
                                             >
                                               {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
                                             </button>
@@ -1517,7 +1517,7 @@ export default function TatamePage() {
                   value={pesoInput}
                   onChange={e => setPesoInput(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
-                  style={{ backgroundColor: "var(--card)", borderColor: pesoInput ? "#dc2626" : "#333" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: pesoInput ? "#dc2626" : "var(--border)" }}
                   autoFocus
                 />
                 <button

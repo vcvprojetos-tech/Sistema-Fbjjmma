@@ -18,6 +18,12 @@
   --destructive: #dc2626;
   --accent: #1a1a1a;
   --accent-foreground: #ffffff;
+  /* superfícies do coordenador de tatame */
+  --surface-match: #111111;
+  --surface-input: #222222;
+  --surface-button: #1f2937;
+  --selected-warm: #1a0d00;
+  --selected-cool: #0d0d1a;
 }
 
 /* ── Modo claro (paleta GitHub) ────────────────────────────────────────────── */
@@ -38,6 +44,12 @@
   --destructive: #dc2626;
   --accent: #f6f8fa;
   --accent-foreground: #1f2328;
+  /* superfícies do coordenador de tatame — modo claro */
+  --surface-match: #f6f8fa;
+  --surface-input: #e2e8f0;
+  --surface-button: #e2e8f0;
+  --selected-warm: rgba(251, 191, 36, 0.1);
+  --selected-cool: rgba(59, 130, 246, 0.07);
 }
 
 @theme inline {
