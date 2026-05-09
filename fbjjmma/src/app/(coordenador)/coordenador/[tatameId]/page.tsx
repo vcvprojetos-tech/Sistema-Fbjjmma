@@ -810,24 +810,17 @@ export default function TatamePage() {
                             onClick={() => desfazerResultado(bracket.id)}
                             disabled={undoLoading || actionLoading}
                             title="Desfazer último resultado"
-                            className="text-[10px] px-2 py-0.5 rounded font-semibold transition-colors disabled:opacity-40"
-                            style={{ backgroundColor: "#78350f40", color: "#fb923c", border: "1px solid #78350f60" }}
+                            className="text-[10px] px-2 py-0.5 rounded font-semibold transition-colors disabled:opacity-40 btn-desfazer"
                           >
                             ↩ Desfazer
                           </button>
                         )}
                         <span
-                          className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
-                          style={{
-                            backgroundColor:
-                              bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
-                              bracket.status === "FINALIZADA" ? "#14532d60" :
-                              bracket.status === "PREMIADA" ? "#4a1d9660" : "#1a1a1a",
-                            color:
-                              bracket.status === "EM_ANDAMENTO" ? "#fbbf24" :
-                              bracket.status === "FINALIZADA" ? "#4ade80" :
-                              bracket.status === "PREMIADA" ? "#a78bfa" : "#6b7280",
-                          }}
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
+                            bracket.status === "EM_ANDAMENTO" ? "badge-em-andamento" :
+                            bracket.status === "FINALIZADA" ? "badge-finalizada" :
+                            bracket.status === "PREMIADA" ? "badge-premiada" : "badge-aguardando"
+                          }`}
                         >
                           {bracket.status === "EM_ANDAMENTO" ? "Em Andamento" :
                            bracket.status === "FINALIZADA" ? "Finalizada" :
@@ -916,13 +909,13 @@ export default function TatamePage() {
                                 R{match.round} · P{match.matchNumber}
                               </span>
                               {isDone ? (
-                                <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">
+                                <span className="text-xs font-semibold whitespace-nowrap" style={{ color: "var(--hdr-done)" }}>
                                   {match.isWO ? `W.O. (${match.woType === "PESO" ? "Peso" : "Ausência"})` : "Finalizada"}
                                 </span>
                               ) : bothPresent ? (
-                                <span className="text-xs text-[#4ade80] font-semibold whitespace-nowrap">● Prontos</span>
+                                <span className="text-xs font-semibold whitespace-nowrap" style={{ color: "var(--hdr-done)" }}>● Prontos</span>
                               ) : (
-                                <span className="text-xs text-[#6b7280] whitespace-nowrap">Confirme presença</span>
+                                <span className="text-xs whitespace-nowrap" style={{ color: "var(--muted)" }}>Confirme presença</span>
                               )}
                             </div>
 
@@ -971,9 +964,9 @@ export default function TatamePage() {
 
                             {/* VS */}
                             <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
-                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "var(--border)" }} />
-                              <span className="text-xs font-bold py-1" style={{ color: bothPresent && !isDone ? "#4ade80" : "var(--muted)" }}>VS</span>
-                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "#16a34a40" : "var(--border)" }} />
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "var(--hdr-done)" : "var(--border)", opacity: bothPresent && !isDone ? 0.4 : 1 }} />
+                              <span className="text-xs font-bold py-1" style={{ color: bothPresent && !isDone ? "var(--hdr-done)" : "var(--muted)" }}>VS</span>
+                              <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "var(--hdr-done)" : "var(--border)", opacity: bothPresent && !isDone ? 0.4 : 1 }} />
                             </div>
 
                             {/* Atleta 2 */}
@@ -1024,23 +1017,22 @@ export default function TatamePage() {
                                   <>
                                     <div className="flex gap-2">
                                       <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p2.id, absenteeName: p1Name, absentPosition: "p1" })} disabled={actionLoading}
-                                        className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                        className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors btn-opcoes">
                                         Opções — {p1Name.split(" ")[0]}
                                       </button>
                                       <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p1.id, absenteeName: p2Name, absentPosition: "p2" })} disabled={actionLoading}
-                                        className="flex-1 py-2 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors">
+                                        className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors btn-opcoes">
                                         Opções — {p2Name.split(" ")[0]}
                                       </button>
                                     </div>
                                     <button onClick={() => setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId, p1Name, p2Name })} disabled={actionLoading}
-                                      className="w-full py-2 rounded-lg text-xs font-semibold border transition-colors"
-                                      style={{ color: "#f97316", borderColor: "#7c2d1240", backgroundColor: "#7c2d1210" }}>
+                                      className="w-full py-2 rounded-lg text-xs font-semibold transition-colors btn-wo-ambos">
                                       W.O. — Ambos Ausentes
                                     </button>
                                   </>
                                 ) : (
                                   <div className="flex flex-col gap-2">
-                                    <p className="text-xs text-[#f87171] font-semibold">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
+                                    <p className="text-xs font-semibold" style={{ color: "var(--destructive)" }}>Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
                                     {(() => {
                                       const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
                                       const all3Done = posCalls.some((c: CallTime) => c.call === 3)

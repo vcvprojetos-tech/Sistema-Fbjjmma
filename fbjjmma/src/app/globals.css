@@ -194,6 +194,28 @@ body {
   border-color: var(--border) !important;
 }
 
+/* ── Status badges do coordenador ─────────────────────────────────────────── */
+.badge-em-andamento { background-color: #78350f60; color: #fbbf24; }
+.light .badge-em-andamento { background-color: #fef3c7; color: #b45309; }
+.badge-finalizada { background-color: #14532d60; color: #4ade80; }
+.light .badge-finalizada { background-color: #dcfce7; color: #15803d; }
+.badge-premiada { background-color: #4a1d9660; color: #a78bfa; }
+.light .badge-premiada { background-color: #f3e8ff; color: #7c3aed; }
+.badge-aguardando { background-color: #1a1a1a; color: #6b7280; }
+.light .badge-aguardando { background-color: #f1f5f9; color: #475569; }
+
+/* ── Botões de ação do match card ──────────────────────────────────────────── */
+.btn-desfazer { background-color: #78350f40; color: #fb923c; border: 1px solid #78350f60; }
+.light .btn-desfazer { background-color: #fef3c7; color: #92400e; border-color: #fcd34d; }
+
+.btn-opcoes { color: #f87171; border: 1px solid #7f1d1d40; }
+.btn-opcoes:hover:not(:disabled) { background-color: #7f1d1d20; }
+.light .btn-opcoes { color: #dc2626; border-color: #fca5a5; }
+.light .btn-opcoes:hover:not(:disabled) { background-color: #fee2e2; }
+
+.btn-wo-ambos { color: #f97316; border: 1px solid #7c2d1240; background-color: #7c2d1210; }
+.light .btn-wo-ambos { color: #c2410c; border-color: #fdba74; background-color: #fff7ed; }
+
 /* ── Autofill adapta ao tema ────────────────────────────────────────────────── */
 .dark input:-webkit-autofill,
 .dark input:-webkit-autofill:hover,
