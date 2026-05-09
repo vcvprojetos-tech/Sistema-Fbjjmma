@@ -509,7 +509,7 @@ export default function PremiacaoPage() {
             <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
               <button
                 onClick={() => setSideTab("aguardando")}
-                className="flex-1 py-2 text-xs font-bold transition-colors"
+                className="flex-1 py-3 text-xs font-bold transition-colors"
                 style={{
                   color: sideTab === "aguardando" ? "#fbbf24" : "#6b7280",
                   borderBottom: sideTab === "aguardando" ? "2px solid #fbbf24" : "2px solid transparent",
@@ -520,7 +520,7 @@ export default function PremiacaoPage() {
               </button>
               <button
                 onClick={() => setSideTab("premiadas")}
-                className="flex-1 py-2 text-xs font-bold transition-colors"
+                className="flex-1 py-3 text-xs font-bold transition-colors"
                 style={{
                   color: sideTab === "premiadas" ? "#a78bfa" : "#6b7280",
                   borderBottom: sideTab === "premiadas" ? "2px solid #a78bfa" : "2px solid transparent",
@@ -538,7 +538,7 @@ export default function PremiacaoPage() {
                     <p className="text-[#6b7280] text-xs">Nenhum atleta encontrado.</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-1.5 px-2 py-2">
                     {brackets.filter(b => bracketMatchesSearch(b, searchQuery)).map(b => {
                       const isSelected = b.id === selectedId
                       const isPending = b.status === "FINALIZADA"
@@ -547,15 +547,11 @@ export default function PremiacaoPage() {
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
-                          className="w-full text-left transition-colors"
+                          className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
                           style={{
-                            margin: "4px 8px",
-                            width: "calc(100% - 16px)",
-                            borderRadius: 8,
                             border: "1px solid var(--border)",
                             borderLeft: isSelected ? "3px solid #3b82f6" : "3px solid transparent",
                             backgroundColor: isSelected ? "var(--selected-cool)" : "var(--card)",
-                            padding: "10px 12px",
                           }}
                         >
                           <div className="flex items-center gap-1.5 mb-0.5">
@@ -586,7 +582,7 @@ export default function PremiacaoPage() {
                     <p className="text-[#4ade80] text-xs font-medium">Todas premiadas!</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-1.5 px-2 py-2">
                     {(() => {
                       const rendered: React.ReactNode[] = []
                       const seenGroups = new Set<string>()
@@ -603,15 +599,11 @@ export default function PremiacaoPage() {
                             <button
                               key={b.bracketGroupId}
                               onClick={() => setSelectedId(groupBrackets[0].id)}
-                              className="w-full text-left transition-colors"
+                              className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
                               style={{
-                                margin: "4px 8px",
-                                width: "calc(100% - 16px)",
-                                borderRadius: 8,
                                 border: "1px solid var(--border)",
                                 borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
                                 backgroundColor: isSelected ? "var(--selected-warm)" : "var(--card)",
-                                padding: "10px 12px",
                               }}
                             >
                               <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
@@ -629,15 +621,11 @@ export default function PremiacaoPage() {
                             <button
                               key={b.id}
                               onClick={() => setSelectedId(b.id)}
-                              className="w-full text-left transition-colors"
+                              className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
                               style={{
-                                margin: "4px 8px",
-                                width: "calc(100% - 16px)",
-                                borderRadius: 8,
                                 border: "1px solid var(--border)",
                                 borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
                                 backgroundColor: isSelected ? "var(--selected-warm)" : "var(--card)",
-                                padding: "10px 12px",
                               }}
                             >
                               <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
@@ -659,7 +647,7 @@ export default function PremiacaoPage() {
                     <p className="text-[#4b5563] text-xs">Nenhuma chave premiada ainda.</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-1.5 px-2 py-2">
                     {premiadas.map((b) => {
                       const isSelected = b.id === selectedId
                       const placements = computePlacements(b, brackets)
@@ -667,15 +655,11 @@ export default function PremiacaoPage() {
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
-                          className="w-full text-left transition-colors"
+                          className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
                           style={{
-                            margin: "4px 8px",
-                            width: "calc(100% - 16px)",
-                            borderRadius: 8,
                             border: "1px solid var(--border)",
                             borderLeft: isSelected ? "3px solid #a78bfa" : "3px solid transparent",
                             backgroundColor: isSelected ? "var(--selected-cool)" : "var(--card)",
-                            padding: "10px 12px",
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
