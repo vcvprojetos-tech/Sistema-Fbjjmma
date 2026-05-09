@@ -42,6 +42,7 @@ const CONTENT_H =
   - COL_HEAD_H - COL_HEAD_MB
 
 const CALL_INTERVAL_MS = 5 * 60 * 1000
+const GRACE_MS = 30 * 1000 // 30s de graça após 3ª chamada antes de sumir
 
 interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
 interface MatchInfo {
@@ -117,7 +118,7 @@ function filterGroupsToFit(groups: BracketGroup[], maxH: number): BracketGroup[]
   return result
 }
 
-function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
+function getGroupsForTatame(tatame: TatameInfo, now: number): BracketGroup[] {
   const groups: BracketGroup[] = []
 
   const sorted = [...tatame.brackets].sort((a, b) => {
@@ -130,32 +131,41 @@ function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
     const seen = new Set<string>()
 
     for (const m of b.matches) {
-      if (m.endedAt) continue
+      const allCalls = m.callTimes ?? []
+
+      if (m.endedAt) {
+        // Manter visível por GRACE_MS após a 3ª chamada
+        const call3 = allCalls.find(c => c.call === 3)
+        if (!call3 || now - new Date(call3.at).getTime() >= GRACE_MS) continue
+      }
+
       if (!m.position1) continue
 
-      const p1Name = getName(m.position1)
-      if (p1Name !== "BYE" && !m.p1CheckedIn) {
-        const key = `${m.id}-p1`
-        if (!seen.has(key)) {
-          seen.add(key)
-          const allCalls = m.callTimes ?? []
-          const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos).sort((a, b) => a.call - b.call)
-          athletes.push({ key, name: p1Name, team: getTeam(m.position1), calls: p1Calls.length, callTimes: p1Calls.map(c => ({ call: c.call, at: c.at })) })
-        }
+      const addAthlete = (
+        pos: MatchInfo["position1"],
+        posKey: string,
+        checkedIn: boolean,
+        callFilter: (c: CallTime) => boolean
+      ) => {
+        const name = getName(pos)
+        if (name === "BYE") return
+        const key = `${m.id}-${posKey}`
+        if (seen.has(key)) return
+        const posCalls = allCalls.filter(callFilter).sort((a, b) => a.call - b.call)
+        // Em período de graça: só mostrar quem tem 3ª chamada
+        if (m.endedAt && posCalls.length < 3) return
+        // Normal: só mostrar quem não fez check-in
+        if (!m.endedAt && checkedIn) return
+        seen.add(key)
+        athletes.push({
+          key, name, team: getTeam(pos),
+          calls: posCalls.length,
+          callTimes: posCalls.map(c => ({ call: c.call, at: c.at })),
+        })
       }
 
-      if (m.position2) {
-        const p2Name = getName(m.position2)
-        if (p2Name !== "BYE" && !m.p2CheckedIn) {
-          const key = `${m.id}-p2`
-          if (!seen.has(key)) {
-            seen.add(key)
-            const allCalls = m.callTimes ?? []
-            const p2Calls = allCalls.filter(c => c.pos === "p2" || c.pos == null).sort((a, b) => a.call - b.call)
-            athletes.push({ key, name: p2Name, team: getTeam(m.position2), calls: p2Calls.length, callTimes: p2Calls.map(c => ({ call: c.call, at: c.at })) })
-          }
-        }
-      }
+      addAthlete(m.position1, "p1", m.p1CheckedIn, c => c.pos === "p1" || !c.pos)
+      if (m.position2) addAthlete(m.position2, "p2", m.p2CheckedIn, c => c.pos === "p2" || c.pos == null)
     }
 
     if (athletes.length > 0) {
@@ -341,7 +351,7 @@ export default function PainelPage() {
                 const color = COL_COLORS[colIdx % COL_COLORS.length]
                 const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
                 const op = tatame.operations[0]?.user.name ?? ""
-                const groups = filterGroupsToFit(getGroupsForTatame(tatame), CONTENT_H)
+                const groups = filterGroupsToFit(getGroupsForTatame(tatame, now), CONTENT_H)
 
                 return (
                   <div key={tatame.id}>
