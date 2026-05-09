@@ -17,9 +17,9 @@ const BELT_LABELS: Record<string, string> = {
 
 const DESIGN_W = 1920
 const DESIGN_H = 1080
-const NUM_COLS = 4
-const NAMES_PER_COL = 10
-const GAP = 4
+const GROUPS_PER_ROW = 4
+const GROUP_GAP = 14
+const GROUP_HEADER_H = 76
 
 const MEDAL_COLORS: Record<number, { bg: string; border: string; text: string; subText: string; label: string; emoji: string }> = {
   1: { bg: "#fbbf24", border: "#d97706", text: "#1c1917", subText: "#44403c", label: "1°\nLugar", emoji: "🥇" },
@@ -65,11 +65,16 @@ interface EventData {
 }
 
 interface AwardEntry {
-  key: string       // registrationId
+  key: string
   name: string
   team: string
+  place: number
+}
+
+interface AwardGroup {
+  bracketId: string
   category: string
-  place: number     // 1, 2 ou 3
+  athletes: AwardEntry[]
 }
 
 function athleteName(reg: Reg | null | undefined): string {
@@ -135,28 +140,25 @@ function bracketFinalizedAt(b: BracketInfo): number {
   return times.length > 0 ? Math.max(...times) : 0
 }
 
-function getAwardEntries(brackets: BracketInfo[]): AwardEntry[] {
-  // Ordena chaves pelo momento de finalização (mais antiga primeiro)
+function getAwardGroups(brackets: BracketInfo[]): AwardGroup[] {
   const sorted = [...brackets].sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
-
-  const entries: AwardEntry[] = []
+  const groups: AwardGroup[] = []
   for (const b of sorted) {
-    const category = catLabel(b)
-    // Dentro de cada chave: 1°, 2°, 3°
     const podium = getPodium(b).sort((a, c) => a.place - c.place)
+    const athletes: AwardEntry[] = []
     for (const { pos, place } of podium) {
       const reg = pos.registration
       if (!reg || reg.awarded) continue
-      entries.push({
-        key: reg.id,
-        name: athleteName(reg),
-        team: reg.team?.name ?? "",
-        category,
-        place,
-      })
+      athletes.push({ key: reg.id, name: athleteName(reg), team: reg.team?.name ?? "", place })
     }
+    if (athletes.length > 0) groups.push({ bracketId: b.id, category: catLabel(b), athletes })
   }
-  return entries
+  return groups
+}
+
+function queueLabel(idx: number): string {
+  if (idx === 0) return "Categoria sendo premiada"
+  return `${idx + 1}° na fila de premiação`
 }
 
 function placeColor(place: number) {
@@ -224,18 +226,23 @@ export default function PainelPremiacaoPage() {
     </div>
   )
 
-  const entries = getAwardEntries(data.brackets)
-  // Sempre 4 colunas fixas de até 10 slots cada
-  const cols: AwardEntry[][] = Array.from({ length: NUM_COLS }, (_, i) =>
-    entries.slice(i * NAMES_PER_COL, (i + 1) * NAMES_PER_COL)
-  )
+  const groups = getAwardGroups(data.brackets)
+  const totalAthletes = groups.reduce((s, g) => s + g.athletes.length, 0)
 
-  // Altura fixa por slot
   const TOPBAR_H = 52
   const LEGEND_H = 38
-  const OUTER_PAD = 16 + 10 + 10 + 10
-  const SLOTS_AREA_H = DESIGN_H - TOPBAR_H - LEGEND_H - OUTER_PAD
-  const SLOT_H = Math.floor((SLOTS_AREA_H - (NAMES_PER_COL - 1) * GAP) / NAMES_PER_COL)
+  const OUTER_PAD = 46
+  const CONTENT_H = DESIGN_H - TOPBAR_H - LEGEND_H - OUTER_PAD
+  const numRows = groups.length <= GROUPS_PER_ROW ? 1 : groups.length <= GROUPS_PER_ROW * 2 ? 2 : 3
+  const GROUP_H = Math.min(
+    numRows === 1 ? 420 : Math.floor((CONTENT_H - (numRows - 1) * GROUP_GAP) / numRows),
+    CONTENT_H
+  )
+  const MAX_ATHLETES_SHOWN = 4
+  const ATHLETE_GAP = 6
+  const ATHLETE_H = Math.floor(
+    (GROUP_H - GROUP_HEADER_H - 12 - (MAX_ATHLETES_SHOWN - 1) * ATHLETE_GAP) / MAX_ATHLETES_SHOWN
+  )
 
   return (
     <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#f0f4f8", overflow: "hidden", position: "relative" }}>
@@ -299,71 +306,85 @@ export default function PainelPremiacaoPage() {
             </div>
           ))}
           <span style={{ color: "#94a3b8", fontSize: 13, marginLeft: "auto" }}>
-            {entries.length} atleta(s) aguardando premiação
+            {totalAthletes} atleta(s) · {groups.length} categoria(s) aguardando premiação
           </span>
         </div>
 
-        {/* Colunas */}
-        {entries.length === 0 ? (
-          <div style={{ height: SLOTS_AREA_H, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Cards de categorias */}
+        {groups.length === 0 ? (
+          <div style={{ height: CONTENT_H, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 60, marginBottom: 10 }}>🏆</div>
-              <div style={{ color: "#94a3b8", fontSize: 24 }}>Nenhum atleta aguardando premiação</div>
+              <div style={{ color: "#94a3b8", fontSize: 24 }}>Nenhuma categoria aguardando premiação</div>
             </div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${NUM_COLS}, minmax(0, 1fr))`, gap: 16 }}>
-            {cols.map((col, colIdx) => (
-              <div key={colIdx}>
-                <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
-                  {Array.from({ length: NAMES_PER_COL }).map((_, idx) => {
-                    const a = col[idx]
-                    if (!a) {
-                      return (
-                        <div key={`empty-${idx}`} style={{
-                          height: SLOT_H, borderRadius: 6,
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                        }} />
-                      )
-                    }
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${GROUPS_PER_ROW}, minmax(0, 1fr))`, gap: GROUP_GAP }}>
+            {groups.map((group, gIdx) => (
+              <div key={group.bracketId} style={{
+                height: GROUP_H,
+                backgroundColor: "#ffffff",
+                borderRadius: 10,
+                overflow: "hidden",
+                border: "1px solid #e2e8f0",
+                boxShadow: gIdx === 0 ? "0 0 0 2px #3b82f6" : "0 1px 3px rgba(0,0,0,0.07)",
+                display: "flex", flexDirection: "column",
+              }}>
+                {/* Cabeçalho do grupo */}
+                <div style={{
+                  height: GROUP_HEADER_H, flexShrink: 0,
+                  backgroundColor: gIdx === 0 ? "#1e3a5f" : "#334155",
+                  padding: "0 18px",
+                  display: "flex", flexDirection: "column", justifyContent: "center",
+                }}>
+                  <div style={{ color: gIdx === 0 ? "#93c5fd" : "#94a3b8", fontSize: 13, fontWeight: 600, marginBottom: 3 }}>
+                    {queueLabel(gIdx)}
+                  </div>
+                  <div style={{ color: "#ffffff", fontSize: 16, fontWeight: 900, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {group.category}
+                  </div>
+                </div>
+
+                {/* Atletas */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: ATHLETE_GAP, padding: "8px 8px 8px 8px" }}>
+                  {group.athletes.slice(0, MAX_ATHLETES_SHOWN).map(a => {
                     const c = placeColor(a.place)
                     return (
                       <div key={a.key} style={{
-                        height: SLOT_H,
+                        height: ATHLETE_H,
                         backgroundColor: c.bg,
-                        borderRadius: 6,
+                        borderRadius: 7,
                         display: "flex", alignItems: "center", gap: 10, padding: "0 14px",
                         overflow: "hidden",
                         borderLeft: `4px solid ${c.border}`,
+                        flexShrink: 0,
                       }}>
-                        {/* Badge lugar */}
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 44, flexShrink: 0 }}>
-                          <span style={{ color: c.text, fontWeight: 900, fontSize: 15, lineHeight: 1.1, textAlign: "center", whiteSpace: "pre-line" }}>
+                        <div style={{ width: 42, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ color: c.text, fontWeight: 900, fontSize: 14, lineHeight: 1.15, textAlign: "center", whiteSpace: "pre-line" }}>
                             {c.label}
                           </span>
                         </div>
-                        {/* Emoji medalha */}
-                        <span style={{ fontSize: 26, flexShrink: 0 }}>{c.emoji}</span>
-                        {/* Info atleta */}
+                        <span style={{ fontSize: 24, flexShrink: 0 }}>{c.emoji}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: c.text, fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <div style={{ color: c.text, fontWeight: 700, fontSize: 18, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {a.name}
                           </div>
-                          <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
-                            {a.team && (
-                              <span style={{ color: c.subText, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {a.team}
-                              </span>
-                            )}
-                            <span style={{ color: c.subText, opacity: 0.7, fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
-                              {a.category}
-                            </span>
-                          </div>
+                          {a.team && (
+                            <div style={{ color: c.subText, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>
+                              {a.team}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
                   })}
+                  {/* Slots vazios para completar o card */}
+                  {Array.from({ length: Math.max(0, MAX_ATHLETES_SHOWN - group.athletes.length) }).map((_, i) => (
+                    <div key={`empty-${i}`} style={{
+                      height: ATHLETE_H, borderRadius: 7,
+                      backgroundColor: "#f8fafc", border: "1px dashed #e2e8f0", flexShrink: 0,
+                    }} />
+                  ))}
                 </div>
               </div>
             ))}
