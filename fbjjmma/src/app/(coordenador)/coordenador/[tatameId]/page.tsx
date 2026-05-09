@@ -581,11 +581,11 @@ export default function TatamePage() {
             <p className="text-[#4b5563] text-xs">{emptyText}</p>
           </div>
         ) : (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1.5 px-2 py-2">
             {items.map(({ section, brackets }) => (
-              <div key={section ?? "default"}>
+              <div key={section ?? "default"} className="flex flex-col gap-1.5">
                 {section && (
-                  <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[#4b5563]">{section}</p>
+                  <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>{section}</p>
                 )}
                 {(() => {
                   const rendered: React.ReactNode[] = []
@@ -603,19 +603,19 @@ export default function TatamePage() {
                         <button
                           key={b.bracketGroupId}
                           onClick={() => setSelectedId(group[0].id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          className="w-full text-left px-3 py-2.5 rounded-md transition-colors"
                           style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: groupIsSelected ? (groupIsActive ? "var(--selected-warm)" : "var(--selected-cool)") : "transparent",
-                            borderLeft: groupIsSelected ? `3px solid ${groupIsActive ? "#fbbf24" : color}` : "3px solid transparent",
+                            border: "1px solid var(--border)",
+                            borderLeft: `3px solid ${groupIsSelected ? (groupIsActive ? "#fbbf24" : color) : "var(--border-alt)"}`,
+                            backgroundColor: groupIsSelected ? (groupIsActive ? "var(--selected-warm)" : "var(--selected-cool)") : "var(--card)",
                           }}
                         >
-                          <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {group.length} sub-chaves</p>
+                          <p className="text-xs font-semibold" style={{ color: "#f59e0b" }}>GRUPO — {group.length} sub-chaves</p>
                           <p className="font-medium leading-tight mt-0.5 break-words"
                             style={{ color: groupIsActive ? "#fbbf24" : "var(--foreground)", fontSize: "0.72rem" }}>
                             {catLabel(b).replace(" (Sub-chave)", "")}
                           </p>
-                          <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
                             {group.reduce((s, x) => s + x.positions.length, 0)} atleta(s) no total
                           </p>
                         </button>
@@ -627,19 +627,19 @@ export default function TatamePage() {
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          className="w-full text-left px-3 py-2.5 rounded-md transition-colors"
                           style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: isSelected ? (isActive ? "var(--selected-warm)" : "var(--selected-cool)") : "transparent",
-                            borderLeft: isSelected ? `3px solid ${isActive ? "#fbbf24" : color}` : "3px solid transparent",
+                            border: "1px solid var(--border)",
+                            borderLeft: `3px solid ${isSelected ? (isActive ? "#fbbf24" : color) : "var(--border-alt)"}`,
+                            backgroundColor: isSelected ? (isActive ? "var(--selected-warm)" : "var(--selected-cool)") : "var(--card)",
                           }}
                         >
-                          <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
+                          <p className="text-xs" style={{ color: "var(--muted)" }}>Chave #{b.bracketNumber}</p>
                           <p className="font-medium leading-tight mt-0.5 break-words"
                             style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "var(--foreground)", fontSize: "0.72rem" }}>
                             {catLabel(b)}
                           </p>
-                          <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
                             {b.positions.length} atleta(s) · {b.matches.filter(m => m.winnerId).length}/{b.matches.length} partidas
                           </p>
                         </button>
@@ -741,16 +741,16 @@ export default function TatamePage() {
         <div className="flex flex-1 overflow-hidden">
 
           {/* Coluna esquerda — abas Ativas / Finalizadas */}
-          <div className="w-60 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)" }}>
+          <div className="w-60 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
             {/* Abas */}
             <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
               <button
                 onClick={() => setSideTab("ativas")}
                 className="flex-1 py-2 text-xs font-bold transition-colors"
                 style={{
-                  color: sideTab === "ativas" ? "#fbbf24" : "#6b7280",
+                  color: sideTab === "ativas" ? "#fbbf24" : "var(--muted)",
                   borderBottom: sideTab === "ativas" ? "2px solid #fbbf24" : "2px solid transparent",
-                  backgroundColor: "var(--background)",
+                  backgroundColor: "var(--card-alt)",
                 }}
               >
                 Ativas ({emAndamento.length + pendentes.length})
@@ -759,9 +759,9 @@ export default function TatamePage() {
                 onClick={() => setSideTab("finalizadas")}
                 className="flex-1 py-2 text-xs font-bold transition-colors"
                 style={{
-                  color: sideTab === "finalizadas" ? "#4ade80" : "#6b7280",
+                  color: sideTab === "finalizadas" ? "#4ade80" : "var(--muted)",
                   borderBottom: sideTab === "finalizadas" ? "2px solid #4ade80" : "2px solid transparent",
-                  backgroundColor: "var(--background)",
+                  backgroundColor: "var(--card-alt)",
                 }}
               >
                 Finalizadas ({finalizadas.length})

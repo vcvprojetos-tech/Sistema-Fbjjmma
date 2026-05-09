@@ -63,8 +63,8 @@
   --surface-match: #f6f8fa;
   --surface-input: #e2e8f0;
   --surface-button: #e2e8f0;
-  --selected-warm: rgba(251, 191, 36, 0.1);
-  --selected-cool: rgba(59, 130, 246, 0.07);
+  --selected-warm: #fef3c7;
+  --selected-cool: #dbeafe;
   /* BracketView — cards de atletas (modo claro) */
   --bracket-card-bg: #eef1f5;
   --bracket-card-border: #c8d0db;
