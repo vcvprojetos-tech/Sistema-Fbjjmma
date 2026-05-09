@@ -72,7 +72,7 @@ interface AthleteEntry {
   name: string
   team: string
   calls: number
-  lastCallAt: string | null
+  callTimes: { call: number; at: string }[]
 }
 
 interface BracketGroup {
@@ -139,9 +139,8 @@ function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
         if (!seen.has(key)) {
           seen.add(key)
           const allCalls = m.callTimes ?? []
-          const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
-          const p1LastCall = p1Calls.length > 0 ? p1Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
-          athletes.push({ key, name: p1Name, team: getTeam(m.position1), calls: p1Calls.length, lastCallAt: p1LastCall })
+          const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos).sort((a, b) => a.call - b.call)
+          athletes.push({ key, name: p1Name, team: getTeam(m.position1), calls: p1Calls.length, callTimes: p1Calls.map(c => ({ call: c.call, at: c.at })) })
         }
       }
 
@@ -152,9 +151,8 @@ function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
           if (!seen.has(key)) {
             seen.add(key)
             const allCalls = m.callTimes ?? []
-            const p2Calls = allCalls.filter(c => c.pos === "p2" || c.pos == null)
-            const p2LastCall = p2Calls.length > 0 ? p2Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
-            athletes.push({ key, name: p2Name, team: getTeam(m.position2), calls: p2Calls.length, lastCallAt: p2LastCall })
+            const p2Calls = allCalls.filter(c => c.pos === "p2" || c.pos == null).sort((a, b) => a.call - b.call)
+            athletes.push({ key, name: p2Name, team: getTeam(m.position2), calls: p2Calls.length, callTimes: p2Calls.map(c => ({ call: c.call, at: c.at })) })
           }
         }
       }
@@ -408,13 +406,17 @@ export default function PainelPage() {
                                       </div>
                                     )}
                                   </div>
-                                  {a.calls > 0 && (
+                                  {a.callTimes.length > 0 && (
                                     <div style={{ flexShrink: 0, textAlign: "right" }}>
-                                      <div style={{ color: rowTextName(a.calls), fontSize: 12, fontWeight: 700 }}>
-                                        {a.calls}ª chamada
-                                      </div>
-                                      {a.calls < 3 && a.lastCallAt && (() => {
-                                        const remaining = Math.max(0, CALL_INTERVAL_MS - (now - new Date(a.lastCallAt).getTime()))
+                                      {a.callTimes.map(ct => (
+                                        <div key={ct.call} style={{ color: rowTextName(a.calls), fontSize: 11, fontWeight: 600, lineHeight: 1.35 }}>
+                                          {ct.call}ª {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                        </div>
+                                      ))}
+                                      {a.calls < 3 && (() => {
+                                        const lastAt = a.callTimes[a.callTimes.length - 1]?.at
+                                        if (!lastAt) return null
+                                        const remaining = Math.max(0, CALL_INTERVAL_MS - (now - new Date(lastAt).getTime()))
                                         if (remaining <= 0) return null
                                         const mins = Math.floor(remaining / 60000)
                                         const secs = Math.floor((remaining % 60000) / 1000)
