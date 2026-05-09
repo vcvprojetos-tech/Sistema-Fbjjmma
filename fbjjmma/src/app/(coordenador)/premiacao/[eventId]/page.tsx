@@ -420,8 +420,8 @@ export default function PremiacaoPage() {
               onChange={(e) => setPixValue(e.target.value)}
               placeholder="CPF, e-mail, telefone ou chave aleatória"
               autoFocus
-              className="rounded-xl px-4 py-3 text-sm outline-none"
-              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff" }}
+              className="rounded-xl px-4 py-3 outline-none"
+              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff", fontSize: 16 }}
             />
           </div>
           <div className="flex gap-3 mt-1">
@@ -451,7 +451,7 @@ export default function PremiacaoPage() {
     <div className="flex flex-col h-[calc(100vh-57px)]" style={{ backgroundColor: "var(--page-surface)" }}>
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 py-3 border-b shrink-0"
+        className="flex items-center justify-between px-5 py-4 border-b shrink-0"
         style={{ borderColor: "var(--border)" }}
       >
         <div className="flex items-center gap-3">
@@ -470,8 +470,8 @@ export default function PremiacaoPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar atleta..."
-              className="pl-8 pr-7 py-1.5 rounded-lg text-xs outline-none w-40"
-              style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+              className="pl-8 pr-7 py-2.5 rounded-lg outline-none w-44"
+              style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", fontSize: 16 }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-2 text-[#6b7280] hover:text-white">
@@ -488,8 +488,8 @@ export default function PremiacaoPage() {
             <span className="text-[#fbbf24] font-bold">{pendentes.length} aguardando</span>
             <span className="text-[#a78bfa] font-bold">{premiadas.length} premiadas</span>
           </div>
-          <button onClick={() => load(true)} disabled={refreshing} className="text-[#6b7280] hover:text-white transition-colors">
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          <button onClick={() => load(true)} disabled={refreshing} className="p-2 text-[#6b7280] hover:text-white transition-colors">
+            <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -690,7 +690,7 @@ export default function PremiacaoPage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Colocações — coluna fixa esquerda */}
-                <div className="w-[26rem] shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div className="w-96 shrink-0 overflow-y-auto p-4 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho */}
                   <div
                     className="rounded-xl border p-3"
@@ -737,17 +737,17 @@ export default function PremiacaoPage() {
                               className="rounded-xl overflow-hidden border"
                               style={{ borderColor: `${cfg.color}25`, backgroundColor: cfg.bg }}
                             >
-                              <div className="px-3 py-2.5 flex items-center gap-3">
-                                <span className="text-xl shrink-0">{cfg.icon}</span>
+                              <div className="px-4 py-4 flex items-center gap-3">
+                                <span className="text-2xl shrink-0">{cfg.icon}</span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold truncate" style={{ color: awarded ? "#4ade80" : "var(--card-foreground)" }}>{regName}</p>
+                                  <p className="text-sm font-bold truncate" style={{ color: awarded ? "#4ade80" : "var(--card-foreground)" }}>{regName}</p>
                                   {teamName && <p className="text-xs text-[#6b7280] truncate">{teamName}</p>}
-                                  <p className="text-[10px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</p>
+                                  <p className="text-xs font-semibold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
                                 </div>
                                 {awarded ? (
                                   <div className="flex flex-col items-center gap-0.5 text-[#4ade80] shrink-0">
-                                    <CheckCircle2 className="h-5 w-5" />
-                                    <span className="text-[10px] font-bold">Premiado</span>
+                                    <CheckCircle2 className="h-6 w-6" />
+                                    <span className="text-xs font-bold">Premiado</span>
                                   </div>
                                 ) : (
                                   <button
@@ -760,7 +760,7 @@ export default function PremiacaoPage() {
                                       }
                                     }}
                                     disabled={isAwardingNow || !pl.registration}
-                                    className="px-4 py-2 rounded-lg font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                                    className="px-5 py-3 rounded-xl font-bold text-base transition-all active:scale-95 disabled:opacity-50 shrink-0"
                                     style={{ backgroundColor: "#dc2626", color: "#fff" }}
                                   >
                                     {isAwardingNow ? "..." : "Premiar"}
