@@ -149,7 +149,7 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
   if (woMatches.length === 0) return null
 
   // Expande cada partida W.O. em entradas individuais por atleta
-  const entries: { key: string; name: string; label: string; calls: Array<{ call: number; at: string }>; endedAt?: string | null }[] = []
+  const entries: { key: string; name: string; label: string; woType?: string | null; calls: Array<{ call: number; at: string }>; endedAt?: string | null }[] = []
   for (const m of woMatches) {
     const isSolo = m.position2Id === null
     const isDoubleWO = !isSolo && m.winnerId === null && !!m.position1Id && !!m.position2Id
@@ -160,8 +160,8 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const reg2 = posIdMap.get(m.position2Id!)?.registration ?? null
       const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
       const p2Calls = allCalls.filter(c => c.pos === "p2" || !c.pos)
-      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), calls: p1Calls, endedAt: m.endedAt })
-      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), calls: p2Calls, endedAt: m.endedAt })
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), woType: m.woType, calls: p1Calls, endedAt: m.endedAt })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), woType: m.woType, calls: p2Calls, endedAt: m.endedAt })
     } else if (m.position1Id) {
       if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
@@ -171,38 +171,48 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
       const loserPos = loserId === m.position1Id ? "p1" : "p2"
       const loserCalls = allCalls.filter(c => c.pos === loserPos || !c.pos)
-      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), calls: loserCalls, endedAt: m.endedAt })
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), woType: m.woType, calls: loserCalls, endedAt: m.endedAt })
     }
   }
 
   if (entries.length === 0) return null
+
+  const allAbsent = entries.every(e => e.woType === "AUSENCIA" || !e.woType)
+  const allDescl = entries.every(e => e.woType === "PESO" || e.woType === "DESCLASSIFICACAO")
+  const sectionTitle = allAbsent ? "W.O." : allDescl ? "Desclassificados" : "W.O. / Desclassificados"
+
   return (
     <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
-      <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>W.O.</p>
+      <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{sectionTitle}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        {entries.map(e => (
-          <div key={e.key}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
-              <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
-              <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
-            </div>
-            {(e.calls.length > 0 || e.endedAt) && (
-              <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
-                {e.calls.sort((a, b) => a.call - b.call).map(c => (
-                  <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
-                    <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
-                  </span>
-                ))}
-                {e.endedAt && (
-                  <span style={{ fontSize: 8, color: "#9ca3af" }}>
-                    <span style={{ color: "#dc2626", fontWeight: 700 }}>W.O.</span> {fmtTime(e.endedAt)}
-                  </span>
-                )}
+        {entries.map(e => {
+          const isAbsence = e.woType === "AUSENCIA" || !e.woType
+          const endLabel = isAbsence ? "W.O." : "Desc."
+          const endColor = isAbsence ? "#dc2626" : "#a855f7"
+          return (
+            <div key={e.key}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
+                <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
+                <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
               </div>
-            )}
-          </div>
-        ))}
+              {(e.calls.length > 0 || e.endedAt) && (
+                <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
+                  {e.calls.sort((a, b) => a.call - b.call).map(c => (
+                    <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
+                      <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
+                    </span>
+                  ))}
+                  {e.endedAt && (
+                    <span style={{ fontSize: 8, color: "#9ca3af" }}>
+                      <span style={{ color: endColor, fontWeight: 700 }}>{endLabel}</span> {fmtTime(e.endedAt)}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
