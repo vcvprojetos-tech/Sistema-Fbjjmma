@@ -60,6 +60,7 @@ interface Match {
   woType: string | null
   woWeight1: number | null
   woWeight2: number | null
+  endedAt: string | null
 }
 
 interface BracketData {
@@ -226,6 +227,13 @@ function sortBrackets(list: BracketData[]) {
   })
 }
 
+function bracketFinalizedAt(b: BracketData): number {
+  const times = b.matches
+    .filter(m => m.endedAt)
+    .map(m => new Date(m.endedAt!).getTime())
+  return times.length > 0 ? Math.max(...times) : 0
+}
+
 export default function PremiacaoPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const [eventName, setEventName] = useState("")
@@ -269,9 +277,21 @@ export default function PremiacaoPage() {
   // Auto-seleciona a primeira pendente quando não há nada selecionado
   useEffect(() => {
     if (selectedId) return
-    const pendentes = sortBrackets(brackets.filter((b) => b.status === "FINALIZADA"))
-    if (pendentes.length > 0) setSelectedId(pendentes[0].id)
+    const primeiras = brackets
+      .filter((b) => b.status === "FINALIZADA")
+      .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
+    if (primeiras.length > 0) setSelectedId(primeiras[0].id)
   }, [brackets, selectedId])
+
+  // Auto-avança para a próxima chave quando a atual é totalmente premiada
+  useEffect(() => {
+    if (!selectedId || sideTab !== "aguardando") return
+    const isStillPending = pendentes.some((b) => b.id === selectedId)
+    if (isStillPending) return
+    if (pendentes.length === 0) return
+    setSelectedId(pendentes[0].id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brackets])
 
   const handlePremiar = useCallback(async (bracket: BracketData, placement: Placement, prizePix?: string) => {
     if (!placement.registration) return
@@ -329,8 +349,8 @@ export default function PremiacaoPage() {
       .map((b) => b.bracketGroupId)
       .filter(Boolean) as string[]
   )
-  const pendentes = sortBrackets(
-    brackets.filter((b) => {
+  const pendentes = brackets
+    .filter((b) => {
       if (b.status !== "FINALIZADA") return false
       // Sub-chave com grande final em andamento: não listar ainda
       if (b.bracketGroupId && !b.isGrandFinal && grandFinalGroups.has(b.bracketGroupId)) return false
@@ -344,7 +364,7 @@ export default function PremiacaoPage() {
       if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return false
       return true
     })
-  )
+    .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
   const premiadas = sortBrackets(brackets.filter((b) => {
     if (b.status === "PREMIADA") return true
     // FINALIZADA com todos os colocados já premiados (status travado): tratar como premiada
