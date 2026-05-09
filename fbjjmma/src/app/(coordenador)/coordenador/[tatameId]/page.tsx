@@ -657,7 +657,7 @@ export default function TatamePage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-57px)]">
+    <div className="flex flex-col h-[calc(100vh-57px)]" style={{ backgroundColor: "var(--page-surface)" }}>
 
       {/* Overlay de entrada em tela cheia */}
       {showOverlay && (
@@ -741,7 +741,7 @@ export default function TatamePage() {
         <div className="flex flex-1 overflow-hidden">
 
           {/* Coluna esquerda — abas Ativas / Finalizadas */}
-          <div className="w-60 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+          <div className="w-60 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--sidebar-surface)" }}>
             {/* Abas */}
             <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
               <button
@@ -750,7 +750,7 @@ export default function TatamePage() {
                 style={{
                   color: sideTab === "ativas" ? "#fbbf24" : "var(--muted)",
                   borderBottom: sideTab === "ativas" ? "2px solid #fbbf24" : "2px solid transparent",
-                  backgroundColor: "var(--card-alt)",
+                  backgroundColor: "var(--sidebar-surface)",
                 }}
               >
                 Ativas ({emAndamento.length + pendentes.length})
@@ -761,7 +761,7 @@ export default function TatamePage() {
                 style={{
                   color: sideTab === "finalizadas" ? "#4ade80" : "var(--muted)",
                   borderBottom: sideTab === "finalizadas" ? "2px solid #4ade80" : "2px solid transparent",
-                  backgroundColor: "var(--card-alt)",
+                  backgroundColor: "var(--sidebar-surface)",
                 }}
               >
                 Finalizadas ({finalizadas.length})

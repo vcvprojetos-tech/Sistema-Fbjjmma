@@ -24,6 +24,8 @@
   --surface-button: #1f2937;
   --selected-warm: #1a0d00;
   --selected-cool: #0d0d1a;
+  --page-surface: #0a0a0a;
+  --sidebar-surface: #1a1a1a;
   /* BracketView — cards de atletas */
   --bracket-card-bg: #1a1f2e;
   --bracket-card-border: #2d3748;
@@ -65,6 +67,8 @@
   --surface-button: #e2e8f0;
   --selected-warm: #fef3c7;
   --selected-cool: #dbeafe;
+  --page-surface: #f0f2f5;
+  --sidebar-surface: #e2e8f0;
   /* BracketView — cards de atletas (modo claro) */
   --bracket-card-bg: #eef1f5;
   --bracket-card-border: #c8d0db;
