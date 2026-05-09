@@ -21,10 +21,10 @@ const NUM_COLS = 4
 const NAMES_PER_COL = 10
 const GAP = 4
 
-const MEDAL_COLORS: Record<number, { bg: string; text: string; label: string }> = {
-  1: { bg: "#78350f", text: "#fde68a", label: "1°" },
-  2: { bg: "#1e3a5f", text: "#bfdbfe", label: "2°" },
-  3: { bg: "#431407", text: "#fed7aa", label: "3°" },
+const MEDAL_COLORS: Record<number, { bg: string; border: string; text: string; label: string }> = {
+  1: { bg: "#b45309", border: "#92400e", text: "#ffffff", label: "1°" },
+  2: { bg: "#6b7280", border: "#4b5563", text: "#ffffff", label: "2°" },
+  3: { bg: "#92400e", border: "#78350f", text: "#ffffff", label: "3°" },
 }
 
 interface Reg {
@@ -164,9 +164,9 @@ function placeColor(place: number) {
 }
 
 const LEGEND = [
-  { ...MEDAL_COLORS[1], label: "1° Lugar" },
-  { ...MEDAL_COLORS[2], label: "2° Lugar" },
-  { ...MEDAL_COLORS[3], label: "3° Lugar" },
+  { ...MEDAL_COLORS[1] },
+  { ...MEDAL_COLORS[2] },
+  { ...MEDAL_COLORS[3] },
 ]
 
 export default function PainelPremiacaoPage() {
@@ -219,8 +219,8 @@ export default function PainelPremiacaoPage() {
   }, [fetchData])
 
   if (!data) return (
-    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0a0f1a" }}>
-      <p style={{ color: "#475569" }}>Carregando painel...</p>
+    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f0f4f8" }}>
+      <p style={{ color: "#64748b" }}>Carregando painel...</p>
     </div>
   )
 
@@ -238,13 +238,13 @@ export default function PainelPremiacaoPage() {
   const SLOT_H = Math.floor((SLOTS_AREA_H - (NAMES_PER_COL - 1) * GAP) / NAMES_PER_COL)
 
   return (
-    <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#0a0f1a", overflow: "hidden", position: "relative" }}>
+    <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#f0f4f8", overflow: "hidden", position: "relative" }}>
 
       {showOverlay && (
-        <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0f1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#f0f4f8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo2.png" alt="FBJJMMA" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
-          <div style={{ color: "#f1f5f9", fontSize: "1.5rem", fontWeight: 900, marginBottom: 12 }}>
+          <div style={{ color: "#1e293b", fontSize: "1.5rem", fontWeight: 900, marginBottom: 12 }}>
             Painel de Premiação
           </div>
           <div style={{ color: "#64748b", fontSize: "1rem", marginBottom: 32 }}>Área de Entrega de Medalhas</div>
@@ -256,7 +256,7 @@ export default function PainelPremiacaoPage() {
 
       {!showOverlay && (
         <button onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
-          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#64748b", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
+          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "#e2e8f0", border: "1px solid #cbd5e1", borderRadius: 8, color: "#475569", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
           {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
         </button>
       )}
@@ -266,39 +266,39 @@ export default function PainelPremiacaoPage() {
         transform: `scaleX(${scaleX}) scaleY(${scaleY})`,
         transformOrigin: "top left",
         position: "absolute", top: 0, left: 0,
-        backgroundColor: "#0a0f1a",
+        backgroundColor: "#f0f4f8",
         padding: `16px 24px 10px`,
         boxSizing: "border-box",
         fontFamily: "system-ui, sans-serif",
       }}>
 
         {/* Topbar */}
-        <div style={{ height: TOPBAR_H, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ height: TOPBAR_H, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#ffffff", borderRadius: 10, padding: "0 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: "1px solid #e2e8f0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo2.png" alt="FBJJMMA" style={{ width: 38, height: 38, objectFit: "contain" }} />
+            <img src="/logo2.png" alt="FBJJMMA" style={{ width: 34, height: 34, objectFit: "contain" }} />
             <div>
-              <div style={{ color: "#f1f5f9", fontWeight: 900, fontSize: 20 }}>{data.event.name}</div>
+              <div style={{ color: "#1e293b", fontWeight: 900, fontSize: 20 }}>{data.event.name}</div>
               <div style={{ color: "#64748b", fontSize: 13 }}>Painel de Premiação — Entrega de Medalhas</div>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ color: "#475569", fontSize: 11 }}>Última atualização</div>
-            <div style={{ color: "#64748b", fontSize: 15, fontFamily: "monospace" }}>
+            <div style={{ color: "#94a3b8", fontSize: 11 }}>Última atualização</div>
+            <div style={{ color: "#475569", fontSize: 15, fontFamily: "monospace" }}>
               {lastUpdate?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </div>
           </div>
         </div>
 
         {/* Legenda */}
-        <div style={{ height: LEGEND_H, marginBottom: 10, display: "flex", alignItems: "center", gap: 24, borderBottom: "1px solid #1e293b" }}>
+        <div style={{ height: LEGEND_H, marginBottom: 10, display: "flex", alignItems: "center", gap: 24, backgroundColor: "#e2e8f0", borderRadius: 8, padding: "0 18px" }}>
           {LEGEND.map(l => (
-            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3, border: `1px solid ${l.text}44` }} />
-              <span style={{ color: "#64748b", fontSize: 15 }}>{l.label}</span>
+            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3, border: `1px solid ${l.border}` }} />
+              <span style={{ color: "#475569", fontSize: 15, fontWeight: 600 }}>{l.label}</span>
             </div>
           ))}
-          <span style={{ color: "#334155", fontSize: 13, marginLeft: "auto" }}>
+          <span style={{ color: "#94a3b8", fontSize: 13, marginLeft: "auto" }}>
             {entries.length} atleta(s) aguardando premiação
           </span>
         </div>
@@ -307,8 +307,8 @@ export default function PainelPremiacaoPage() {
         {entries.length === 0 ? (
           <div style={{ height: SLOTS_AREA_H, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#1e293b", fontSize: 60, marginBottom: 10 }}>🏆</div>
-              <div style={{ color: "#475569", fontSize: 24 }}>Nenhum atleta aguardando premiação</div>
+              <div style={{ fontSize: 60, marginBottom: 10 }}>🏆</div>
+              <div style={{ color: "#94a3b8", fontSize: 24 }}>Nenhum atleta aguardando premiação</div>
             </div>
           </div>
         ) : (
@@ -322,8 +322,8 @@ export default function PainelPremiacaoPage() {
                       return (
                         <div key={`empty-${idx}`} style={{
                           height: SLOT_H, borderRadius: 6,
-                          backgroundColor: "#0f172a",
-                          border: "1px dashed #1e293b",
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #e2e8f0",
                         }} />
                       )
                     }
@@ -335,7 +335,7 @@ export default function PainelPremiacaoPage() {
                         borderRadius: 6,
                         display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
                         overflow: "hidden",
-                        borderLeft: `4px solid ${c.text}88`,
+                        borderLeft: `4px solid ${c.border}`,
                       }}>
                         <span style={{ color: c.text, fontWeight: 900, fontSize: 20, width: 28, textAlign: "center", flexShrink: 0 }}>
                           {c.label}
@@ -346,11 +346,11 @@ export default function PainelPremiacaoPage() {
                           </div>
                           <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
                             {a.team && (
-                              <span style={{ color: c.text, opacity: 0.75, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                 {a.team}
                               </span>
                             )}
-                            <span style={{ color: c.text, opacity: 0.5, fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
                               {a.category}
                             </span>
                           </div>
