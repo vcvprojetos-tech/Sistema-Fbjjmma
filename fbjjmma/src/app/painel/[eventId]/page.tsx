@@ -20,27 +20,11 @@ const COL_COLORS = ["#0d9488","#f97316","#eab308","#7c3aed","#0891b2","#be185d",
 const DESIGN_W = 1920
 const DESIGN_H = 1080
 
-const NAMES_PER_COL = 10
-const GAP = 4
-
-// Alturas fixas para layout determinístico
-const TOPBAR_H   = 52   // topbar
-const TOPBAR_MB  = 10
-const LEGEND_H   = 38   // legenda
-const LEGEND_MB  = 10
-const COL_HEAD_H = 60   // cabeçalho da coluna (título + coordenador)
-const COL_HEAD_MB = 8
-const OUTER_PAD_T = 16
-const OUTER_PAD_B = 12
-const OUTER_PAD_H = 16  // horizontal
-
-const SLOTS_AREA_H =
-  DESIGN_H - OUTER_PAD_T - OUTER_PAD_B
-  - TOPBAR_H - TOPBAR_MB
-  - LEGEND_H - LEGEND_MB
-  - COL_HEAD_H - COL_HEAD_MB
-
-const SLOT_H = Math.floor((SLOTS_AREA_H - (NAMES_PER_COL - 1) * GAP) / NAMES_PER_COL)
+const GROUPS_PER_ROW = 4
+const GROUP_GAP = 12
+const GROUP_HEADER_H = 58
+const ATHLETE_H = 50
+const ATHLETE_GAP = 5
 
 const CALL_INTERVAL_MS = 5 * 60 * 1000
 
@@ -72,11 +56,17 @@ interface AthleteEntry {
   key: string
   name: string
   team: string
-  category: string
-  checkedIn: boolean
   calls: number
   lastCallAt: string | null
-  isWO: boolean
+}
+
+interface CallGroup {
+  tatameId: string
+  tatameName: string
+  tatameColor: string
+  bracketId: string
+  category: string
+  athletes: AthleteEntry[]
 }
 
 function catLabel(b: BracketInfo) {
@@ -95,67 +85,67 @@ function getTeam(pos: MatchInfo["position1"]) {
   return pos?.registration?.team?.name ?? ""
 }
 
-function getAthletes(tatame: TatameInfo): AthleteEntry[] {
-  const entries: AthleteEntry[] = []
-  const seen = new Set<string>()
+function getCallGroups(tatames: TatameInfo[]): CallGroup[] {
+  const groups: CallGroup[] = []
 
-  // EM_ANDAMENTO antes de DESIGNADA, depois por bracketNumber
-  const sorted = [...tatame.brackets].sort((a, b) => {
-    const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
-    return statusOrder(a.status) - statusOrder(b.status) || a.bracketNumber - b.bracketNumber
-  })
+  for (let colIdx = 0; colIdx < tatames.length; colIdx++) {
+    const tatame = tatames[colIdx]
+    const color = COL_COLORS[colIdx % COL_COLORS.length]
 
-  for (const b of sorted) {
-    const category = catLabel(b)
-    for (const m of b.matches) {
-      if (m.endedAt) continue
-      if (!m.position1) continue
+    const sorted = [...tatame.brackets].sort((a, b) => {
+      const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
+      return statusOrder(a.status) - statusOrder(b.status) || a.bracketNumber - b.bracketNumber
+    })
 
-      const p1Name = getName(m.position1)
-      if (p1Name !== "BYE") {
-        const key = `${m.id}-p1`
-        if (!seen.has(key)) {
-          seen.add(key)
-          const allCalls = m.callTimes ?? []
-          const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
-          const p1LastCall = p1Calls.length > 0 ? p1Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
-          entries.push({
-            key, name: p1Name,
-            team: getTeam(m.position1),
-            category,
-            checkedIn: m.p1CheckedIn,
-            calls: p1Calls.length,
-            lastCallAt: p1LastCall,
-            isWO: m.isWO && !!m.endedAt,
-          })
-        }
-      }
+    for (const b of sorted) {
+      const athletes: AthleteEntry[] = []
+      const seen = new Set<string>()
 
-      if (m.position2) {
-        const p2Name = getName(m.position2)
-        if (p2Name !== "BYE") {
-          const key = `${m.id}-p2`
+      for (const m of b.matches) {
+        if (m.endedAt) continue
+        if (!m.position1) continue
+
+        const p1Name = getName(m.position1)
+        if (p1Name !== "BYE" && !m.p1CheckedIn) {
+          const key = `${m.id}-p1`
           if (!seen.has(key)) {
             seen.add(key)
             const allCalls = m.callTimes ?? []
-            const p2Calls = allCalls.filter(c => c.pos === "p2" || c.pos == null)
-            const p2LastCall = p2Calls.length > 0 ? p2Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
-            entries.push({
-              key, name: p2Name,
-              team: getTeam(m.position2),
-              category,
-              checkedIn: m.p2CheckedIn,
-              calls: p2Calls.length,
-              lastCallAt: p2LastCall,
-              isWO: m.isWO && !!m.endedAt,
-            })
+            const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
+            const p1LastCall = p1Calls.length > 0 ? p1Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
+            athletes.push({ key, name: p1Name, team: getTeam(m.position1), calls: p1Calls.length, lastCallAt: p1LastCall })
           }
         }
+
+        if (m.position2) {
+          const p2Name = getName(m.position2)
+          if (p2Name !== "BYE" && !m.p2CheckedIn) {
+            const key = `${m.id}-p2`
+            if (!seen.has(key)) {
+              seen.add(key)
+              const allCalls = m.callTimes ?? []
+              const p2Calls = allCalls.filter(c => c.pos === "p2" || c.pos == null)
+              const p2LastCall = p2Calls.length > 0 ? p2Calls.reduce((a, b) => a.call >= b.call ? a : b).at : null
+              athletes.push({ key, name: p2Name, team: getTeam(m.position2), calls: p2Calls.length, lastCallAt: p2LastCall })
+            }
+          }
+        }
+      }
+
+      if (athletes.length > 0) {
+        groups.push({
+          tatameId: tatame.id,
+          tatameName: tatame.name,
+          tatameColor: color,
+          bracketId: b.id,
+          category: catLabel(b),
+          athletes,
+        })
       }
     }
   }
 
-  return entries.filter(e => !e.checkedIn && !e.isWO)
+  return groups
 }
 
 function rowBg(calls: number) {
@@ -178,10 +168,10 @@ function rowTextSub(calls: number) {
 }
 
 const LEGEND = [
-  { bg: "#ffffff", border: "#cbd5e1", text: "#1e293b", label: "Aguardando" },
-  { bg: "#2563eb", border: "#1d4ed8", text: "#ffffff", label: "1ª Chamada" },
-  { bg: "#d97706", border: "#b45309", text: "#ffffff", label: "2ª Chamada" },
-  { bg: "#dc2626", border: "#b91c1c", text: "#ffffff", label: "3ª Chamada" },
+  { bg: "#ffffff", border: "#cbd5e1", label: "Aguardando" },
+  { bg: "#2563eb", border: "#1d4ed8", label: "1ª Chamada" },
+  { bg: "#d97706", border: "#b45309", label: "2ª Chamada" },
+  { bg: "#dc2626", border: "#b91c1c", label: "3ª Chamada" },
 ]
 
 export default function PainelPage() {
@@ -249,10 +239,6 @@ export default function PainelPage() {
 
   const { event, tatames: allTatames } = data
 
-  // Divisão dos tatames por painel:
-  // ≤ 4 tatames → todos no painel 1
-  //   6 tatames → painel 1: 1-3, painel 2: 4-6
-  //   8 tatames → painel 1: 1-4, painel 2: 5-8
   const tatames = (() => {
     if (!painelNum) return allTatames
     const total = allTatames.length
@@ -260,8 +246,14 @@ export default function PainelPage() {
     return painelNum === "1" ? allTatames.slice(0, splitAt) : allTatames.slice(splitAt)
   })()
 
+  const groups = getCallGroups(tatames)
+  const totalAthletes = groups.reduce((s, g) => s + g.athletes.length, 0)
+
+  const TOPBAR_H = 52
+  const LEGEND_H = 38
+
   return (
-    <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#0a0f1a", overflow: "hidden", position: "relative" }}>
+    <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#f0f4f8", overflow: "hidden", position: "relative" }}>
 
       {showOverlay && (
         <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#f0f4f8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
@@ -295,7 +287,7 @@ export default function PainelPage() {
       }}>
 
         {/* Topbar */}
-        <div style={{ height: TOPBAR_H + TOPBAR_MB, backgroundColor: "#ffffff", borderBottom: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "space-between", padding: `0 ${OUTER_PAD_H}px` }}>
+        <div style={{ height: TOPBAR_H, marginBottom: 10, backgroundColor: "#ffffff", borderBottom: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo2.png" alt="FBJJMMA" style={{ width: 34, height: 34, objectFit: "contain" }} />
@@ -312,121 +304,105 @@ export default function PainelPage() {
           </div>
         </div>
 
-        {/* Área de conteúdo com padding */}
-        <div style={{ padding: `${TOPBAR_MB}px ${OUTER_PAD_H}px ${OUTER_PAD_B}px` }}>
+        <div style={{ padding: "0 16px 12px" }}>
 
-        {/* Legenda */}
-        <div style={{ height: LEGEND_H, marginBottom: LEGEND_MB, display: "flex", alignItems: "center", gap: 24, backgroundColor: "#e2e8f0", borderRadius: 8, padding: "0 16px", border: "1px solid #cbd5e1" }}>
-          {LEGEND.map(l => (
-            <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 16, height: 16, backgroundColor: l.bg, borderRadius: 4, border: `1px solid ${l.border}` }} />
-              <span style={{ color: "#1e293b", fontSize: 14, fontWeight: 600 }}>{l.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {tatames.length === 0 ? (
-          <div style={{ height: SLOTS_AREA_H + COL_HEAD_H + COL_HEAD_MB, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#cbd5e1", fontSize: 60, marginBottom: 10 }}>📋</div>
-              <div style={{ color: "#94a3b8", fontSize: 24 }}>Nenhum tatame ativo no momento</div>
-            </div>
+          {/* Legenda */}
+          <div style={{ height: LEGEND_H, marginBottom: 10, display: "flex", alignItems: "center", gap: 24, backgroundColor: "#e2e8f0", borderRadius: 8, padding: "0 16px", border: "1px solid #cbd5e1" }}>
+            {LEGEND.map(l => (
+              <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 14, height: 14, backgroundColor: l.bg, borderRadius: 3, border: `1px solid ${l.border}` }} />
+                <span style={{ color: "#1e293b", fontSize: 13, fontWeight: 600 }}>{l.label}</span>
+              </div>
+            ))}
+            <span style={{ color: "#94a3b8", fontSize: 13, marginLeft: "auto" }}>
+              {totalAthletes} atleta(s) · {groups.length} categoria(s) aguardando
+            </span>
           </div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${tatames.length}, minmax(0, 1fr))`, gap: 16 }}>
-            {tatames.map((tatame, colIdx) => {
-              const color = COL_COLORS[colIdx % COL_COLORS.length]
-              const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
-              const op = tatame.operations[0]?.user.name ?? ""
-              const athletes = getAthletes(tatame).slice(0, NAMES_PER_COL)
 
-              return (
-                <div key={tatame.id}>
-                  {/* Cabeçalho do tatame */}
-                  <div style={{ height: COL_HEAD_H, marginBottom: COL_HEAD_MB, textAlign: "center", display: "flex", flexDirection: "column" }}>
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", paddingTop: 4, paddingBottom: 10 }}>
-                      <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 28, letterSpacing: "0.04em", textTransform: "uppercase" }}>Tatame {num}</div>
-                      {op && <div style={{ color: "#64748b", fontSize: 13 }}>{op}</div>}
+          {/* Cards de categorias */}
+          {groups.length === 0 ? (
+            <div style={{ height: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 60, marginBottom: 10 }}>📋</div>
+                <div style={{ color: "#94a3b8", fontSize: 24 }}>Nenhum atleta aguardando chamada</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${GROUPS_PER_ROW}, minmax(0, 1fr))`, gap: GROUP_GAP, alignContent: "start" }}>
+              {groups.map((group) => (
+                <div key={group.bracketId} style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
+                  display: "flex", flexDirection: "column",
+                }}>
+                  {/* Cabeçalho */}
+                  <div style={{
+                    height: GROUP_HEADER_H, flexShrink: 0,
+                    backgroundColor: "#1e293b",
+                    borderLeft: `4px solid ${group.tatameColor}`,
+                    padding: "0 14px",
+                    display: "flex", flexDirection: "column", justifyContent: "center",
+                  }}>
+                    <div style={{ color: group.tatameColor, fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
+                      {group.tatameName}
                     </div>
-                    <div style={{ height: 3, backgroundColor: color, borderRadius: 2 }} />
+                    <div style={{ color: "#ffffff", fontSize: 13, fontWeight: 900, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {group.category}
+                    </div>
                   </div>
 
-                  {/* Lista de nomes: 10 slots de altura fixa */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
-                    {athletes.length === 0 ? (
-                      <div style={{ height: SLOTS_AREA_H, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ color: "#94a3b8", fontSize: 18 }}>Sem atletas pendentes</span>
-                      </div>
-                    ) : (
-                      Array.from({ length: NAMES_PER_COL }).map((_, idx) => {
-                        const a = athletes[idx]
-                        if (!a) {
-                          return (
-                            <div key={`empty-${idx}`} style={{
-                              height: SLOT_H, borderRadius: 6,
-                              backgroundColor: "#e2e8f0",
-                              border: "1px dashed #cbd5e1",
-                            }} />
-                          )
-                        }
-                        return (
-                          <div key={a.key} style={{
-                            height: SLOT_H,
-                            backgroundColor: rowBg(a.calls),
-                            borderRadius: 6,
-                            display: "flex", alignItems: "center", gap: 12, padding: "0 14px",
-                            overflow: "hidden",
-                            borderLeft: `4px solid ${color}`,
-                            border: `1px solid ${rowBorder(a.calls)}`,
-                            borderLeftWidth: 4,
-                            borderLeftColor: color,
-                          }}>
-                            <span style={{ color: rowTextName(a.calls), fontWeight: 900, fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>
-                              {idx + 1}
-                            </span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ color: rowTextName(a.calls), fontWeight: 700, fontSize: 20, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {a.name}
-                              </div>
-                              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2 }}>
-                                {a.team && (
-                                  <span style={{ color: rowTextSub(a.calls), fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {a.team}
-                                  </span>
-                                )}
-                                <span style={{ color: rowTextSub(a.calls), opacity: 0.7, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>
-                                  {a.category}
-                                </span>
-                              </div>
-                            </div>
-                            {a.calls > 0 && (
-                              <div style={{ flexShrink: 0, textAlign: "right" }}>
-                                <div style={{ color: rowTextName(a.calls), fontSize: 13, fontWeight: 700 }}>
-                                  {a.calls}ª chamada
-                                </div>
-                                {a.calls < 3 && a.lastCallAt && (() => {
-                                  const remaining = Math.max(0, CALL_INTERVAL_MS - (now - new Date(a.lastCallAt).getTime()))
-                                  if (remaining <= 0) return null
-                                  const mins = Math.floor(remaining / 60000)
-                                  const secs = Math.floor((remaining % 60000) / 1000)
-                                  return (
-                                    <div style={{ color: rowTextSub(a.calls), fontSize: 11, marginTop: 1 }}>
-                                      {a.calls + 1}ª em {mins}:{secs.toString().padStart(2, "0")}
-                                    </div>
-                                  )
-                                })()}
-                              </div>
-                            )}
+                  {/* Atletas */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: ATHLETE_GAP, padding: "6px" }}>
+                    {group.athletes.map((a) => (
+                      <div key={a.key} style={{
+                        height: ATHLETE_H,
+                        backgroundColor: rowBg(a.calls),
+                        borderRadius: 6,
+                        display: "flex", alignItems: "center", gap: 8, padding: "0 10px",
+                        overflow: "hidden",
+                        border: `1px solid ${rowBorder(a.calls)}`,
+                        borderLeftWidth: 4,
+                        borderLeftColor: group.tatameColor,
+                        flexShrink: 0,
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: rowTextName(a.calls), fontWeight: 700, fontSize: 14, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {a.name}
                           </div>
-                        )
-                      })
-                    )}
+                          {a.team && (
+                            <div style={{ color: rowTextSub(a.calls), fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>
+                              {a.team}
+                            </div>
+                          )}
+                        </div>
+                        {a.calls > 0 && (
+                          <div style={{ flexShrink: 0, textAlign: "right" }}>
+                            <div style={{ color: rowTextName(a.calls), fontSize: 12, fontWeight: 700 }}>
+                              {a.calls}ª chamada
+                            </div>
+                            {a.calls < 3 && a.lastCallAt && (() => {
+                              const remaining = Math.max(0, CALL_INTERVAL_MS - (now - new Date(a.lastCallAt).getTime()))
+                              if (remaining <= 0) return null
+                              const mins = Math.floor(remaining / 60000)
+                              const secs = Math.floor((remaining % 60000) / 1000)
+                              return (
+                                <div style={{ color: rowTextSub(a.calls), fontSize: 10, marginTop: 1 }}>
+                                  {a.calls + 1}ª em {mins}:{secs.toString().padStart(2, "0")}
+                                </div>
+                              )
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
