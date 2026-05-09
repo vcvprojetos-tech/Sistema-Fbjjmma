@@ -24,6 +24,21 @@
   --surface-button: #1f2937;
   --selected-warm: #1a0d00;
   --selected-cool: #0d0d1a;
+  /* BracketView — cards de atletas */
+  --bracket-card-bg: #1a1f2e;
+  --bracket-card-border: #2d3748;
+  --bracket-card-text: #ffffff;
+  --bracket-dimmed-bg: #151008;
+  --bracket-dimmed-border: #3d3020;
+  --bracket-dimmed-text: #a07830;
+  /* BracketView — caixas de resultado final */
+  --bracket-gold-bg: #1c0f00;
+  --bracket-gold-border: #78350f;
+  --bracket-silver-bg: #0d1a2e;
+  --bracket-silver-border: #1e3a5f;
+  --bracket-bronze-bg: #1a0e00;
+  --bracket-bronze-border: #5c3a1e;
+  --bracket-final-name: #ffffff;
 }
 
 /* ── Modo claro (paleta GitHub) ────────────────────────────────────────────── */
@@ -50,6 +65,21 @@
   --surface-button: #e2e8f0;
   --selected-warm: rgba(251, 191, 36, 0.1);
   --selected-cool: rgba(59, 130, 246, 0.07);
+  /* BracketView — cards de atletas (modo claro) */
+  --bracket-card-bg: #eef1f5;
+  --bracket-card-border: #c8d0db;
+  --bracket-card-text: #1f2328;
+  --bracket-dimmed-bg: #f5ead8;
+  --bracket-dimmed-border: #d4a95a;
+  --bracket-dimmed-text: #a07830;
+  /* BracketView — caixas de resultado final (modo claro) */
+  --bracket-gold-bg: #fef9ec;
+  --bracket-gold-border: #d97706;
+  --bracket-silver-bg: #eff6ff;
+  --bracket-silver-border: #3b82f6;
+  --bracket-bronze-bg: #fff7ed;
+  --bracket-bronze-border: #ea580c;
+  --bracket-final-name: #1f2328;
 }
 
 @theme inline {

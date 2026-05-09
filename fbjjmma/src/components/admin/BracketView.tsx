@@ -405,8 +405,8 @@ function ThreeAthleteBracket({
         onClick={clickable ? () => onAthleteClick!(reg!.id) : undefined}
         style={{
           position: "absolute", left: PAD, top, width: CW, height: CH,
-          border: `1px solid ${name && !dimmed ? "#2d3748" : dimmed && name ? "#3d3020" : "var(--border)"}`,
-          backgroundColor: name ? (dimmed ? "#151008" : "#1a1f2e") : "var(--card)",
+          border: `1px solid ${name && !dimmed ? "var(--bracket-card-border)" : dimmed && name ? "var(--bracket-dimmed-border)" : "var(--border)"}`,
+          backgroundColor: name ? (dimmed ? "var(--bracket-dimmed-bg)" : "var(--bracket-card-bg)") : "var(--card)",
           borderRadius: 2, padding: "3px 7px",
           display: "flex", flexDirection: "column", justifyContent: "center",
           boxSizing: "border-box", overflow: "hidden",
@@ -421,7 +421,7 @@ function ThreeAthleteBracket({
         }}>{posLabel}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: dimmed ? "#a07830" : clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
+            <p style={{ fontSize: 9, color: dimmed ? "var(--bracket-dimmed-text)" : clickable ? "#f87171" : "var(--bracket-card-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
               {name.toUpperCase()}
             </p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
@@ -429,7 +429,7 @@ function ThreeAthleteBracket({
             </p>
           </>
         ) : (
-          <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>{emptyText}</p>
+          <p style={{ fontSize: 9, color: "var(--muted)", margin: 0 }}>{emptyText}</p>
         )}
       </div>
     )
@@ -440,8 +440,8 @@ function ThreeAthleteBracket({
     return (
       <div style={{
         position: "absolute", left: RBX, top, width: RBW, height: RBH,
-        border: `1px solid ${label ? "#2d3748" : "#2a2a2a"}`,
-        backgroundColor: label ? "#1a1f2e" : "var(--background)",
+        border: `1px solid ${label ? "var(--bracket-card-border)" : "var(--border)"}`,
+        backgroundColor: label ? "var(--bracket-card-bg)" : "var(--background)",
         borderRadius: 2, boxSizing: "border-box",
         display: "flex", alignItems: "center", justifyContent: "center",
         opacity: inactive ? 0.25 : 1,
@@ -518,8 +518,8 @@ function ThreeAthleteBracket({
           {/* Final box */}
           <div style={{
             position: "absolute", left: FX, top: finalBoxTop, width: FBW, height: FBH,
-            border: `1px solid ${finalWinnerId ? "#78350f" : m2Active ? "#2d3020" : "#252525"}`,
-            backgroundColor: finalWinnerId ? "#1c0f00" : m2Active ? "#0f1400" : "var(--background)",
+            border: `1px solid ${finalWinnerId ? "var(--bracket-gold-border)" : m2Active ? "var(--bracket-card-border)" : "var(--border)"}`,
+            backgroundColor: finalWinnerId ? "var(--bracket-gold-bg)" : m2Active ? "var(--bracket-card-bg)" : "var(--background)",
             borderRadius: 2, display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             boxSizing: "border-box", padding: "2px 6px", gap: 2,
@@ -549,7 +549,7 @@ function ThreeAthleteBracket({
           ].map(({ label, color, reg }) => reg ? (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
               <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
+              <span style={{ fontSize: 10, color: "var(--foreground)", fontWeight: 600 }}>{getRegName(reg)}</span>
               {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
               {label === "1° Lugar" && isAbsolute && reg.prizePix && (
                 <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
@@ -758,8 +758,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           top: slotTopY(slotIdx) + PADDING,
           width: ATHLETE_W,
           height: ATHLETE_H,
-          border: `1px solid ${name ? "#2d3748" : "var(--border)"}`,
-          backgroundColor: name ? "#1a1f2e" : "var(--card)",
+          border: `1px solid ${name ? "var(--bracket-card-border)" : "var(--border)"}`,
+          backgroundColor: name ? "var(--bracket-card-bg)" : "var(--card)",
           borderRadius: 2,
           padding: "3px 7px",
           display: "flex",
@@ -778,11 +778,11 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "var(--bracket-card-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (
-          <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>—</p>
+          <p style={{ fontSize: 9, color: "var(--muted)", margin: 0 }}>—</p>
         )}
       </div>
     )
@@ -803,8 +803,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             top: centerYs[r][i] - RESULT_H / 2 + PADDING,
             width: RESULT_W,
             height: RESULT_H,
-            border: `1px solid ${posNum !== null ? "#2d3748" : "#2a2a2a"}`,
-            backgroundColor: posNum !== null ? "#1a1f2e" : "var(--background)",
+            border: `1px solid ${posNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
+            backgroundColor: posNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
             borderRadius: 2,
             boxSizing: "border-box",
             display: "flex",
@@ -835,8 +835,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           top: slotTopY(slotIdx) + PADDING,
           width: ATHLETE_W,
           height: ATHLETE_H,
-          border: `1px solid ${name ? "#2d3748" : "var(--border)"}`,
-          backgroundColor: name ? "#1a1f2e" : "var(--card)",
+          border: `1px solid ${name ? "var(--bracket-card-border)" : "var(--border)"}`,
+          backgroundColor: name ? "var(--bracket-card-bg)" : "var(--card)",
           borderRadius: 2,
           padding: "3px 7px",
           display: "flex",
@@ -855,11 +855,11 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "var(--bracket-card-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (
-          <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>—</p>
+          <p style={{ fontSize: 9, color: "var(--muted)", margin: 0 }}>—</p>
         )}
       </div>
     )
@@ -880,8 +880,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             top: centerYs[r][i] - RESULT_H / 2 + PADDING,
             width: RESULT_W,
             height: RESULT_H,
-            border: `1px solid ${posNum !== null ? "#2d3748" : "#2a2a2a"}`,
-            backgroundColor: posNum !== null ? "#1a1f2e" : "var(--background)",
+            border: `1px solid ${posNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
+            backgroundColor: posNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
             borderRadius: 2,
             boxSizing: "border-box",
             display: "flex",
@@ -941,8 +941,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       top: centerYs[numHalfRounds - 1][0] - RESULT_H / 2 + PADDING,
       width: RESULT_W,
       height: RESULT_H,
-      border: `1px solid ${leftFinalistPosNum !== null ? "#2d3748" : "#2a2a2a"}`,
-      backgroundColor: leftFinalistPosNum !== null ? "#1a1f2e" : "var(--background)",
+      border: `1px solid ${leftFinalistPosNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
+      backgroundColor: leftFinalistPosNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
       borderRadius: 2,
       boxSizing: "border-box",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -959,8 +959,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       top: centerYs[numHalfRounds - 1][0] - RESULT_H / 2 + PADDING,
       width: RESULT_W,
       height: RESULT_H,
-      border: `1px solid ${rightFinalistPosNum !== null ? "#2d3748" : "#2a2a2a"}`,
-      backgroundColor: rightFinalistPosNum !== null ? "#1a1f2e" : "var(--background)",
+      border: `1px solid ${rightFinalistPosNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
+      backgroundColor: rightFinalistPosNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
       borderRadius: 2,
       boxSizing: "border-box",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -974,34 +974,34 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       position: "absolute", left: centerX,
       top: finalCenterY - finalBoxH - 3,
       width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${firstPlaceReg ? "#78350f" : "#3a3a00"}`,
-      backgroundColor: firstPlaceReg ? "#1c0f00" : "#1c1c00",
+      border: `1px solid ${firstPlaceReg ? "var(--bracket-gold-border)" : "var(--border)"}`,
+      backgroundColor: firstPlaceReg ? "var(--bracket-gold-bg)" : "var(--card)",
       borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
     }}>
       <span style={{ fontSize: 7, color: "#fbbf24", fontWeight: 700, lineHeight: 1.2 }}>1° Lugar</span>
-      {firstPlaceReg && <span style={{ fontSize: 7, color: "#ffffff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(firstPlaceReg)}</span>}
+      {firstPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(firstPlaceReg)}</span>}
     </div>,
     <div key="final-2" style={{
       position: "absolute", left: centerX,
       top: finalCenterY + 3,
       width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${secondPlaceReg ? "#1e3a5f" : "var(--border)"}`,
-      backgroundColor: secondPlaceReg ? "#0d1a2e" : "var(--card)",
+      border: `1px solid ${secondPlaceReg ? "var(--bracket-silver-border)" : "var(--border)"}`,
+      backgroundColor: secondPlaceReg ? "var(--bracket-silver-bg)" : "var(--card)",
       borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
     }}>
       <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
-      {secondPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
+      {secondPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
     </div>,
     <div key="final-3" style={{
       position: "absolute", left: centerX,
       top: finalCenterY + finalBoxH + 9,
       width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${thirdPlaceReg ? "#5c3a1e" : "#2a2000"}`,
-      backgroundColor: thirdPlaceReg ? "#1a0e00" : "#100e00",
+      border: `1px solid ${thirdPlaceReg ? "var(--bracket-bronze-border)" : "var(--border)"}`,
+      backgroundColor: thirdPlaceReg ? "var(--bracket-bronze-bg)" : "var(--card)",
       borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
     }}>
       <span style={{ fontSize: 7, color: "#cd7c2f", fontWeight: 600, lineHeight: 1.2 }}>3° Lugar</span>
-      {thirdPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
+      {thirdPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
     </div>
   )
 
@@ -1054,7 +1054,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           {placements.map(({ label, color, reg }) => reg && (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
               <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
+              <span style={{ fontSize: 10, color: "var(--foreground)", fontWeight: 600 }}>{getRegName(reg)}</span>
               {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
               {label === "1° Lugar" && isAbsolute && reg.prizePix && (
                 <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
