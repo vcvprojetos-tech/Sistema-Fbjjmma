@@ -684,7 +684,7 @@ export default function TatamePage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center justify-between px-5 py-3 border-b shrink-0" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
         <div className="flex items-center gap-3">
           <Link href="/coordenador" className="text-[#6b7280] hover:text-white">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -798,7 +798,7 @@ export default function TatamePage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Controles */}
-                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
                   {/* Cabeçalho da chave */}
                   <div className="rounded-xl border p-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -1383,7 +1383,7 @@ export default function TatamePage() {
                 </div>
 
                 {/* Visualização da chave */}
-                <div className="flex-1 overflow-auto p-5 space-y-6 min-h-0">
+                <div className="flex-1 overflow-auto p-5 space-y-6 min-h-0" style={{ backgroundColor: "var(--card-alt)" }}>
                   {(() => {
                     const bracketsToShow = bracket.bracketGroupId && !bracket.isGrandFinal
                       ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId)

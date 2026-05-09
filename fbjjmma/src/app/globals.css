@@ -79,8 +79,8 @@
   --surface-button: #e2e8f0;
   --selected-warm: #fef3c7;
   --selected-cool: #dbeafe;
-  --page-surface: #f0f2f5;
-  --sidebar-surface: #e2e8f0;
+  --page-surface: #e2e8f0;
+  --sidebar-surface: #cdd5e0;
   /* Header do coordenador — contadores e rótulos (modo claro) */
   --hdr-active: #b45309;
   --hdr-done: #15803d;
