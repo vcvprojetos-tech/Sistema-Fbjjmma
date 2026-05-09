@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
+import { useTheme } from "next-themes"
 import { RefreshCw, Trophy, Award, CheckCircle2, ChevronRight, Search, X } from "lucide-react"
 import BracketView from "@/components/admin/BracketView"
 
@@ -28,6 +29,12 @@ const PLACE_CONFIG: Record<number, { label: string; color: string; bg: string; i
   1: { label: "1° Lugar", color: "#fbbf24", bg: "#78350f25", icon: "🥇" },
   2: { label: "2° Lugar", color: "#d1d5db", bg: "#37415125", icon: "🥈" },
   3: { label: "3° Lugar", color: "#c97941", bg: "#7c2d1225", icon: "🥉" },
+}
+
+const PLACE_CONFIG_LIGHT: Record<number, { label: string; color: string; bg: string; icon: string }> = {
+  1: { label: "1° Lugar", color: "#b45309", bg: "#fef9ec", icon: "🥇" },
+  2: { label: "2° Lugar", color: "#475569", bg: "#f1f5f9", icon: "🥈" },
+  3: { label: "3° Lugar", color: "#c2410c", bg: "#fff7ed", icon: "🥉" },
 }
 
 const MEDAL_BY_PLACE: Record<number, string> = { 1: "OURO", 2: "PRATA", 3: "BRONZE" }
@@ -236,6 +243,8 @@ function bracketFinalizedAt(b: BracketData): number {
 
 export default function PremiacaoPage() {
   const { eventId } = useParams<{ eventId: string }>()
+  const { resolvedTheme } = useTheme()
+  const isLight = resolvedTheme === "light"
   const [eventName, setEventName] = useState("")
   const [brackets, setBrackets] = useState<BracketData[]>([])
   const [loading, setLoading] = useState(true)
@@ -705,13 +714,7 @@ export default function PremiacaoPage() {
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <p className="text-[#6b7280] text-xs">Chave #{selectedBracket.bracketNumber}</p>
-                      <span
-                        className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
-                        style={{
-                          backgroundColor: selectedBracket.status === "PREMIADA" ? "#4a1d9640" : "#78350f40",
-                          color: selectedBracket.status === "PREMIADA" ? "#a78bfa" : "#fbbf24",
-                        }}
-                      >
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${selectedBracket.status === "PREMIADA" ? "badge-premiada" : "badge-finalizada"}`}>
                         {selectedBracket.status === "PREMIADA" ? "Premiada" : "Finalizada"}
                       </span>
                     </div>
@@ -739,7 +742,7 @@ export default function PremiacaoPage() {
                     return (
                       <div className="space-y-3">
                         {placements.map((pl) => {
-                          const cfg = PLACE_CONFIG[pl.place]
+                          const cfg = (isLight ? PLACE_CONFIG_LIGHT : PLACE_CONFIG)[pl.place]
                           const awarded = pl.registration?.awarded ?? false
                           const isAwardingNow = awarding.has(pl.registration?.id ?? "")
                           const regName = pl.registration?.athlete?.user.name ?? pl.registration?.guestName ?? "—"
