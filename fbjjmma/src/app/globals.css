@@ -143,6 +143,7 @@
 * {
   box-sizing: border-box;
   border-color: var(--border);
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -150,6 +151,18 @@ body {
   color: var(--foreground);
   font-family: Inter, Arial, Helvetica, sans-serif;
   min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Touch UX — remove 300ms delay em todos os elementos interativos */
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Scroll suave com momentum no iOS */
+.overflow-y-auto, .overflow-auto, .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Overrides de modo claro para classes Tailwind hardcoded ───────────────── */
