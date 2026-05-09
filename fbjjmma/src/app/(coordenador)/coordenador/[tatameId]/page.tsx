@@ -1026,6 +1026,19 @@ export default function TatamePage() {
                                         )
                                       })}
                                     </div>
+                                    {(() => {
+                                      const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
+                                      if (posCalls.length === 0) return null
+                                      return (
+                                        <div className="flex flex-col gap-0.5">
+                                          {posCalls.map((ct: CallTime) => (
+                                            <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
+                                              {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )
+                                    })()}
                                     {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
                                     <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
                                     <button
@@ -1161,6 +1174,19 @@ export default function TatamePage() {
                                 )
                               })}
                             </div>
+                            {(() => {
+                              const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
+                              if (posCalls.length === 0) return null
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  {posCalls.map((ct: CallTime) => (
+                                    <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
+                                      {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                    </span>
+                                  ))}
+                                </div>
+                              )
+                            })()}
                             {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
                             <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
                             <button
