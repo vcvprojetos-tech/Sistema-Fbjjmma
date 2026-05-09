@@ -19,6 +19,7 @@
   --accent: #1a1a1a;
   --accent-foreground: #ffffff;
   /* superfícies do coordenador de tatame */
+  --match-card-bg: #111111;
   --surface-match: #111111;
   --surface-input: #222222;
   --surface-button: #1f2937;
@@ -74,7 +75,8 @@
   --accent: #f6f8fa;
   --accent-foreground: #1f2328;
   /* superfícies do coordenador de tatame — modo claro */
-  --surface-match: #f6f8fa;
+  --match-card-bg: #eef1f6;
+  --surface-match: #e4e9f2;
   --surface-input: #e2e8f0;
   --surface-button: #e2e8f0;
   --selected-warm: #fef3c7;
