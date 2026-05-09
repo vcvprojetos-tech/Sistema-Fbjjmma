@@ -31,6 +31,11 @@
   --hdr-done: #4ade80;
   --hdr-pending: #9ca3af;
   --hdr-op: #4ade80;
+  /* Botões de chamada */
+  --call-2-bg: #78350f30;
+  --call-2-color: #fbbf24;
+  --call-3-bg: #7f1d1d30;
+  --call-3-color: #f87171;
   /* Botões Cronograma e Tabela de Peso */
   --btn-sched-bg: #1d4ed820;
   --btn-sched-fg: #60a5fa;
@@ -86,6 +91,11 @@
   --hdr-done: #15803d;
   --hdr-pending: #4b5563;
   --hdr-op: #374151;
+  /* Botões de chamada (modo claro) */
+  --call-2-bg: #fef3c7;
+  --call-2-color: #b45309;
+  --call-3-bg: #fee2e2;
+  --call-3-color: #dc2626;
   /* Botões Cronograma e Tabela de Peso (modo claro) */
   --btn-sched-bg: #dbeafe;
   --btn-sched-fg: #1d4ed8;

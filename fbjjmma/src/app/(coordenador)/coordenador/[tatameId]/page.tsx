@@ -1051,7 +1051,7 @@ export default function TatamePage() {
                                                       onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
                                                       disabled={!canCall || !!callLoading || actionLoading}
                                                       className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                                      style={{ backgroundColor: done ? "#15803d" : "var(--surface-button)", color: done ? "#4ade80" : "var(--muted-foreground)" }}
+                                                      style={{ backgroundColor: done ? "#15803d" : n === 2 ? "var(--call-2-bg)" : n === 3 ? "var(--call-3-bg)" : "var(--surface-button)", color: done ? "#4ade80" : n === 2 ? "var(--call-2-color)" : n === 3 ? "var(--call-3-color)" : "var(--muted-foreground)" }}
                                                     >
                                                       {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
                                                     </button>
@@ -1086,16 +1086,16 @@ export default function TatamePage() {
                                     <button
                                       onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
                                       disabled={actionLoading}
-                                      className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                                      style={{ backgroundColor: "#78350f" }}
+                                      className="w-full py-2 rounded-lg text-xs font-semibold"
+                                      style={{ backgroundColor: "#78350f", color: "#ffffff" }}
                                     >
                                       Desclassificação por Peso
                                     </button>
                                     <button
                                       onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: callMenu.winnerId, loserName: callMenu.absenteeName }); setDesclReason(""); setCallMenu(null) }}
                                       disabled={actionLoading}
-                                      className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                                      style={{ backgroundColor: "#7c3aed" }}
+                                      className="w-full py-2 rounded-lg text-xs font-semibold"
+                                      style={{ backgroundColor: "#7c3aed", color: "#ffffff" }}
                                     >
                                       Desclassificado
                                     </button>
@@ -1215,7 +1215,7 @@ export default function TatamePage() {
                                               onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
                                               disabled={!canCall || !!callLoading || actionLoading}
                                               className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                              style={{ backgroundColor: done ? "#15803d" : "var(--surface-button)", color: done ? "#4ade80" : "var(--muted-foreground)" }}
+                                              style={{ backgroundColor: done ? "#15803d" : n === 2 ? "var(--call-2-bg)" : n === 3 ? "var(--call-3-bg)" : "var(--surface-button)", color: done ? "#4ade80" : n === 2 ? "var(--call-2-color)" : n === 3 ? "var(--call-3-color)" : "var(--muted-foreground)" }}
                                             >
                                               {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
                                             </button>
