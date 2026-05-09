@@ -902,7 +902,7 @@ export default function TatamePage() {
                           <div key={match.id} className="rounded-xl border overflow-hidden"
                             style={{
                               borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "var(--border-alt)",
-                              backgroundColor: "var(--match-card-bg)",
+                              backgroundColor: "var(--card)",
                             }}>
                             <div className="px-3 py-2 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
                               <span className="text-xs text-[#6b7280] whitespace-nowrap shrink-0">
@@ -963,7 +963,7 @@ export default function TatamePage() {
                             </div>
 
                             {/* VS */}
-                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--match-card-bg)" }}>
+                            <div className="flex items-center gap-2 px-4" style={{ backgroundColor: "var(--background)" }}>
                               <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "var(--hdr-done)" : "var(--border)", opacity: bothPresent && !isDone ? 0.4 : 1 }} />
                               <span className="text-xs font-bold py-1" style={{ color: bothPresent && !isDone ? "var(--hdr-done)" : "var(--muted)" }}>VS</span>
                               <div className="flex-1 h-px" style={{ backgroundColor: bothPresent && !isDone ? "var(--hdr-done)" : "var(--border)", opacity: bothPresent && !isDone ? 0.4 : 1 }} />
