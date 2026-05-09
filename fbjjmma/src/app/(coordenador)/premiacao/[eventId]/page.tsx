@@ -439,7 +439,7 @@ export default function PremiacaoPage() {
       </div>
     )}
     {/*  page body  */}
-    <div className="flex flex-col h-[calc(100vh-57px)]">
+    <div className="flex flex-col h-[calc(100vh-57px)]" style={{ backgroundColor: "var(--page-surface)" }}>
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3 border-b shrink-0"
@@ -495,7 +495,7 @@ export default function PremiacaoPage() {
         <div className="flex flex-1 overflow-hidden">
 
           {/* Coluna esquerda — Abas Aguardando/Premiadas */}
-          <div className="w-64 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)" }}>
+          <div className="w-64 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--sidebar-surface)" }}>
             {/* Abas */}
             <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
               <button
@@ -504,7 +504,7 @@ export default function PremiacaoPage() {
                 style={{
                   color: sideTab === "aguardando" ? "#fbbf24" : "#6b7280",
                   borderBottom: sideTab === "aguardando" ? "2px solid #fbbf24" : "2px solid transparent",
-                  backgroundColor: "var(--background)",
+                  backgroundColor: "var(--sidebar-surface)",
                 }}
               >
                 Aguardando ({pendentes.length})
@@ -515,7 +515,7 @@ export default function PremiacaoPage() {
                 style={{
                   color: sideTab === "premiadas" ? "#a78bfa" : "#6b7280",
                   borderBottom: sideTab === "premiadas" ? "2px solid #a78bfa" : "2px solid transparent",
-                  backgroundColor: "var(--background)",
+                  backgroundColor: "var(--sidebar-surface)",
                 }}
               >
                 Premiadas ({premiadas.length})
@@ -538,11 +538,15 @@ export default function PremiacaoPage() {
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          className="w-full text-left transition-colors"
                           style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: isSelected ? "#0d1525" : "transparent",
+                            margin: "4px 8px",
+                            width: "calc(100% - 16px)",
+                            borderRadius: 8,
+                            border: "1px solid var(--border)",
                             borderLeft: isSelected ? "3px solid #3b82f6" : "3px solid transparent",
+                            backgroundColor: isSelected ? "var(--selected-cool)" : "var(--card)",
+                            padding: "10px 12px",
                           }}
                         >
                           <div className="flex items-center gap-1.5 mb-0.5">
@@ -590,11 +594,15 @@ export default function PremiacaoPage() {
                             <button
                               key={b.bracketGroupId}
                               onClick={() => setSelectedId(groupBrackets[0].id)}
-                              className="w-full text-left px-3 py-3 border-b transition-colors"
+                              className="w-full text-left transition-colors"
                               style={{
-                                borderColor: "var(--border)",
-                                backgroundColor: isSelected ? "#1a0a00" : "transparent",
+                                margin: "4px 8px",
+                                width: "calc(100% - 16px)",
+                                borderRadius: 8,
+                                border: "1px solid var(--border)",
                                 borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                                backgroundColor: isSelected ? "var(--selected-warm)" : "var(--card)",
+                                padding: "10px 12px",
                               }}
                             >
                               <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
@@ -612,11 +620,15 @@ export default function PremiacaoPage() {
                             <button
                               key={b.id}
                               onClick={() => setSelectedId(b.id)}
-                              className="w-full text-left px-3 py-3 border-b transition-colors"
+                              className="w-full text-left transition-colors"
                               style={{
-                                borderColor: "var(--border)",
-                                backgroundColor: isSelected ? "#1a0a00" : "transparent",
+                                margin: "4px 8px",
+                                width: "calc(100% - 16px)",
+                                borderRadius: 8,
+                                border: "1px solid var(--border)",
                                 borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                                backgroundColor: isSelected ? "var(--selected-warm)" : "var(--card)",
+                                padding: "10px 12px",
                               }}
                             >
                               <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
@@ -646,11 +658,15 @@ export default function PremiacaoPage() {
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          className="w-full text-left transition-colors"
                           style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: isSelected ? "#0d0d1a" : "transparent",
+                            margin: "4px 8px",
+                            width: "calc(100% - 16px)",
+                            borderRadius: 8,
+                            border: "1px solid var(--border)",
                             borderLeft: isSelected ? "3px solid #a78bfa" : "3px solid transparent",
+                            backgroundColor: isSelected ? "var(--selected-cool)" : "var(--card)",
+                            padding: "10px 12px",
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
@@ -699,7 +715,7 @@ export default function PremiacaoPage() {
                         {selectedBracket.status === "PREMIADA" ? "Premiada" : "Finalizada"}
                       </span>
                     </div>
-                    <p className="text-white font-bold text-xs leading-tight truncate">{catLabel(selectedBracket)}</p>
+                    <p className="font-bold text-xs leading-tight truncate" style={{ color: "var(--foreground)" }}>{catLabel(selectedBracket)}</p>
                     {!selectedBracket.isAbsolute && (
                       <p className="text-[#4b5563] text-xs mt-0.5">
                         até {selectedBracket.weightCategory.maxWeight === 999 ? "∞" : `${selectedBracket.weightCategory.maxWeight}kg`}
@@ -737,7 +753,7 @@ export default function PremiacaoPage() {
                               <div className="px-3 py-2.5 flex items-center gap-3">
                                 <span className="text-xl shrink-0">{cfg.icon}</span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold truncate" style={{ color: awarded ? "#4ade80" : "#f9fafb" }}>{regName}</p>
+                                  <p className="text-xs font-bold truncate" style={{ color: awarded ? "#4ade80" : "var(--card-foreground)" }}>{regName}</p>
                                   {teamName && <p className="text-xs text-[#6b7280] truncate">{teamName}</p>}
                                   <p className="text-[10px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</p>
                                 </div>
