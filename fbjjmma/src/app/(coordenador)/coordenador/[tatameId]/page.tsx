@@ -612,7 +612,7 @@ export default function TatamePage() {
                         >
                           <p className="text-xs font-semibold" style={{ color: "#f59e0b" }}>GRUPO — {group.length} sub-chaves</p>
                           <p className="font-medium leading-tight mt-0.5 break-words"
-                            style={{ color: groupIsActive ? "#fbbf24" : "var(--foreground)", fontSize: "0.72rem" }}>
+                            style={{ color: groupIsActive ? "var(--hdr-active)" : "var(--foreground)", fontSize: "0.72rem" }}>
                             {catLabel(b).replace(" (Sub-chave)", "")}
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
@@ -636,7 +636,7 @@ export default function TatamePage() {
                         >
                           <p className="text-xs" style={{ color: "var(--muted)" }}>Chave #{b.bracketNumber}</p>
                           <p className="font-medium leading-tight mt-0.5 break-words"
-                            style={{ color: isActive ? "#fbbf24" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "var(--foreground)", fontSize: "0.72rem" }}>
+                            style={{ color: isActive ? "var(--hdr-active)" : b.status === "FINALIZADA" || b.status === "PREMIADA" ? color : "var(--foreground)", fontSize: "0.72rem" }}>
                             {catLabel(b)}
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
@@ -696,7 +696,7 @@ export default function TatamePage() {
             <p className="text-[#6b7280] text-xs">{tatame.event.name}</p>
           </div>
           {operador && (
-            <span className="text-xs text-[#4ade80] hidden sm:inline">
+            <span className="text-xs font-medium hidden sm:inline" style={{ color: "var(--hdr-op)" }}>
               · Op: {operador.user.name}
             </span>
           )}
@@ -705,7 +705,7 @@ export default function TatamePage() {
             <button
               onClick={() => setDocModal({ title: "Cronograma do Evento", url: tatame.event.schedule! })}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
-              style={{ backgroundColor: "#1d4ed820", color: "#60a5fa", border: "1px solid #1d4ed840" }}
+              style={{ backgroundColor: "var(--btn-sched-bg)", color: "var(--btn-sched-fg)", border: "1px solid var(--btn-sched-br)" }}
             >
               📅 Cronograma
             </button>
@@ -714,7 +714,7 @@ export default function TatamePage() {
             <button
               onClick={() => setDocModal({ title: "Tabela de Peso", url: tatame.event.pesoDoc! })}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
-              style={{ backgroundColor: "#78350f20", color: "#fbbf24", border: "1px solid #78350f40" }}
+              style={{ backgroundColor: "var(--btn-peso-bg)", color: "var(--btn-peso-fg)", border: "1px solid var(--btn-peso-br)" }}
             >
               ⚖️ Tabela de Peso
             </button>
@@ -722,9 +722,9 @@ export default function TatamePage() {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex gap-3 text-xs">
-            {emAndamento.length > 0 && <span className="text-[#fbbf24] font-bold">{emAndamento.length} em andamento</span>}
-            <span className="text-[#6b7280] font-bold">{pendentes.length} aguardando</span>
-            <span className="text-[#4ade80] font-bold">{finalizadas.length} finalizadas</span>
+            {emAndamento.length > 0 && <span className="font-bold" style={{ color: "var(--hdr-active)" }}>{emAndamento.length} em andamento</span>}
+            <span className="font-bold" style={{ color: "var(--hdr-pending)" }}>{pendentes.length} aguardando</span>
+            <span className="font-bold" style={{ color: "var(--hdr-done)" }}>{finalizadas.length} finalizadas</span>
           </div>
           <button onClick={() => load(true)} disabled={refreshing} className="text-[#6b7280] hover:text-white transition-colors">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -748,8 +748,8 @@ export default function TatamePage() {
                 onClick={() => setSideTab("ativas")}
                 className="flex-1 py-2 text-xs font-bold transition-colors"
                 style={{
-                  color: sideTab === "ativas" ? "#fbbf24" : "var(--muted)",
-                  borderBottom: sideTab === "ativas" ? "2px solid #fbbf24" : "2px solid transparent",
+                  color: sideTab === "ativas" ? "var(--hdr-active)" : "var(--muted)",
+                  borderBottom: sideTab === "ativas" ? "2px solid var(--hdr-active)" : "2px solid transparent",
                   backgroundColor: "var(--sidebar-surface)",
                 }}
               >
@@ -759,8 +759,8 @@ export default function TatamePage() {
                 onClick={() => setSideTab("finalizadas")}
                 className="flex-1 py-2 text-xs font-bold transition-colors"
                 style={{
-                  color: sideTab === "finalizadas" ? "#4ade80" : "var(--muted)",
-                  borderBottom: sideTab === "finalizadas" ? "2px solid #4ade80" : "2px solid transparent",
+                  color: sideTab === "finalizadas" ? "var(--hdr-done)" : "var(--muted)",
+                  borderBottom: sideTab === "finalizadas" ? "2px solid var(--hdr-done)" : "2px solid transparent",
                   backgroundColor: "var(--sidebar-surface)",
                 }}
               >

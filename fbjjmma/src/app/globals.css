@@ -26,6 +26,18 @@
   --selected-cool: #0d0d1a;
   --page-surface: #0a0a0a;
   --sidebar-surface: #1a1a1a;
+  /* Header do coordenador — contadores e rótulos */
+  --hdr-active: #fbbf24;
+  --hdr-done: #4ade80;
+  --hdr-pending: #9ca3af;
+  --hdr-op: #4ade80;
+  /* Botões Cronograma e Tabela de Peso */
+  --btn-sched-bg: #1d4ed820;
+  --btn-sched-fg: #60a5fa;
+  --btn-sched-br: #1d4ed840;
+  --btn-peso-bg: #78350f20;
+  --btn-peso-fg: #fbbf24;
+  --btn-peso-br: #78350f40;
   /* BracketView — cards de atletas */
   --bracket-card-bg: #1a1f2e;
   --bracket-card-border: #2d3748;
@@ -69,6 +81,18 @@
   --selected-cool: #dbeafe;
   --page-surface: #f0f2f5;
   --sidebar-surface: #e2e8f0;
+  /* Header do coordenador — contadores e rótulos (modo claro) */
+  --hdr-active: #b45309;
+  --hdr-done: #15803d;
+  --hdr-pending: #4b5563;
+  --hdr-op: #374151;
+  /* Botões Cronograma e Tabela de Peso (modo claro) */
+  --btn-sched-bg: #dbeafe;
+  --btn-sched-fg: #1d4ed8;
+  --btn-sched-br: #93c5fd;
+  --btn-peso-bg: #fef3c7;
+  --btn-peso-fg: #92400e;
+  --btn-peso-br: #fcd34d;
   /* BracketView — cards de atletas (modo claro) */
   --bracket-card-bg: #eef1f5;
   --bracket-card-border: #c8d0db;
