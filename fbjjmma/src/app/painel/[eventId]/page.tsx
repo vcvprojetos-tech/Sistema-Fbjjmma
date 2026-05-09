@@ -34,6 +34,13 @@ const ATHLETE_GAP = 4
 const CARD_PAD = 5
 const CARD_GAP = 10
 
+// Altura disponível para os cards dentro de cada coluna (espaço abaixo do cabeçalho do tatame)
+const CONTENT_H =
+  DESIGN_H - TOPBAR_H - TOPBAR_MB
+  - LEGEND_H - LEGEND_MB
+  - 12  // outer_pad_b
+  - COL_HEAD_H - COL_HEAD_MB
+
 const CALL_INTERVAL_MS = 5 * 60 * 1000
 
 interface CallTime { call: number; at: string; pos?: "p1" | "p2" | null }
@@ -88,6 +95,26 @@ function getName(pos: MatchInfo["position1"]) {
 }
 function getTeam(pos: MatchInfo["position1"]) {
   return pos?.registration?.team?.name ?? ""
+}
+
+function cardHeight(numAthletes: number): number {
+  return CAT_HEADER_H + CARD_PAD * 2 + numAthletes * ATHLETE_H + Math.max(0, numAthletes - 1) * ATHLETE_GAP
+}
+
+function filterGroupsToFit(groups: BracketGroup[], maxH: number): BracketGroup[] {
+  const result: BracketGroup[] = []
+  let usedH = 0
+  for (const group of groups) {
+    const h = cardHeight(group.athletes.length)
+    const gap = result.length > 0 ? CARD_GAP : 0
+    if (usedH + gap + h <= maxH) {
+      result.push(group)
+      usedH += gap + h
+    } else {
+      break
+    }
+  }
+  return result
 }
 
 function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
@@ -316,7 +343,7 @@ export default function PainelPage() {
                 const color = COL_COLORS[colIdx % COL_COLORS.length]
                 const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
                 const op = tatame.operations[0]?.user.name ?? ""
-                const groups = getGroupsForTatame(tatame)
+                const groups = filterGroupsToFit(getGroupsForTatame(tatame), CONTENT_H)
 
                 return (
                   <div key={tatame.id}>
