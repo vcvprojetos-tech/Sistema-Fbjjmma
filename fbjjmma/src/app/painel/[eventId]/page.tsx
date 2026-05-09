@@ -29,7 +29,7 @@ const COL_HEAD_MB = 8
 const OUTER_PAD_H = 16
 
 const CAT_HEADER_H = 40
-const ATHLETE_H = 46
+const ATHLETE_H = 58
 const ATHLETE_GAP = 4
 const CARD_PAD = 5
 const CARD_GAP = 10
@@ -399,11 +399,11 @@ export default function PainelPage() {
                                   flexShrink: 0,
                                 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ color: rowTextName(a.calls), fontWeight: 700, fontSize: 14, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    <div style={{ color: rowTextName(a.calls), fontWeight: 700, fontSize: 16, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                       {a.name}
                                     </div>
                                     {a.team && (
-                                      <div style={{ color: rowTextSub(a.calls), fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>
+                                      <div style={{ color: rowTextSub(a.calls), fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>
                                         {a.team}
                                       </div>
                                     )}
