@@ -220,11 +220,11 @@ body {
 
 .btn-opcoes { color: #f87171; border: 1px solid #7f1d1d40; }
 .btn-opcoes:hover:not(:disabled) { background-color: #7f1d1d20; }
-.light .btn-opcoes { color: #dc2626; border-color: #fca5a5; }
-.light .btn-opcoes:hover:not(:disabled) { background-color: #fee2e2; }
+.light .btn-opcoes { color: #ffffff; background-color: #dc2626; border-color: #dc2626; }
+.light .btn-opcoes:hover:not(:disabled) { background-color: #b91c1c; border-color: #b91c1c; }
 
 .btn-wo-ambos { color: #f97316; border: 1px solid #7c2d1240; background-color: #7c2d1210; }
-.light .btn-wo-ambos { color: #c2410c; border-color: #fdba74; background-color: #fff7ed; }
+.light .btn-wo-ambos { color: #ffffff; background-color: #f97316; border-color: #f97316; }
 
 /* ── Autofill adapta ao tema ────────────────────────────────────────────────── */
 .dark input:-webkit-autofill,
