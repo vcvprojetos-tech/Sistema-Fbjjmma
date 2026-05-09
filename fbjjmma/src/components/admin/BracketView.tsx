@@ -149,7 +149,7 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
   if (woMatches.length === 0) return null
 
   // Expande cada partida W.O. em entradas individuais por atleta
-  const entries: { key: string; name: string; label: string; calls: Array<{ call: number; at: string }> }[] = []
+  const entries: { key: string; name: string; label: string; calls: Array<{ call: number; at: string }>; endedAt?: string | null }[] = []
   for (const m of woMatches) {
     const isSolo = m.position2Id === null
     const isDoubleWO = !isSolo && m.winnerId === null && !!m.position1Id && !!m.position2Id
@@ -160,8 +160,8 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const reg2 = posIdMap.get(m.position2Id!)?.registration ?? null
       const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
       const p2Calls = allCalls.filter(c => c.pos === "p2" || !c.pos)
-      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), calls: p1Calls })
-      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), calls: p2Calls })
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), calls: p1Calls, endedAt: m.endedAt })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), calls: p2Calls, endedAt: m.endedAt })
     } else if (m.position1Id) {
       if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
@@ -171,7 +171,7 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
       const loserPos = loserId === m.position1Id ? "p1" : "p2"
       const loserCalls = allCalls.filter(c => c.pos === loserPos || !c.pos)
-      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), calls: loserCalls })
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), calls: loserCalls, endedAt: m.endedAt })
     }
   }
 
@@ -187,13 +187,18 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
               <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
               <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
             </div>
-            {e.calls.length > 0 && (
+            {(e.calls.length > 0 || e.endedAt) && (
               <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
                 {e.calls.sort((a, b) => a.call - b.call).map(c => (
                   <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
                     <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
                   </span>
                 ))}
+                {e.endedAt && (
+                  <span style={{ fontSize: 8, color: "#9ca3af" }}>
+                    <span style={{ color: "#dc2626", fontWeight: 700 }}>W.O.</span> {fmtTime(e.endedAt)}
+                  </span>
+                )}
               </div>
             )}
           </div>

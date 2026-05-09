@@ -305,7 +305,7 @@ export default function TatamePage() {
     } catch { /* silencioso */ }
   }, [getPin, load])
 
-  const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number, autoWinnerId?: string, absentPosition?: "p1" | "p2" | null) => {
+  const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number, _autoWinnerId?: string, absentPosition?: "p1" | "p2" | null) => {
     setCallLoading(`${matchId}-${callNumber}`)
     setCallError(null)
     try {
@@ -317,22 +317,6 @@ export default function TatamePage() {
       const data = await res.json()
       if (!res.ok) {
         setCallError({ matchId, msg: data.error || "Erro ao registrar chamada.", remaining: data.remaining })
-      } else if (callNumber === 3 && autoWinnerId !== undefined) {
-        // 3ª chamada: W.O. automático por ausência
-        setCallMenu(null)
-        setActionLoading(true)
-        const woRes = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
-          body: JSON.stringify({ winnerId: autoWinnerId, isWO: true, woType: "AUSENCIA", woWeight: null }),
-        })
-        if (!woRes.ok) {
-          const woData = await woRes.json()
-          setError(woData.error || "Erro ao registrar W.O.")
-        } else {
-          await load(true)
-        }
-        setActionLoading(false)
       } else {
         await load(true)
       }
@@ -340,6 +324,28 @@ export default function TatamePage() {
       setCallError({ matchId, msg: "Erro de conexão." })
     } finally {
       setCallLoading(null)
+    }
+  }, [getPin, load])
+
+  const aplicarWOAusencia = useCallback(async (matchId: string, bracketId: string, winnerId: string) => {
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
+        body: JSON.stringify({ winnerId, isWO: true, woType: "AUSENCIA", woWeight: null }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || "Erro ao registrar W.O.")
+      } else {
+        setCallMenu(null)
+        await load(true)
+      }
+    } catch {
+      setError("Erro de conexão.")
+    } finally {
+      setActionLoading(false)
     }
   }, [getPin, load])
 
@@ -1007,40 +1013,56 @@ export default function TatamePage() {
                                 ) : (
                                   <div className="flex flex-col gap-2">
                                     <p className="text-xs text-[#f87171] font-semibold">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
-                                    <div className="flex gap-1.5">
-                                      {[1, 2, 3].map(n => {
-                                        const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos)
-                                        const done = posCalls.some((c: CallTime) => c.call === n)
-                                        const isLoadingCall = callLoading === `${match.id}-${n}`
-                                        const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
-                                        return (
-                                          <button
-                                            key={n}
-                                            onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
-                                            disabled={!canCall || !!callLoading || actionLoading}
-                                            className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                            style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
-                                          >
-                                            {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
-                                          </button>
-                                        )
-                                      })}
-                                    </div>
                                     {(() => {
                                       const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
-                                      if (posCalls.length === 0) return null
+                                      const all3Done = posCalls.some((c: CallTime) => c.call === 3)
                                       return (
-                                        <div className="flex flex-col gap-0.5">
-                                          {posCalls.map((ct: CallTime) => (
-                                            <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
-                                              {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                                            </span>
-                                          ))}
-                                        </div>
+                                        <>
+                                          {!all3Done ? (
+                                            <>
+                                              <div className="flex gap-1.5">
+                                                {[1, 2, 3].map(n => {
+                                                  const done = posCalls.some((c: CallTime) => c.call === n)
+                                                  const isLoadingCall = callLoading === `${match.id}-${n}`
+                                                  const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
+                                                  return (
+                                                    <button
+                                                      key={n}
+                                                      onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
+                                                      disabled={!canCall || !!callLoading || actionLoading}
+                                                      className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
+                                                      style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                                    >
+                                                      {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                                                    </button>
+                                                  )
+                                                })}
+                                              </div>
+                                              {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                                              <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
+                                            </>
+                                          ) : (
+                                            <button
+                                              onClick={() => aplicarWOAusencia(match.id, match._bracketId, callMenu.winnerId)}
+                                              disabled={actionLoading}
+                                              className="w-full py-2 rounded-lg text-sm font-bold text-white"
+                                              style={{ backgroundColor: "#dc2626" }}
+                                            >
+                                              {actionLoading ? "..." : "W.O. — Confirmar ausência"}
+                                            </button>
+                                          )}
+                                          {posCalls.length > 0 && (
+                                            <div className="flex flex-col gap-0.5">
+                                              {posCalls.map((ct: CallTime) => (
+                                                <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
+                                                  {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </>
                                       )
                                     })()}
-                                    {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
-                                    <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
                                     <button
                                       onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
                                       disabled={actionLoading}
@@ -1155,40 +1177,56 @@ export default function TatamePage() {
                         {callMenu?.matchId === match.id && (
                           <div className="px-3 pb-3 flex flex-col gap-2" style={{ borderTop: "1px solid var(--border)" }}>
                             <p className="text-xs text-[#f87171] font-semibold pt-2">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
-                            <div className="flex gap-1.5">
-                              {[1, 2, 3].map(n => {
-                                const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos)
-                                const done = posCalls.some((c: CallTime) => c.call === n)
-                                const isLoadingCall = callLoading === `${match.id}-${n}`
-                                const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
-                                return (
-                                  <button
-                                    key={n}
-                                    onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
-                                    disabled={!canCall || !!callLoading || actionLoading}
-                                    className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
-                                    style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
-                                  >
-                                    {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
-                                  </button>
-                                )
-                              })}
-                            </div>
                             {(() => {
                               const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
-                              if (posCalls.length === 0) return null
+                              const all3Done = posCalls.some((c: CallTime) => c.call === 3)
                               return (
-                                <div className="flex flex-col gap-0.5">
-                                  {posCalls.map((ct: CallTime) => (
-                                    <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
-                                      {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                                    </span>
-                                  ))}
-                                </div>
+                                <>
+                                  {!all3Done ? (
+                                    <>
+                                      <div className="flex gap-1.5">
+                                        {[1, 2, 3].map(n => {
+                                          const done = posCalls.some((c: CallTime) => c.call === n)
+                                          const isLoadingCall = callLoading === `${match.id}-${n}`
+                                          const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
+                                          return (
+                                            <button
+                                              key={n}
+                                              onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
+                                              disabled={!canCall || !!callLoading || actionLoading}
+                                              className="flex-1 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-40"
+                                              style={{ backgroundColor: done ? "#15803d" : "#1f2937", color: done ? "#4ade80" : "#9ca3af" }}
+                                            >
+                                              {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
+                                      {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                                      <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => aplicarWOAusencia(match.id, match._bracketId, callMenu.winnerId)}
+                                      disabled={actionLoading}
+                                      className="w-full py-2 rounded-lg text-sm font-bold text-white"
+                                      style={{ backgroundColor: "#dc2626" }}
+                                    >
+                                      {actionLoading ? "..." : "W.O. — Confirmar ausência"}
+                                    </button>
+                                  )}
+                                  {posCalls.length > 0 && (
+                                    <div className="flex flex-col gap-0.5">
+                                      {posCalls.map((ct: CallTime) => (
+                                        <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
+                                          {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
                               )
                             })()}
-                            {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
-                            <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
                             <button
                               onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
                               disabled={actionLoading}
