@@ -31,6 +31,8 @@
   --hdr-done: #4ade80;
   --hdr-pending: #9ca3af;
   --hdr-op: #4ade80;
+  /* Título Confirmação de Presença */
+  --confirm-title: #60a5fa;
   /* Botões de chamada */
   --call-2-bg: #78350f30;
   --call-2-color: #fbbf24;
@@ -91,6 +93,8 @@
   --hdr-done: #15803d;
   --hdr-pending: #4b5563;
   --hdr-op: #374151;
+  /* Título Confirmação de Presença (modo claro) */
+  --confirm-title: #2563eb;
   /* Botões de chamada (modo claro) */
   --call-2-bg: #d97706;
   --call-2-color: #ffffff;
@@ -225,6 +229,11 @@ body {
 
 .btn-wo-ambos { color: #f97316; border: 1px solid #7c2d1240; background-color: #7c2d1210; }
 .light .btn-wo-ambos { color: #ffffff; background-color: #f97316; border-color: #f97316; }
+
+.btn-wo-solo { color: #f87171; border: 1px solid #7f1d1d40; }
+.btn-wo-solo:hover:not(:disabled) { background-color: #7f1d1d20; }
+.light .btn-wo-solo { color: #ffffff; background-color: #dc2626; border-color: #dc2626; }
+.light .btn-wo-solo:hover:not(:disabled) { background-color: #b91c1c; border-color: #b91c1c; }
 
 /* ── Autofill adapta ao tema ────────────────────────────────────────────────── */
 .dark input:-webkit-autofill,

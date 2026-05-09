@@ -1151,7 +1151,7 @@ export default function TatamePage() {
                       <div key={match.id} className="rounded-xl border overflow-hidden"
                         style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
                         <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-                          <span className="text-xs font-semibold" style={{ color: isMid ? "#60a5fa" : "#fbbf24" }}>
+                          <span className="text-xs font-semibold" style={{ color: isMid ? "var(--confirm-title)" : "#fbbf24" }}>
                             {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
                           </span>
                         </div>
@@ -1168,7 +1168,7 @@ export default function TatamePage() {
                             {(!isMid && p1Present) ? "✓" : (p1?.position ?? "1")}
                           </button>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white text-xs truncate">{p1Name}</p>
+                            <p className="font-semibold text-xs truncate" style={{ color: "var(--foreground)" }}>{p1Name}</p>
                             {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                           </div>
                           <span className="text-xs text-[#6b7280]">TAP</span>
@@ -1188,7 +1188,7 @@ export default function TatamePage() {
                             <button
                               onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
                               disabled={actionLoading}
-                              className="flex-1 py-3 rounded-lg text-xs font-semibold text-[#f87171] border border-[#7f1d1d40] hover:bg-[#7f1d1d20] transition-colors"
+                              className="flex-1 py-3 rounded-lg text-xs font-semibold transition-colors btn-wo-solo"
                             >
                               W.O.
                             </button>
