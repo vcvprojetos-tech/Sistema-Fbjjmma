@@ -179,11 +179,11 @@ function rowBorder(calls: number) {
   if (calls === 1) return "#1d4ed8"
   return "#e2e8f0"
 }
-function rowTextName(calls: number) {
-  return calls >= 1 ? "#ffffff" : "#1e293b"
+function rowTextName(_calls: number) {
+  return "#0f172a"
 }
-function rowTextSub(calls: number) {
-  return calls >= 1 ? "rgba(255,255,255,0.85)" : "#64748b"
+function rowTextSub(_calls: number) {
+  return "#374151"
 }
 
 const LEGEND = [
