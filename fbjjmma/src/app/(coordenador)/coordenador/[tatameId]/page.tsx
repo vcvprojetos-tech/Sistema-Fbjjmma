@@ -1932,7 +1932,6 @@ export default function TatamePage() {
                     onChange={e => setConsultaQ(e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-sm text-white border outline-none"
                     style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
-                    autoFocus
                   />
                 </div>
                 {/* Resultados */}
