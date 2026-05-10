@@ -779,7 +779,7 @@ export default function TatamePage() {
                     emptyText: "Nenhuma chave ativa.",
                   })
                 : renderSideColumn({
-                    color: "#4ade80",
+                    color: "var(--hdr-done)",
                     items: [{ brackets: finalizadas }],
                     emptyText: "Nenhuma chave finalizada ainda.",
                   })
@@ -1301,7 +1301,7 @@ export default function TatamePage() {
                                     <p className="text-[#6b7280] text-xs font-semibold uppercase tracking-wider mb-1">Sub-chave #{b.bracketNumber}</p>
                                     {bChamp ? (
                                       <div>
-                                        <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🏅 Campeão</p>
+                                        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--hdr-active)" }}>🏅 Campeão</p>
                                         <p className="text-white text-base font-bold">{getAthleteName(bChamp)}</p>
                                         {getAthleteTeam(bChamp) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(bChamp)}</p>}
                                       </div>
@@ -1309,7 +1309,7 @@ export default function TatamePage() {
                                   </div>
                                 )
                               })}
-                              <p className="text-[#f59e0b] text-sm font-semibold mt-2">⏳ Aguardando Grande Final</p>
+                              <p className="text-sm font-semibold mt-2" style={{ color: "var(--hdr-active)" }}>⏳ Aguardando Grande Final</p>
                               <p className="text-[#6b7280] text-xs">O pódio será definido na Grande Final entre os campeões.</p>
                             </div>
                           )
@@ -1321,26 +1321,26 @@ export default function TatamePage() {
                               <Trophy className="h-10 w-10 text-[#fbbf24]" />
                               {champion && (
                                 <div>
-                                  <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
+                                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--hdr-active)" }}>🥇 1° Lugar</p>
                                   <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
                                   {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
                                 </div>
                               )}
                               {runnerUp && (
                                 <div>
-                                  <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
+                                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--podium-silver)" }}>🥈 2° Lugar</p>
                                   <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
                                   {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
                                 </div>
                               )}
                               {thirdPlace && (
                                 <div>
-                                  <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
+                                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--podium-bronze)" }}>🥉 3° Lugar</p>
                                   <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
                                   {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
                                 </div>
                               )}
-                              <p className="text-center text-[#4ade80] font-semibold text-sm">
+                              <p className="text-center font-semibold text-sm" style={{ color: "var(--hdr-done)" }}>
                                 {grandFinal.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
                               </p>
                             </div>
@@ -1352,26 +1352,26 @@ export default function TatamePage() {
                             <Trophy className="h-10 w-10 text-[#fbbf24]" />
                             {champion && (
                               <div>
-                                <p className="text-[#fbbf24] text-xs font-semibold uppercase tracking-wider">🥇 1° Lugar</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--hdr-active)" }}>🥇 1° Lugar</p>
                                 <p className="text-white text-xl font-bold">{getAthleteName(champion)}</p>
                                 {getAthleteTeam(champion) && <p className="text-[#9ca3af] text-sm">{getAthleteTeam(champion)}</p>}
                               </div>
                             )}
                             {runnerUp && (
                               <div>
-                                <p className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">🥈 2° Lugar</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--podium-silver)" }}>🥈 2° Lugar</p>
                                 <p className="text-white text-base font-semibold">{getAthleteName(runnerUp)}</p>
                                 {getAthleteTeam(runnerUp) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(runnerUp)}</p>}
                               </div>
                             )}
                             {thirdPlace && (
                               <div>
-                                <p className="text-[#cd7f32] text-xs font-semibold uppercase tracking-wider">🥉 3° Lugar</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--podium-bronze)" }}>🥉 3° Lugar</p>
                                 <p className="text-white text-base font-semibold">{getAthleteName(thirdPlace)}</p>
                                 {getAthleteTeam(thirdPlace) && <p className="text-[#6b7280] text-sm">{getAthleteTeam(thirdPlace)}</p>}
                               </div>
                             )}
-                            <p className="text-center text-[#4ade80] font-semibold text-sm">
+                            <p className="text-center font-semibold text-sm" style={{ color: "var(--hdr-done)" }}>
                               {bracket?.status === "PREMIADA" ? "Chave Premiada ✓" : "Chave Finalizada"}
                             </p>
                             <p className="text-center text-[#6b7280] text-xs">{bracket?.matches.length} partida(s) realizada(s)</p>
