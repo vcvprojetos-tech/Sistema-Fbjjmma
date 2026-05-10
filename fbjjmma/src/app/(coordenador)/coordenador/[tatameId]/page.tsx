@@ -1539,7 +1539,7 @@ export default function TatamePage() {
 
       {/* W.O. / Desclassificação modal */}
       {woModal && bracket && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
+        <div className={`fixed inset-0 z-50 flex ${pesoStep ? "items-start pt-12" : "items-end"} justify-center p-4`} style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
           <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
             {/* W.O. Duplo — confirmação */}
             {woModal.winnerId === "" && !pesoStep ? (
@@ -1784,7 +1784,7 @@ export default function TatamePage() {
 
       {/* Modal de Desclassificação com motivo */}
       {desclModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4 pb-4" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
           <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
             <div>
               <p className="text-white font-bold text-lg">Desclassificação</p>
