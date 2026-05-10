@@ -1553,12 +1553,17 @@ export default function TatamePage() {
         const overlayAlpha = docClosing ? 0 : docDrag ? Math.max(0.1, 0.55 - dist / 400) : 0.55
         const closeDoc = () => {
           setDocClosing(true)
-          setTimeout(() => { setDocModal(null); setDocClosing(false); setDocDrag(null) }, 260)
+          setTimeout(() => { setDocModal(null); setDocClosing(false); setDocDrag(null) }, 150)
         }
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center"
-            style={{ backgroundColor: `rgba(0,0,0,${overlayAlpha})`, transition: docClosing ? "background-color 0.26s" : "none" }}
+            style={{
+              backgroundColor: `rgba(0,0,0,${overlayAlpha})`,
+              transition: docClosing ? "background-color 0.15s" : "none",
+              // libera cliques imediatamente ao iniciar o fechamento
+              pointerEvents: docClosing ? "none" : "auto",
+            }}
             onClick={!docDrag ? closeDoc : undefined}
           >
             <div
@@ -1569,7 +1574,7 @@ export default function TatamePage() {
                 boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
                 transform: `translate(${modalTx}px, ${modalTy}px) rotate(${modalRotate}deg)`,
                 opacity: modalOpacity,
-                transition: docClosing ? "transform 0.26s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.26s" : "none",
+                transition: docClosing ? "transform 0.15s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.15s" : "none",
                 cursor: docDrag ? "grabbing" : "grab",
                 userSelect: "none",
                 touchAction: "none",
