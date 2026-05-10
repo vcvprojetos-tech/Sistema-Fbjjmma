@@ -277,6 +277,7 @@ export default function PremiacaoPage() {
   const [consultaWeight, setConsultaWeight] = useState("")
   const [consultaResults, setConsultaResults] = useState<ConsultaResult[] | null>(null)
   const [consultaLoading, setConsultaLoading] = useState(false)
+  const [consultaSnapshot, setConsultaSnapshot] = useState<{ sex: string; age: string; belt: string; weight: string; q: string } | null>(null)
 
   const enterFullscreen = useCallback(() => {
     document.documentElement.requestFullscreen?.().catch(() => {})
@@ -529,7 +530,7 @@ export default function PremiacaoPage() {
             <p className="text-[#6b7280] text-xs">{eventName}</p>
           </div>
           <button
-            onClick={() => { setConsultaOpen(true); setConsultaResults(null); fetchConsulta() }}
+            onClick={() => { setConsultaOpen(true); setConsultaResults(null); setConsultaSnapshot(null); fetchConsulta() }}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
             style={{ backgroundColor: "#0f172a", color: "#60a5fa", border: "1px solid #1e3a5f" }}
           >
@@ -909,12 +910,12 @@ export default function PremiacaoPage() {
 
       {/* Modal de Consulta de Chaves */}
       {consultaOpen && (() => {
-        const locColors: Record<string, { text: string; bg: string }> = {
-          tatame: { text: "#4ade80", bg: "#14532d40" },
-          premiacao: { text: "#60a5fa", bg: "#1e3a5f40" },
-          premiada: { text: "#c084fc", bg: "#58187040" },
-          finalizada: { text: "#fbbf24", bg: "#78350f40" },
-          aguardando: { text: "#9ca3af", bg: "#1f293740" },
+        const locColors: Record<string, { badgeBg: string; textColor: string }> = {
+          tatame:    { badgeBg: "#15803d", textColor: "#4ade80" },
+          premiacao: { badgeBg: "#1d4ed8", textColor: "#60a5fa" },
+          premiada:  { badgeBg: "#7c3aed", textColor: "#c084fc" },
+          finalizada:{ badgeBg: "#b45309", textColor: "#fbbf24" },
+          aguardando:{ badgeBg: "#374151", textColor: "#9ca3af" },
         }
         const weightOptions = Array.from(
           new Map(
@@ -927,15 +928,14 @@ export default function PremiacaoPage() {
           ).values()
         ).sort((a, b) => a.maxWeight - b.maxWeight)
 
-        const hasFilter = !!(consultaSex || consultaAge || consultaBelt || consultaWeight || consultaQ.trim())
-
-        const filteredConsulta = hasFilter
+        const snap = consultaSnapshot
+        const filteredConsulta = snap
           ? (consultaResults ?? []).filter(r => {
-              if (consultaSex && r.weightCategory.sex !== consultaSex) return false
-              if (consultaAge && r.weightCategory.ageGroup !== consultaAge) return false
-              if (consultaBelt && r.belt !== consultaBelt) return false
-              if (consultaWeight && r.weightCategory.name !== consultaWeight) return false
-              if (consultaQ.trim() && !r.athletes.some(a => a.toLowerCase().includes(consultaQ.trim().toLowerCase()))) return false
+              if (snap.sex && r.weightCategory.sex !== snap.sex) return false
+              if (snap.age && r.weightCategory.ageGroup !== snap.age) return false
+              if (snap.belt && r.belt !== snap.belt) return false
+              if (snap.weight && r.weightCategory.name !== snap.weight) return false
+              if (snap.q.trim() && !r.athletes.some(a => a.toLowerCase().includes(snap.q.trim().toLowerCase()))) return false
               return true
             })
           : []
@@ -965,7 +965,7 @@ export default function PremiacaoPage() {
                       className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
-                      <option value="">Todos os sexos</option>
+                      <option value="">Sexo</option>
                       <option value="MASCULINO">Masculino</option>
                       <option value="FEMININO">Feminino</option>
                     </select>
@@ -975,7 +975,7 @@ export default function PremiacaoPage() {
                       className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
-                      <option value="">Todas as categorias</option>
+                      <option value="">Categorias</option>
                       {Object.entries(AGE_GROUP_LABELS).map(([k, v]) => (
                         <option key={k} value={k}>{v}</option>
                       ))}
@@ -988,7 +988,7 @@ export default function PremiacaoPage() {
                       className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
-                      <option value="">Todas as faixas</option>
+                      <option value="">Faixa</option>
                       {Object.entries(BELT_LABELS).map(([k, v]) => (
                         <option key={k} value={k}>{v}</option>
                       ))}
@@ -1000,7 +1000,7 @@ export default function PremiacaoPage() {
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                       disabled={consultaLoading || consultaResults === null}
                     >
-                      <option value="">Todos os pesos</option>
+                      <option value="">Peso</option>
                       {weightOptions.map(w => (
                         <option key={w.name} value={w.name}>{w.name}</option>
                       ))}
@@ -1008,18 +1008,27 @@ export default function PremiacaoPage() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Buscar por nome do atleta..."
+                    placeholder="Nome do atleta..."
                     value={consultaQ}
                     onChange={e => setConsultaQ(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") setConsultaSnapshot({ sex: consultaSex, age: consultaAge, belt: consultaBelt, weight: consultaWeight, q: consultaQ }) }}
                     className="w-full rounded-lg px-3 py-2 text-sm text-white border outline-none"
                     style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   />
+                  <button
+                    onClick={() => setConsultaSnapshot({ sex: consultaSex, age: consultaAge, belt: consultaBelt, weight: consultaWeight, q: consultaQ })}
+                    disabled={consultaLoading || consultaResults === null}
+                    className="w-full py-2.5 rounded-lg text-sm font-bold text-white disabled:opacity-50"
+                    style={{ backgroundColor: "#2563eb" }}
+                  >
+                    {consultaLoading ? "Buscando..." : "Pesquisar"}
+                  </button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 pb-4">
                   {(consultaLoading || consultaResults === null) ? (
                     <p className="text-[#6b7280] text-sm text-center py-8">Buscando...</p>
-                  ) : !hasFilter ? (
-                    <p className="text-[#4b5563] text-sm text-center py-8">Selecione ao menos um filtro para ver as chaves.</p>
+                  ) : snap === null ? (
+                    <p className="text-[#4b5563] text-sm text-center py-8">Configure os filtros e clique em Pesquisar.</p>
                   ) : filteredConsulta.length === 0 ? (
                     <p className="text-[#4b5563] text-sm text-center py-8">Nenhuma chave encontrada.</p>
                   ) : (
@@ -1042,7 +1051,7 @@ export default function PremiacaoPage() {
                               </div>
                               <span
                                 className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-                                style={{ color: col.text, backgroundColor: col.bg }}
+                                style={{ color: "#ffffff", backgroundColor: col.badgeBg }}
                               >
                                 {r.localizacaoTipo === "tatame" ? (r.tatameName ?? "Tatame") :
                                  r.localizacaoTipo === "premiacao" ? "Premiação" :
@@ -1050,7 +1059,7 @@ export default function PremiacaoPage() {
                                  r.localizacaoTipo === "finalizada" ? "Finalizada" : "Aguardando"}
                               </span>
                             </div>
-                            <p className="text-xs mt-1.5 leading-snug" style={{ color: col.text }}>{r.localizacao}</p>
+                            <p className="text-xs mt-1.5 leading-snug" style={{ color: col.textColor }}>{r.localizacao}</p>
                           </div>
                         )
                       })}
