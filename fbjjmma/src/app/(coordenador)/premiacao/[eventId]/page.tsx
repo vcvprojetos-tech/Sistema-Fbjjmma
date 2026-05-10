@@ -251,7 +251,6 @@ export default function PremiacaoPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [awarding, setAwarding] = useState<Set<string>>(new Set())
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [pixModal, setPixModal] = useState<{ bracket: BracketData; placement: Placement } | null>(null)
   const [pixValue, setPixValue] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -268,7 +267,7 @@ export default function PremiacaoPage() {
       if (data.event) {
         setEventName(data.event.name)
         setBrackets(data.brackets || [])
-        setLastUpdated(new Date())
+
       }
     } catch {
       console.error("Erro ao carregar premiação")
@@ -481,11 +480,6 @@ export default function PremiacaoPage() {
               </button>
             )}
           </div>
-          {lastUpdated && (
-            <span className="text-[#4b5563] text-xs hidden sm:inline">
-              {lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-            </span>
-          )}
           <div className="flex gap-3 text-xs">
             <span className="text-[#fbbf24] font-bold">{pendentes.length} aguardando</span>
             <span className="text-[#a78bfa] font-bold">{premiadas.length} premiadas</span>
