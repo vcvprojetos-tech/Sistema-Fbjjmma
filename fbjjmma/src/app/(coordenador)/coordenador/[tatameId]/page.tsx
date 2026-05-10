@@ -1553,8 +1553,9 @@ export default function TatamePage() {
         const modalRotate = dx * 0.04
         const overlayAlpha = docClosing ? 0 : docDrag ? Math.max(0.1, 0.55 - dist / 400) : 0.55
         const closeDoc = () => {
-          // Mata o click-catcher imediatamente via DOM — sem esperar re-render do React
-          // Isso libera a tela para toque instantaneamente, mesmo no iOS/Android
+          // Blur de qualquer elemento focado dentro do modal para evitar
+          // o comportamento "1º toque foca, 2º toque clica" em tablets Android
+          ;(document.activeElement as HTMLElement)?.blur()
           if (docOverlayRef.current) docOverlayRef.current.style.display = "none"
           setDocClosing(true)
           setTimeout(() => { setDocModal(null); setDocClosing(false); setDocDrag(null) }, 150)
@@ -1576,7 +1577,8 @@ export default function TatamePage() {
               ref={docOverlayRef}
               className="fixed inset-0"
               style={{ zIndex: 50 }}
-              onPointerUp={!docDrag ? (e) => { e.preventDefault(); closeDoc() } : undefined}
+              onTouchEnd={!docDrag ? (e) => { e.preventDefault(); closeDoc() } : undefined}
+              onClick={!docDrag ? () => closeDoc() : undefined}
             />
             {/* 3. Card — irmão do click-catcher, anima independente */}
             <div
@@ -1592,33 +1594,33 @@ export default function TatamePage() {
                   transform: `translate(${modalTx}px, ${modalTy}px) rotate(${modalRotate}deg)`,
                   opacity: modalOpacity,
                   transition: docClosing ? "transform 0.15s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.15s" : "none",
-                  cursor: docDrag ? "grabbing" : "grab",
                   userSelect: "none",
                   touchAction: "none",
                   pointerEvents: docClosing ? "none" : "auto",
                 }}
-                onPointerDown={e => {
-                  e.currentTarget.setPointerCapture(e.pointerId)
-                  setDocDrag({ startX: e.clientX, startY: e.clientY, dx: 0, dy: 0 })
+                onTouchStart={e => {
+                  const t = e.touches[0]
+                  setDocDrag({ startX: t.clientX, startY: t.clientY, dx: 0, dy: 0 })
                 }}
-                onPointerMove={e => {
-                  if (!docDrag) return
-                  setDocDrag(prev => prev ? { ...prev, dx: e.clientX - prev.startX, dy: e.clientY - prev.startY } : null)
+                onTouchMove={e => {
+                  const t = e.touches[0]
+                  setDocDrag(prev => prev ? { ...prev, dx: t.clientX - prev.startX, dy: t.clientY - prev.startY } : null)
                 }}
-                onPointerUp={e => {
+                onTouchEnd={e => {
                   e.preventDefault()
                   if (!docDrag) return
                   if (canClose) closeDoc()
                   else setDocDrag(null)
                 }}
-                onPointerCancel={() => setDocDrag(null)}
+                onTouchCancel={() => setDocDrag(null)}
               >
                 {/* Barra de título */}
                 <div className="flex items-center justify-between px-3 py-2 shrink-0"
                   style={{ backgroundColor: "rgba(0,0,0,0.65)", borderRadius: "1rem 1rem 0 0" }}>
                   <span className="text-white font-semibold text-xs">{docModal.title}</span>
                   <button
-                    onPointerUp={e => { e.preventDefault(); e.stopPropagation(); closeDoc() }}
+                    onTouchEnd={e => { e.preventDefault(); e.stopPropagation(); closeDoc() }}
+                    onClick={closeDoc}
                     className="text-[#9ca3af] hover:text-white text-base leading-none ml-3"
                   >✕</button>
                 </div>
