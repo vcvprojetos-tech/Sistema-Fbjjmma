@@ -38,6 +38,7 @@ function findDatabaseUrl() {
 const alterations = [
   `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "pesoDoc" TEXT`,
   `ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "callTimes" JSONB`,
+  `ALTER TABLE "brackets" ADD COLUMN IF NOT EXISTS "startedAt" TIMESTAMP(3)`,
 ]
 
 async function syncViaPgClient(dbUrl) {
