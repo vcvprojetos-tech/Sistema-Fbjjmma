@@ -1833,16 +1833,30 @@ export default function TatamePage() {
           finalizada: { text: "#fbbf24", bg: "#78350f40" },
           aguardando: { text: "#9ca3af", bg: "#1f293740" },
         }
-        const filteredConsulta = (consultaResults ?? []).filter(r => {
-          if (consultaSex && r.weightCategory.sex !== consultaSex) return false
-          if (consultaAge && r.weightCategory.ageGroup !== consultaAge) return false
-          if (consultaBelt && r.belt !== consultaBelt) return false
-          if (consultaWeight.trim() &&
-              !r.weightCategory.name.toLowerCase().includes(consultaWeight.toLowerCase()) &&
-              !String(r.weightCategory.maxWeight).includes(consultaWeight.trim())) return false
-          if (consultaQ.trim() && !r.athletes.some(a => a.toLowerCase().includes(consultaQ.trim().toLowerCase()))) return false
-          return true
-        })
+        const weightOptions = Array.from(
+          new Map(
+            (consultaResults ?? [])
+              .filter(r =>
+                (!consultaSex || r.weightCategory.sex === consultaSex) &&
+                (!consultaAge || r.weightCategory.ageGroup === consultaAge)
+              )
+              .map(r => [r.weightCategory.name, r.weightCategory])
+          ).values()
+        ).sort((a, b) => a.maxWeight - b.maxWeight)
+
+        const hasFilter = !!(consultaSex || consultaAge || consultaBelt || consultaWeight || consultaQ.trim())
+
+        const filteredConsulta = hasFilter
+          ? (consultaResults ?? []).filter(r => {
+              if (consultaSex && r.weightCategory.sex !== consultaSex) return false
+              if (consultaAge && r.weightCategory.ageGroup !== consultaAge) return false
+              if (consultaBelt && r.belt !== consultaBelt) return false
+              if (consultaWeight && r.weightCategory.name !== consultaWeight) return false
+              if (consultaQ.trim() && !r.athletes.some(a => a.toLowerCase().includes(consultaQ.trim().toLowerCase()))) return false
+              return true
+            })
+          : []
+
         return (
           <>
             <div
@@ -1866,7 +1880,7 @@ export default function TatamePage() {
                   <div className="flex gap-2">
                     <select
                       value={consultaSex}
-                      onChange={e => setConsultaSex(e.target.value)}
+                      onChange={e => { setConsultaSex(e.target.value); setConsultaWeight("") }}
                       className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
@@ -1876,7 +1890,7 @@ export default function TatamePage() {
                     </select>
                     <select
                       value={consultaAge}
-                      onChange={e => setConsultaAge(e.target.value)}
+                      onChange={e => { setConsultaAge(e.target.value); setConsultaWeight("") }}
                       className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                     >
@@ -1898,14 +1912,18 @@ export default function TatamePage() {
                         <option key={k} value={k}>{v}</option>
                       ))}
                     </select>
-                    <input
-                      type="text"
-                      placeholder="Peso (ex: até 64, 70kg)"
+                    <select
                       value={consultaWeight}
                       onChange={e => setConsultaWeight(e.target.value)}
                       className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
-                    />
+                      disabled={consultaLoading || consultaResults === null}
+                    >
+                      <option value="">Todos os pesos</option>
+                      {weightOptions.map(w => (
+                        <option key={w.name} value={w.name}>{w.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <input
                     type="text"
@@ -1921,6 +1939,8 @@ export default function TatamePage() {
                 <div className="flex-1 overflow-y-auto px-4 pb-4">
                   {(consultaLoading || consultaResults === null) ? (
                     <p className="text-[#6b7280] text-sm text-center py-8">Buscando...</p>
+                  ) : !hasFilter ? (
+                    <p className="text-[#4b5563] text-sm text-center py-8">Selecione ao menos um filtro para ver as chaves.</p>
                   ) : filteredConsulta.length === 0 ? (
                     <p className="text-[#4b5563] text-sm text-center py-8">Nenhuma chave encontrada.</p>
                   ) : (
