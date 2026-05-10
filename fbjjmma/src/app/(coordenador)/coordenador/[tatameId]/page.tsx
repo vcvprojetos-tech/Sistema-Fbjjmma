@@ -180,6 +180,8 @@ export default function TatamePage() {
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
+  const [docDrag, setDocDrag] = useState<{ startX: number; startY: number; dx: number; dy: number } | null>(null)
+  const [docClosing, setDocClosing] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
   const [undoLoading, setUndoLoading] = useState(false)
@@ -1538,30 +1540,86 @@ export default function TatamePage() {
         </div>
       )}
 
-      {/* Modal de consulta rápida de documento (imagens — PDFs abrem em nova aba) */}
-      {docModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-          onClick={() => setDocModal(null)}>
+      {/* Modal de consulta rápida de documento — swipe em qualquer direção para fechar */}
+      {docModal && (() => {
+        const dx = docDrag?.dx ?? 0
+        const dy = docDrag?.dy ?? 0
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        const canClose = dist > 80
+        const modalOpacity = docClosing ? 0 : docDrag ? Math.max(0.15, 1 - dist / 220) : 1
+        const modalTx = docClosing ? dx * 5 : dx
+        const modalTy = docClosing ? dy * 5 : dy
+        const modalRotate = dx * 0.04
+        const overlayAlpha = docClosing ? 0 : docDrag ? Math.max(0.1, 0.55 - dist / 400) : 0.55
+        const closeDoc = () => {
+          setDocClosing(true)
+          setTimeout(() => { setDocModal(null); setDocClosing(false); setDocDrag(null) }, 260)
+        }
+        return (
           <div
-            className="rounded-2xl overflow-hidden shadow-2xl flex flex-col"
-            style={{ maxWidth: "min(80vw, 720px)", maxHeight: "85vh", backgroundColor: "transparent" }}
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-3 py-2 shrink-0"
-              style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: "1rem 1rem 0 0" }}>
-              <span className="text-white font-semibold text-xs">{docModal.title}</span>
-              <button onClick={() => setDocModal(null)}
-                className="text-[#9ca3af] hover:text-white text-base leading-none ml-3">✕</button>
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ backgroundColor: `rgba(0,0,0,${overlayAlpha})`, transition: docClosing ? "background-color 0.26s" : "none" }}
+            onClick={!docDrag ? closeDoc : undefined}
+          >
+            <div
+              style={{
+                maxWidth: "min(80vw, 720px)", maxHeight: "85vh",
+                display: "flex", flexDirection: "column",
+                borderRadius: "1rem", overflow: "hidden",
+                boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+                transform: `translate(${modalTx}px, ${modalTy}px) rotate(${modalRotate}deg)`,
+                opacity: modalOpacity,
+                transition: docClosing ? "transform 0.26s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.26s" : "none",
+                cursor: docDrag ? "grabbing" : "grab",
+                userSelect: "none",
+                touchAction: "none",
+              }}
+              onPointerDown={e => {
+                e.currentTarget.setPointerCapture(e.pointerId)
+                setDocDrag({ startX: e.clientX, startY: e.clientY, dx: 0, dy: 0 })
+              }}
+              onPointerMove={e => {
+                if (!docDrag) return
+                setDocDrag(prev => prev ? { ...prev, dx: e.clientX - prev.startX, dy: e.clientY - prev.startY } : null)
+              }}
+              onPointerUp={() => {
+                if (!docDrag) return
+                if (canClose) closeDoc()
+                else setDocDrag(null)
+              }}
+              onPointerCancel={() => setDocDrag(null)}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Barra de título */}
+              <div className="flex items-center justify-between px-3 py-2 shrink-0"
+                style={{ backgroundColor: "rgba(0,0,0,0.65)", borderRadius: "1rem 1rem 0 0" }}>
+                <span className="text-white font-semibold text-xs">{docModal.title}</span>
+                <button onClick={closeDoc} className="text-[#9ca3af] hover:text-white text-base leading-none ml-3">✕</button>
+              </div>
+              {/* Imagem */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={docModal.url}
+                alt={docModal.title}
+                draggable={false}
+                style={{ display: "block", maxWidth: "min(80vw, 720px)", maxHeight: "74vh", width: "auto", height: "auto" }}
+              />
+              {/* Barra inferior — hint de swipe */}
+              <div style={{
+                backgroundColor: canClose ? "rgba(22,163,74,0.9)" : "rgba(0,0,0,0.65)",
+                padding: "7px 12px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: "0 0 1rem 1rem",
+                transition: "background-color 0.15s",
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: canClose ? "#fff" : "#9ca3af" }}>
+                  {canClose ? "✓ Solte para fechar" : "↕ Arraste em qualquer direção para fechar"}
+                </span>
+              </div>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={docModal.url}
-              alt={docModal.title}
-              style={{ display: "block", maxWidth: "min(80vw, 720px)", maxHeight: "78vh", width: "auto", height: "auto" }}
-            />
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Modal de Desclassificação com motivo */}
       {desclModal && (
