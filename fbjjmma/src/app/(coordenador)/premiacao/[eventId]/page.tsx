@@ -559,7 +559,7 @@ export default function PremiacaoPage() {
                             {isPending && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#78350f40", color: "#fbbf24" }}>PENDENTE</span>}
                             {isAwarded && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#4a1d9640", color: "#a78bfa" }}>PREMIADA</span>}
                           </div>
-                          <p className="text-sm font-medium leading-tight truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
+                          <p className="font-medium leading-tight break-words" style={{ color: "var(--foreground)", fontSize: "0.72rem" }}>{catLabel(b)}</p>
                           <div className="flex flex-col gap-0.5 mt-1">
                             {b.positions.filter(p => {
                               const name = p.registration?.athlete?.user.name ?? p.registration?.guestName ?? ""
@@ -607,7 +607,7 @@ export default function PremiacaoPage() {
                               }}
                             >
                               <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
-                              <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{label}</p>
+                              <p className="font-medium leading-tight mt-0.5 break-words" style={{ color: "var(--foreground)", fontSize: "0.72rem" }}>{label}</p>
                               {allPlacements.length > 0 && (
                                 <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{allPlacements.length} premiado(s)</p>
                               )}
@@ -629,7 +629,7 @@ export default function PremiacaoPage() {
                               }}
                             >
                               <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                              <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
+                              <p className="font-medium leading-tight mt-0.5 break-words" style={{ color: "var(--foreground)", fontSize: "0.72rem" }}>{catLabel(b)}</p>
                               {placements.length > 0 && (
                                 <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
                               )}
@@ -663,7 +663,7 @@ export default function PremiacaoPage() {
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "#a78bfa" }}>{catLabel(b)}</p>
+                          <p className="font-medium leading-tight mt-0.5 break-words" style={{ color: "#a78bfa", fontSize: "0.72rem" }}>{catLabel(b)}</p>
                           {placements.length > 0 && (
                             <div className="flex items-center gap-1 mt-1">
                               <CheckCircle2 className="h-3 w-3 text-[#4ade80]" />
