@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 
 const AGE_LABELS: Record<string, string> = {
@@ -239,6 +239,8 @@ export default function PainelPage() {
     return () => document.removeEventListener("fullscreenchange", onChange)
   }, [])
 
+  const triggeredRef = useRef<Set<string>>(new Set())
+
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`/api/painel/${eventId}`)
@@ -253,6 +255,37 @@ export default function PainelPage() {
     const iv = setInterval(fetchData, 5000)
     return () => clearInterval(iv)
   }, [fetchData])
+
+  // Registra 1ª chamada no momento em que cada bracket aparece no painel
+  useEffect(() => {
+    if (!data) return
+    const allTatames = data.tatames
+    const visibleTatames = (() => {
+      if (!painelNum) return allTatames
+      const total = allTatames.length
+      const splitAt = total <= 4 ? total : Math.ceil(total / 2)
+      return painelNum === "1" ? allTatames.slice(0, splitAt) : allTatames.slice(splitAt)
+    })()
+    for (const tatame of visibleTatames) {
+      const groups = getGroupsForTatame(tatame)
+      const visible = filterGroupsToFit(groups, CONTENT_H)
+      const visibleIds = new Set(visible.map(g => g.bracketId))
+      for (const bracket of tatame.brackets) {
+        if (!visibleIds.has(bracket.id)) continue
+        for (const match of bracket.matches) {
+          const allCalls = (match.callTimes ?? []) as CallTime[]
+          if (allCalls.some(c => c.call === 1)) continue
+          if (triggeredRef.current.has(match.id)) continue
+          triggeredRef.current.add(match.id)
+          fetch(`/api/painel/${eventId}/chamada`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ matchId: match.id, bracketId: bracket.id }),
+          }).catch(() => {})
+        }
+      }
+    }
+  }, [data, eventId, painelNum])
 
   if (!data) return (
     <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f0f4f8" }}>
