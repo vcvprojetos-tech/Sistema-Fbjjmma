@@ -222,8 +222,8 @@ function shortName(reg: Reg | null): string {
   const full = reg?.athlete?.user.name ?? reg?.guestName ?? ""
   if (!full) return ""
   const words = full.trim().split(/\s+/)
-  if (words.length === 1) return words[0].substring(0, 6).toUpperCase()
-  return (words[0].substring(0, 1) + "." + words[words.length - 1].substring(0, 5)).toUpperCase()
+  if (words.length === 1) return words[0].toUpperCase()
+  return (words[0] + " " + words[words.length - 1].substring(0, 1) + ".").toUpperCase()
 }
 
 interface SlotEntry { posId: string | null; isWinner: boolean; hasPotential: boolean }
@@ -417,7 +417,7 @@ function ThreeAthleteBracket({
         {/* position label, outside left edge */}
         <span style={{
           position: "absolute", left: -18, top: "50%", transform: "translateY(-50%)",
-          fontSize: 10, color: dimmed ? "#f59e0b" : "#3b82f6", fontWeight: 700, userSelect: "none",
+          fontSize: 10, color: dimmed ? "#f59e0b" : "var(--foreground)", fontWeight: 700, userSelect: "none",
         }}>{posLabel}</span>
         {name ? (
           <>
@@ -446,7 +446,7 @@ function ThreeAthleteBracket({
         display: "flex", alignItems: "center", justifyContent: "center",
         opacity: inactive ? 0.25 : 1,
       }}>
-        {label && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{label}</span>}
+        {label && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{label}</span>}
       </div>
     )
   }
@@ -773,7 +773,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         {/* Position number label on left */}
         <span style={{
           position: "absolute", left: -POS_LABEL_W, top: "50%",
-          transform: "translateY(-50%)", fontSize: 10, color: "#3b82f6",
+          transform: "translateY(-50%)", fontSize: 10, color: "var(--foreground)",
           fontWeight: 700, userSelect: "none",
         }}>{posNum}</span>
         {name ? (
@@ -812,7 +812,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             justifyContent: "center",
           }}
         >
-          {posNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{posNum}</span>}
+          {posNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{posNum}</span>}
         </div>
       )
     }
@@ -850,7 +850,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         {/* Position number label on right */}
         <span style={{
           position: "absolute", right: -POS_LABEL_W, top: "50%",
-          transform: "translateY(-50%)", fontSize: 10, color: "#3b82f6",
+          transform: "translateY(-50%)", fontSize: 10, color: "var(--foreground)",
           fontWeight: 700, userSelect: "none",
         }}>{posNum}</span>
         {name ? (
@@ -889,7 +889,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             justifyContent: "center",
           }}
         >
-          {posNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{posNum}</span>}
+          {posNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{posNum}</span>}
         </div>
       )
     }
@@ -947,7 +947,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       boxSizing: "border-box",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      {leftFinalistPosNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{leftFinalistPosNum}</span>}
+      {leftFinalistPosNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{leftFinalistPosNum}</span>}
     </div>
   )
 
@@ -965,7 +965,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       boxSizing: "border-box",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      {rightFinalistPosNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{rightFinalistPosNum}</span>}
+      {rightFinalistPosNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{rightFinalistPosNum}</span>}
     </div>
   )
 
