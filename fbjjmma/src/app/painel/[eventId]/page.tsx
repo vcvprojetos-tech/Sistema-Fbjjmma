@@ -121,12 +121,24 @@ function filterGroupsToFit(groups: BracketGroup[], maxH: number): BracketGroup[]
   return result
 }
 
-function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
+function bracketHasAppeared(b: BracketInfo, visibleBrackets: Set<string>): boolean {
+  if (visibleBrackets.has(b.id)) return true
+  return b.matches.some(m => ((m.callTimes ?? []) as CallTime[]).some(c => c.call === 1))
+}
+
+function getGroupsForTatame(tatame: TatameInfo, visibleBrackets: Set<string>): BracketGroup[] {
   const groups: BracketGroup[] = []
 
   const sorted = [...tatame.brackets].sort((a, b) => {
     const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
-    return statusOrder(a.status) - statusOrder(b.status) || a.bracketNumber - b.bracketNumber
+    const aOrd = statusOrder(a.status)
+    const bOrd = statusOrder(b.status)
+    if (aOrd !== bOrd) return aOrd - bOrd
+    // Dentro de EM_ANDAMENTO: chaves já exibidas no painel vêm antes das recém-iniciadas
+    const aApp = bracketHasAppeared(a, visibleBrackets) ? 0 : 1
+    const bApp = bracketHasAppeared(b, visibleBrackets) ? 0 : 1
+    if (aApp !== bApp) return aApp - bApp
+    return a.bracketNumber - b.bracketNumber
   })
 
   for (const b of sorted) {
@@ -240,6 +252,7 @@ export default function PainelPage() {
   }, [])
 
   const triggeredRef = useRef<Set<string>>(new Set())
+  const visibleBracketsRef = useRef<Set<string>>(new Set())
 
   const fetchData = useCallback(async () => {
     try {
@@ -267,11 +280,13 @@ export default function PainelPage() {
       return painelNum === "1" ? allTatames.slice(0, splitAt) : allTatames.slice(splitAt)
     })()
     for (const tatame of visibleTatames) {
-      const groups = getGroupsForTatame(tatame)
+      const groups = getGroupsForTatame(tatame, visibleBracketsRef.current)
       const visible = filterGroupsToFit(groups, CONTENT_H)
       const visibleIds = new Set(visible.map(g => g.bracketId))
       for (const bracket of tatame.brackets) {
         if (!visibleIds.has(bracket.id)) continue
+        // Marca bracket como já exibido no painel
+        visibleBracketsRef.current.add(bracket.id)
         for (const match of bracket.matches) {
           const allCalls = (match.callTimes ?? []) as CallTime[]
           if (allCalls.some(c => c.call === 1)) continue
@@ -379,7 +394,7 @@ export default function PainelPage() {
                 const color = COL_COLORS[colIdx % COL_COLORS.length]
                 const num = tatame.name.match(/Tatame\s+(\d+)/i)?.[1] ?? tatame.name
                 const op = tatame.operations[0]?.user.name ?? ""
-                const groups = filterGroupsToFit(getGroupsForTatame(tatame), CONTENT_H)
+                const groups = filterGroupsToFit(getGroupsForTatame(tatame, visibleBracketsRef.current), CONTENT_H)
 
                 return (
                   <div key={tatame.id}>
