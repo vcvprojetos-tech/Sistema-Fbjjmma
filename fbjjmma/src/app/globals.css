@@ -104,12 +104,12 @@
   --call-3-bg: #dc2626;
   --call-3-color: #ffffff;
   /* Botões Cronograma e Tabela de Peso (modo claro) */
-  --btn-sched-bg: #1d4ed8;
-  --btn-sched-fg: #ffffff;
-  --btn-sched-br: #1d4ed8;
-  --btn-peso-bg: #d97706;
-  --btn-peso-fg: #ffffff;
-  --btn-peso-br: #d97706;
+  --btn-sched-bg: #cbd5e1;
+  --btn-sched-fg: #374151;
+  --btn-sched-br: #94a3b8;
+  --btn-peso-bg: #cbd5e1;
+  --btn-peso-fg: #374151;
+  --btn-peso-br: #94a3b8;
   /* BracketView — cards de atletas (modo claro) */
   --bracket-card-bg: #eef1f5;
   --bracket-card-border: #c8d0db;
