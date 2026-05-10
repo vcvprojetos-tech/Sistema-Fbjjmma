@@ -202,6 +202,29 @@ function catLabel(bracket: BracketData): string {
   return base
 }
 
+interface ConsultaResult {
+  id: string
+  bracketNumber: number
+  belt: string
+  isAbsolute: boolean
+  status: string
+  weightCategory: { name: string; ageGroup: string; sex: string; maxWeight: number }
+  athletes: string[]
+  localizacao: string
+  localizacaoTipo: "tatame" | "premiacao" | "aguardando" | "finalizada" | "premiada"
+  tatameName: string | null
+}
+
+function consultaCatLabel(r: ConsultaResult): string {
+  return [
+    r.weightCategory.sex === "MASCULINO" ? "M" : "F",
+    AGE_GROUP_LABELS[r.weightCategory.ageGroup] || r.weightCategory.ageGroup,
+    r.isAbsolute ? null : r.weightCategory.name,
+    BELT_LABELS[r.belt] || r.belt,
+    r.isAbsolute ? "Absoluto" : null,
+  ].filter(Boolean).join(" · ")
+}
+
 function normalize(str: string): string {
   return str
     .toLowerCase()
@@ -246,6 +269,14 @@ export default function PremiacaoPage() {
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
+  const [consultaOpen, setConsultaOpen] = useState(false)
+  const [consultaQ, setConsultaQ] = useState("")
+  const [consultaSex, setConsultaSex] = useState("")
+  const [consultaAge, setConsultaAge] = useState("")
+  const [consultaBelt, setConsultaBelt] = useState("")
+  const [consultaWeight, setConsultaWeight] = useState("")
+  const [consultaResults, setConsultaResults] = useState<ConsultaResult[] | null>(null)
+  const [consultaLoading, setConsultaLoading] = useState(false)
 
   const enterFullscreen = useCallback(() => {
     document.documentElement.requestFullscreen?.().catch(() => {})
@@ -302,6 +333,20 @@ export default function PremiacaoPage() {
     setSelectedId(pendentes[0].id)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brackets])
+
+  const fetchConsulta = useCallback(async () => {
+    setConsultaLoading(true)
+    try {
+      const res = await fetch(`/api/coordenador/consulta?eventId=${eventId}`)
+      const data = await res.json()
+      if (Array.isArray(data)) setConsultaResults(data)
+      else setConsultaResults([])
+    } catch {
+      setConsultaResults([])
+    } finally {
+      setConsultaLoading(false)
+    }
+  }, [eventId])
 
   const handlePremiar = useCallback(async (bracket: BracketData, placement: Placement, prizePix?: string) => {
     if (!placement.registration) return
@@ -483,6 +528,13 @@ export default function PremiacaoPage() {
             <h1 className="text-base font-bold leading-tight" style={{ color: "var(--foreground)" }}>Premiação</h1>
             <p className="text-[#6b7280] text-xs">{eventName}</p>
           </div>
+          <button
+            onClick={() => { setConsultaOpen(true); setConsultaResults(null); fetchConsulta() }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
+            style={{ backgroundColor: "#0f172a", color: "#60a5fa", border: "1px solid #1e3a5f" }}
+          >
+            🔍 Consulta
+          </button>
         </div>
         <div className="flex items-center gap-3">
           {/* Campo de busca */}
@@ -854,6 +906,162 @@ export default function PremiacaoPage() {
         </div>
       )}
     </div>
+
+      {/* Modal de Consulta de Chaves */}
+      {consultaOpen && (() => {
+        const locColors: Record<string, { text: string; bg: string }> = {
+          tatame: { text: "#4ade80", bg: "#14532d40" },
+          premiacao: { text: "#60a5fa", bg: "#1e3a5f40" },
+          premiada: { text: "#c084fc", bg: "#58187040" },
+          finalizada: { text: "#fbbf24", bg: "#78350f40" },
+          aguardando: { text: "#9ca3af", bg: "#1f293740" },
+        }
+        const weightOptions = Array.from(
+          new Map(
+            (consultaResults ?? [])
+              .filter(r =>
+                (!consultaSex || r.weightCategory.sex === consultaSex) &&
+                (!consultaAge || r.weightCategory.ageGroup === consultaAge)
+              )
+              .map(r => [r.weightCategory.name, r.weightCategory])
+          ).values()
+        ).sort((a, b) => a.maxWeight - b.maxWeight)
+
+        const hasFilter = !!(consultaSex || consultaAge || consultaBelt || consultaWeight || consultaQ.trim())
+
+        const filteredConsulta = hasFilter
+          ? (consultaResults ?? []).filter(r => {
+              if (consultaSex && r.weightCategory.sex !== consultaSex) return false
+              if (consultaAge && r.weightCategory.ageGroup !== consultaAge) return false
+              if (consultaBelt && r.belt !== consultaBelt) return false
+              if (consultaWeight && r.weightCategory.name !== consultaWeight) return false
+              if (consultaQ.trim() && !r.athletes.some(a => a.toLowerCase().includes(consultaQ.trim().toLowerCase()))) return false
+              return true
+            })
+          : []
+
+        return (
+          <>
+            <div
+              className="fixed inset-0 z-50"
+              style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
+              onClick={() => setConsultaOpen(false)}
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ pointerEvents: "none" }}>
+              <div
+                className="w-full max-w-lg rounded-2xl flex flex-col"
+                style={{ backgroundColor: "var(--card-alt)", maxHeight: "85vh", pointerEvents: "auto" }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
+                  <p className="text-white font-bold text-base">🔍 Consulta de Chaves</p>
+                  <button onClick={() => setConsultaOpen(false)} className="text-[#6b7280] hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <div className="px-4 pt-3 pb-2 space-y-2 shrink-0">
+                  <div className="flex gap-2">
+                    <select
+                      value={consultaSex}
+                      onChange={e => { setConsultaSex(e.target.value); setConsultaWeight("") }}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                    >
+                      <option value="">Todos os sexos</option>
+                      <option value="MASCULINO">Masculino</option>
+                      <option value="FEMININO">Feminino</option>
+                    </select>
+                    <select
+                      value={consultaAge}
+                      onChange={e => { setConsultaAge(e.target.value); setConsultaWeight("") }}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                    >
+                      <option value="">Todas as categorias</option>
+                      {Object.entries(AGE_GROUP_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={consultaBelt}
+                      onChange={e => setConsultaBelt(e.target.value)}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                    >
+                      <option value="">Todas as faixas</option>
+                      {Object.entries(BELT_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={consultaWeight}
+                      onChange={e => setConsultaWeight(e.target.value)}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                      disabled={consultaLoading || consultaResults === null}
+                    >
+                      <option value="">Todos os pesos</option>
+                      {weightOptions.map(w => (
+                        <option key={w.name} value={w.name}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome do atleta..."
+                    value={consultaQ}
+                    onChange={e => setConsultaQ(e.target.value)}
+                    className="w-full rounded-lg px-3 py-2 text-sm text-white border outline-none"
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                  />
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                  {(consultaLoading || consultaResults === null) ? (
+                    <p className="text-[#6b7280] text-sm text-center py-8">Buscando...</p>
+                  ) : !hasFilter ? (
+                    <p className="text-[#4b5563] text-sm text-center py-8">Selecione ao menos um filtro para ver as chaves.</p>
+                  ) : filteredConsulta.length === 0 ? (
+                    <p className="text-[#4b5563] text-sm text-center py-8">Nenhuma chave encontrada.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2 mt-1">
+                      {filteredConsulta.map(r => {
+                        const col = locColors[r.localizacaoTipo] ?? locColors.aguardando
+                        return (
+                          <div
+                            key={r.id}
+                            className="rounded-xl p-3"
+                            style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-white leading-tight">{consultaCatLabel(r)}</p>
+                                <p className="text-[#6b7280] text-xs mt-0.5">Chave #{r.bracketNumber}</p>
+                                {r.athletes.length > 0 && (
+                                  <p className="text-[#9ca3af] text-xs mt-1 leading-relaxed">{r.athletes.join(" · ")}</p>
+                                )}
+                              </div>
+                              <span
+                                className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
+                                style={{ color: col.text, backgroundColor: col.bg }}
+                              >
+                                {r.localizacaoTipo === "tatame" ? (r.tatameName ?? "Tatame") :
+                                 r.localizacaoTipo === "premiacao" ? "Premiação" :
+                                 r.localizacaoTipo === "premiada" ? "Premiada" :
+                                 r.localizacaoTipo === "finalizada" ? "Finalizada" : "Aguardando"}
+                              </span>
+                            </div>
+                            <p className="text-xs mt-1.5 leading-snug" style={{ color: col.text }}>{r.localizacao}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )
+      })()}
     </>
   )
 }
