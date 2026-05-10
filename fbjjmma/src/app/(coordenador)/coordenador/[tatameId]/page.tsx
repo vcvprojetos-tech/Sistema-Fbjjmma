@@ -183,6 +183,8 @@ export default function TatamePage() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
   const [undoLoading, setUndoLoading] = useState(false)
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
 
   const enterFullscreen = useCallback(() => {
     document.documentElement.requestFullscreen?.().catch(() => {})
@@ -726,6 +728,9 @@ export default function TatamePage() {
             <span className="font-bold" style={{ color: "var(--hdr-pending)" }}>{pendentes.length} aguardando</span>
             <span className="font-bold" style={{ color: "var(--hdr-done)" }}>{finalizadas.length} finalizadas</span>
           </div>
+          <span className="font-mono font-bold text-sm tabular-nums" style={{ color: "var(--foreground)" }}>
+            {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Bahia" })}
+          </span>
           <button onClick={() => load(true)} disabled={refreshing} className="text-[#6b7280] hover:text-white transition-colors">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </button>

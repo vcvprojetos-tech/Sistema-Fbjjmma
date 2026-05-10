@@ -256,6 +256,8 @@ export default function PremiacaoPage() {
   const [pixValue, setPixValue] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [sideTab, setSideTab] = useState<"aguardando" | "premiadas">("aguardando")
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -488,6 +490,9 @@ export default function PremiacaoPage() {
             <span className="text-[#fbbf24] font-bold">{pendentes.length} aguardando</span>
             <span className="text-[#a78bfa] font-bold">{premiadas.length} premiadas</span>
           </div>
+          <span className="font-mono font-bold text-sm tabular-nums" style={{ color: "var(--foreground)" }}>
+            {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Bahia" })}
+          </span>
           <button onClick={() => load(true)} disabled={refreshing} className="p-2 text-[#6b7280] hover:text-white transition-colors">
             <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
