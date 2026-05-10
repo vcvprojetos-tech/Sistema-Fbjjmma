@@ -98,7 +98,7 @@ function getTeam(pos: MatchInfo["position1"]) {
 }
 
 function cardHeight(numAthletes: number): number {
-  return CAT_HEADER_H + numAthletes * ATHLETE_H + Math.max(0, numAthletes - 1) * ATHLETE_GAP
+  return CAT_HEADER_H + CARD_PAD * 2 + numAthletes * ATHLETE_H + Math.max(0, numAthletes - 1) * ATHLETE_GAP
 }
 
 function filterGroupsToFit(groups: BracketGroup[], maxH: number): BracketGroup[] {
@@ -384,11 +384,12 @@ export default function PainelPage() {
                             </div>
 
                             {/* Atletas */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: ATHLETE_GAP }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: ATHLETE_GAP, padding: CARD_PAD }}>
                               {group.athletes.map((a) => (
                                 <div key={a.key} style={{
                                   height: ATHLETE_H,
                                   backgroundColor: rowBg(a.calls),
+                                  borderRadius: 6,
                                   display: "flex", alignItems: "center", gap: 8, padding: "0 10px",
                                   overflow: "hidden",
                                   borderLeft: `4px solid ${color}`,
