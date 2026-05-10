@@ -98,7 +98,7 @@ function getTeam(pos: MatchInfo["position1"]) {
 }
 
 function toTitleCase(str: string) {
-  return str.toLowerCase().replace(/\b\p{L}/gu, c => c.toUpperCase())
+  return str.toLowerCase().replace(/(?<!\p{L})\p{L}/gu, c => c.toUpperCase())
 }
 
 function cardHeight(numAthletes: number): number {
