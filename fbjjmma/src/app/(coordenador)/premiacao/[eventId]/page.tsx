@@ -19,11 +19,6 @@ const BELT_LABELS: Record<string, string> = {
   AZUL: "Azul", ROXA: "Roxa", MARROM: "Marrom", PRETA: "Preta",
 }
 
-const AGE_GROUP_ORDER = [
-  "PRE_MIRIM", "MIRIM", "INFANTIL_A", "INFANTIL_B",
-  "INFANTO_JUVENIL_A", "INFANTO_JUVENIL_B", "JUVENIL",
-  "ADULTO", "MASTER_1", "MASTER_2", "MASTER_3", "MASTER_4", "MASTER_5", "MASTER_6",
-]
 
 const PLACE_CONFIG: Record<number, { label: string; color: string; bg: string; border: string; icon: string }> = {
   1: { label: "1° Lugar", color: "#fde68a", bg: "#78350f", border: "#fbbf24", icon: "🥇" },
@@ -78,6 +73,7 @@ interface BracketData {
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
+  updatedAt: string
   weightCategory: { name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: Position[]
   matches: Match[]
@@ -224,15 +220,6 @@ function bracketMatchesSearch(bracket: BracketData, query: string): boolean {
   })
 }
 
-function sortBrackets(list: BracketData[]) {
-  return [...list].sort((a, b) => {
-    const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
-    const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
-    if (ageA !== ageB) return ageA - ageB
-    if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
-    return a.weightCategory.maxWeight - b.weightCategory.maxWeight
-  })
-}
 
 function bracketFinalizedAt(b: BracketData): number {
   const times = b.matches
@@ -388,7 +375,7 @@ export default function PremiacaoPage() {
       return true
     })
     .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
-  const premiadas = sortBrackets(brackets.filter((b) => {
+  const premiadas = brackets.filter((b) => {
     if (b.status === "PREMIADA") return true
     // FINALIZADA com todos os colocados já premiados (status travado): tratar como premiada
     if (b.status === "FINALIZADA") {
@@ -396,7 +383,7 @@ export default function PremiacaoPage() {
       if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return true
     }
     return false
-  }))
+  }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
   const selectedBracket = brackets.find((b) => b.id === selectedId) ?? null
 
   if (loading) {
