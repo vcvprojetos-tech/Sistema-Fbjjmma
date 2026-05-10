@@ -97,6 +97,10 @@ function getTeam(pos: MatchInfo["position1"]) {
   return pos?.registration?.team?.name ?? ""
 }
 
+function toTitleCase(str: string) {
+  return str.toLowerCase().replace(/\b\p{L}/gu, c => c.toUpperCase())
+}
+
 function cardHeight(numAthletes: number): number {
   return CAT_HEADER_H + CARD_PAD * 2 + numAthletes * ATHLETE_H + Math.max(0, numAthletes - 1) * ATHLETE_GAP
 }
@@ -397,7 +401,7 @@ export default function PainelPage() {
                                 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ color: rowTextName(a.calls), fontWeight: 700, fontSize: 16, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                      {a.name}
+                                      {toTitleCase(a.name)}
                                     </div>
                                     {a.team && (
                                       <div style={{ color: rowTextSub(a.calls), fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>
