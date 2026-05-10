@@ -26,15 +26,15 @@ const AGE_GROUP_ORDER = [
 ]
 
 const PLACE_CONFIG: Record<number, { label: string; color: string; bg: string; border: string; icon: string }> = {
-  1: { label: "1° Lugar", color: "#fbbf24", bg: "#fbbf2428", border: "#fbbf2455", icon: "🥇" },
-  2: { label: "2° Lugar", color: "#c8d4e8", bg: "#94a3b828", border: "#94a3b855", icon: "🥈" },
-  3: { label: "3° Lugar", color: "#cd7f32", bg: "#cd7f3228", border: "#cd7f3255", icon: "🥉" },
+  1: { label: "1° Lugar", color: "#fde68a", bg: "#78350f", border: "#fbbf24", icon: "🥇" },
+  2: { label: "2° Lugar", color: "#e2e8f0", bg: "#1e293b", border: "#94a3b8", icon: "🥈" },
+  3: { label: "3° Lugar", color: "#fdba74", bg: "#431407", border: "#cd7f32", icon: "🥉" },
 }
 
 const PLACE_CONFIG_LIGHT: Record<number, { label: string; color: string; bg: string; border: string; icon: string }> = {
-  1: { label: "1° Lugar", color: "#92400e", bg: "#fef3c7", border: "#f59e0b", icon: "🥇" },
-  2: { label: "2° Lugar", color: "#334155", bg: "#dde3ed", border: "#94a3b8", icon: "🥈" },
-  3: { label: "3° Lugar", color: "#7c2d12", bg: "#fed7aa", border: "#ea580c", icon: "🥉" },
+  1: { label: "1° Lugar", color: "#78350f", bg: "#fde68a", border: "#d97706", icon: "🥇" },
+  2: { label: "2° Lugar", color: "#1e293b", bg: "#cbd5e1", border: "#64748b", icon: "🥈" },
+  3: { label: "3° Lugar", color: "#7c2d12", bg: "#fdba74", border: "#ea580c", icon: "🥉" },
 }
 
 const MEDAL_BY_PLACE: Record<number, string> = { 1: "OURO", 2: "PRATA", 3: "BRONZE" }
