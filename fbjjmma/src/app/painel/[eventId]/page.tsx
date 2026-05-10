@@ -170,7 +170,7 @@ function getGroupsForTatame(tatame: TatameInfo): BracketGroup[] {
 function rowBg(calls: number) {
   if (calls >= 3) return "#dc2626"
   if (calls === 2) return "#d97706"
-  if (calls === 1) return "#64748b"
+  if (calls === 1) return "#cbd5e1"
   return "#ffffff"
 }
 function rowBorder(calls: number) {
@@ -188,7 +188,7 @@ function rowTextSub(_calls: number) {
 
 const LEGEND = [
   { bg: "#ffffff", border: "#cbd5e1", label: "Aguardando" },
-  { bg: "#64748b", border: "#475569", label: "1ª Chamada" },
+  { bg: "#cbd5e1", border: "#94a3b8", label: "1ª Chamada" },
   { bg: "#d97706", border: "#b45309", label: "2ª Chamada" },
   { bg: "#dc2626", border: "#b91c1c", label: "3ª Chamada" },
 ]
