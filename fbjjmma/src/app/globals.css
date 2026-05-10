@@ -104,12 +104,12 @@
   --call-3-bg: #dc2626;
   --call-3-color: #ffffff;
   /* Botões Cronograma e Tabela de Peso (modo claro) */
-  --btn-sched-bg: #dbeafe;
-  --btn-sched-fg: #1d4ed8;
-  --btn-sched-br: #93c5fd;
-  --btn-peso-bg: #fef3c7;
-  --btn-peso-fg: #92400e;
-  --btn-peso-br: #fcd34d;
+  --btn-sched-bg: #1d4ed8;
+  --btn-sched-fg: #ffffff;
+  --btn-sched-br: #1d4ed8;
+  --btn-peso-bg: #d97706;
+  --btn-peso-fg: #ffffff;
+  --btn-peso-br: #d97706;
   /* BracketView — cards de atletas (modo claro) */
   --bracket-card-bg: #eef1f5;
   --bracket-card-border: #c8d0db;
@@ -229,17 +229,17 @@ button, a, input, select, textarea, [role="button"] {
 
 /* ── Status badges do coordenador ─────────────────────────────────────────── */
 .badge-em-andamento { background-color: #78350f60; color: #fbbf24; }
-.light .badge-em-andamento { background-color: #fef3c7; color: #b45309; }
+.light .badge-em-andamento { background-color: #d97706; color: #ffffff; }
 .badge-finalizada { background-color: #14532d60; color: #4ade80; }
-.light .badge-finalizada { background-color: #dcfce7; color: #15803d; }
+.light .badge-finalizada { background-color: #16a34a; color: #ffffff; }
 .badge-premiada { background-color: #4a1d9660; color: #a78bfa; }
-.light .badge-premiada { background-color: #f3e8ff; color: #7c3aed; }
+.light .badge-premiada { background-color: #7c3aed; color: #ffffff; }
 .badge-aguardando { background-color: #1a1a1a; color: #6b7280; }
-.light .badge-aguardando { background-color: #f1f5f9; color: #475569; }
+.light .badge-aguardando { background-color: #64748b; color: #ffffff; }
 
 /* ── Botões de ação do match card ──────────────────────────────────────────── */
 .btn-desfazer { background-color: #78350f40; color: #fb923c; border: 1px solid #78350f60; }
-.light .btn-desfazer { background-color: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.light .btn-desfazer { background-color: #d97706; color: #ffffff; border-color: #d97706; }
 
 .btn-opcoes { color: #f87171; border: 1px solid #7f1d1d40; }
 .btn-opcoes:hover:not(:disabled) { background-color: #7f1d1d20; }
