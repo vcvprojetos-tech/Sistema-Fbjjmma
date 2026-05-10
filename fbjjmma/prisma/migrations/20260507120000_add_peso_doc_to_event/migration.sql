@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "Event" ADD COLUMN "pesoDoc" TEXT;
+ALTER TABLE "events" ADD COLUMN "pesoDoc" TEXT;
