@@ -222,6 +222,41 @@ export default function PainelPage() {
     return () => clearInterval(iv)
   }, [fetchData])
 
+  useEffect(() => {
+    if (!data) return
+    const total = data.tatames.length
+    const splitAt = total <= 4 ? total : Math.ceil(total / 2)
+    const myTatames = !painelNum
+      ? data.tatames
+      : painelNum === "1"
+      ? data.tatames.slice(0, splitAt)
+      : data.tatames.slice(splitAt)
+
+    for (const tatame of myTatames) {
+      const visibleIds: string[] = []
+      for (const b of tatame.brackets) {
+        if (b.status !== "EM_ANDAMENTO") continue
+        const hasUnchecked = b.matches.some(m => {
+          if (m.endedAt) return false
+          if (!m.position1) return false
+          const p1Name = getName(m.position1)
+          if (p1Name !== "BYE" && !m.p1CheckedIn) return true
+          if (m.position2) {
+            const p2Name = getName(m.position2)
+            if (p2Name !== "BYE" && !m.p2CheckedIn) return true
+          }
+          return false
+        })
+        if (hasUnchecked) visibleIds.push(b.id)
+      }
+      fetch(`/api/painel/${eventId}/visible`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tatameId: tatame.id, bracketIds: visibleIds }),
+      }).catch(() => {})
+    }
+  }, [data, eventId, painelNum])
+
   if (!data) return (
     <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0a0f1a" }}>
       <p style={{ color: "#475569" }}>Carregando painel...</p>
