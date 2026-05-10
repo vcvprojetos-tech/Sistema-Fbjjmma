@@ -180,9 +180,12 @@ export default function TatamePage() {
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
-  const [docDrag, setDocDrag] = useState<{ startX: number; startY: number; dx: number; dy: number } | null>(null)
-  const [docClosing, setDocClosing] = useState(false)
   const docOverlayRef = useRef<HTMLDivElement>(null)
+  const docCardRef = useRef<HTMLDivElement>(null)
+  const docBackdropRef = useRef<HTMLDivElement>(null)
+  const docHintRef = useRef<HTMLDivElement>(null)
+  const docDragStartRef = useRef<{ x: number; y: number } | null>(null)
+  const docDragCurrRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 })
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
   const [undoLoading, setUndoLoading] = useState(false)
@@ -1543,88 +1546,132 @@ export default function TatamePage() {
 
       {/* Modal de consulta rápida de documento — swipe em qualquer direção para fechar */}
       {docModal && (() => {
-        const dx = docDrag?.dx ?? 0
-        const dy = docDrag?.dy ?? 0
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        const canClose = dist > 80
-        const modalOpacity = docClosing ? 0 : docDrag ? Math.max(0.15, 1 - dist / 220) : 1
-        const modalTx = docClosing ? dx * 5 : dx
-        const modalTy = docClosing ? dy * 5 : dy
-        const modalRotate = dx * 0.04
-        const overlayAlpha = docClosing ? 0 : docDrag ? Math.max(0.1, 0.55 - dist / 400) : 0.55
-        const closeDoc = () => {
-          // Blur de qualquer elemento focado dentro do modal para evitar
-          // o comportamento "1º toque foca, 2º toque clica" em tablets Android
+        const closeTap = () => {
           ;(document.activeElement as HTMLElement)?.blur()
           if (docOverlayRef.current) docOverlayRef.current.style.display = "none"
-          setDocClosing(true)
-          setTimeout(() => { setDocModal(null); setDocClosing(false); setDocDrag(null) }, 150)
+          if (docBackdropRef.current) {
+            docBackdropRef.current.style.transition = "opacity 0.15s"
+            docBackdropRef.current.style.opacity = "0"
+          }
+          if (docCardRef.current) {
+            docCardRef.current.style.transition = "opacity 0.15s"
+            docCardRef.current.style.opacity = "0"
+          }
+          setTimeout(() => setDocModal(null), 150)
+        }
+        const onTouchStart = (e: React.TouchEvent) => {
+          const t = e.touches[0]
+          docDragStartRef.current = { x: t.clientX, y: t.clientY }
+          docDragCurrRef.current = { dx: 0, dy: 0 }
+          if (docCardRef.current) docCardRef.current.style.transition = "none"
+        }
+        const onTouchMove = (e: React.TouchEvent) => {
+          if (!docDragStartRef.current || !docCardRef.current) return
+          const t = e.touches[0]
+          const dx = t.clientX - docDragStartRef.current.x
+          const dy = t.clientY - docDragStartRef.current.y
+          docDragCurrRef.current = { dx, dy }
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          const canClose = dist > 80
+          docCardRef.current.style.transform = `translate(${dx}px,${dy}px) rotate(${dx * 0.04}deg)`
+          docCardRef.current.style.opacity = String(Math.max(0.15, 1 - dist / 220))
+          if (docBackdropRef.current)
+            docBackdropRef.current.style.opacity = String(Math.max(0.18, 1 - dist / 400))
+          if (docHintRef.current) {
+            docHintRef.current.style.backgroundColor = canClose ? "rgba(22,163,74,0.9)" : "rgba(0,0,0,0.65)"
+            const span = docHintRef.current.querySelector("span")
+            if (span) span.textContent = canClose ? "✓ Solte para fechar" : "↕ Arraste em qualquer direção para fechar"
+          }
+        }
+        const onTouchEnd = (e: React.TouchEvent) => {
+          e.preventDefault()
+          const { dx, dy } = docDragCurrRef.current
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (!docDragStartRef.current) return
+          docDragStartRef.current = null
+          if (dist > 80) {
+            // Anima saída e fecha — sem nenhum setState durante o drag
+            ;(document.activeElement as HTMLElement)?.blur()
+            if (docOverlayRef.current) docOverlayRef.current.style.display = "none"
+            if (docCardRef.current) {
+              docCardRef.current.style.transition = "transform 0.15s ease-out, opacity 0.15s ease-out"
+              docCardRef.current.style.transform = `translate(${dx * 5}px,${dy * 5}px) rotate(${dx * 0.04}deg)`
+              docCardRef.current.style.opacity = "0"
+            }
+            if (docBackdropRef.current) {
+              docBackdropRef.current.style.transition = "opacity 0.15s"
+              docBackdropRef.current.style.opacity = "0"
+            }
+            setTimeout(() => setDocModal(null), 150)
+          } else {
+            // Volta ao lugar
+            if (docCardRef.current) {
+              docCardRef.current.style.transition = "transform 0.2s ease-out, opacity 0.2s ease-out"
+              docCardRef.current.style.transform = "translate(0,0) rotate(0deg)"
+              docCardRef.current.style.opacity = "1"
+            }
+            if (docBackdropRef.current) {
+              docBackdropRef.current.style.transition = "opacity 0.2s"
+              docBackdropRef.current.style.opacity = "1"
+            }
+            if (docHintRef.current) {
+              docHintRef.current.style.backgroundColor = "rgba(0,0,0,0.65)"
+              const span = docHintRef.current.querySelector("span")
+              if (span) span.textContent = "↕ Arraste em qualquer direção para fechar"
+            }
+            docDragCurrRef.current = { dx: 0, dy: 0 }
+          }
+        }
+        const onTouchCancel = () => {
+          docDragStartRef.current = null
+          docDragCurrRef.current = { dx: 0, dy: 0 }
+          if (docCardRef.current) {
+            docCardRef.current.style.transition = "transform 0.2s, opacity 0.2s"
+            docCardRef.current.style.transform = "translate(0,0) rotate(0deg)"
+            docCardRef.current.style.opacity = "1"
+          }
         }
         return (
           <>
             {/* 1. Backdrop — só visual, nunca intercepta eventos */}
             <div
+              ref={docBackdropRef}
               className="fixed inset-0"
-              style={{
-                zIndex: 49,
-                backgroundColor: `rgba(0,0,0,${overlayAlpha})`,
-                pointerEvents: "none",
-                transition: docClosing ? "background-color 0.15s" : "none",
-              }}
+              style={{ zIndex: 49, backgroundColor: "rgba(0,0,0,0.55)", pointerEvents: "none" }}
             />
-            {/* 2. Click-catcher transparente — sumido imediatamente ao fechar */}
+            {/* 2. Click-catcher transparente — display:none imediatamente ao fechar */}
             <div
               ref={docOverlayRef}
               className="fixed inset-0"
               style={{ zIndex: 50 }}
-              onTouchEnd={!docDrag ? (e) => { e.preventDefault(); closeDoc() } : undefined}
-              onClick={!docDrag ? () => closeDoc() : undefined}
+              onTouchEnd={e => { e.preventDefault(); closeTap() }}
+              onClick={() => closeTap()}
             />
-            {/* 3. Card — irmão do click-catcher, anima independente */}
-            <div
-              className="fixed inset-0 flex items-center justify-center"
-              style={{ zIndex: 51, pointerEvents: "none" }}
-            >
+            {/* 3. Card — pointerEvents:none no container, auto no card */}
+            <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 51, pointerEvents: "none" }}>
               <div
+                ref={docCardRef}
                 style={{
                   maxWidth: "min(80vw, 720px)", maxHeight: "85vh",
                   display: "flex", flexDirection: "column",
                   borderRadius: "1rem", overflow: "hidden",
                   boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
-                  transform: `translate(${modalTx}px, ${modalTy}px) rotate(${modalRotate}deg)`,
-                  opacity: modalOpacity,
-                  transition: docClosing ? "transform 0.15s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.15s" : "none",
-                  userSelect: "none",
-                  touchAction: "none",
-                  pointerEvents: docClosing ? "none" : "auto",
+                  userSelect: "none", touchAction: "none", pointerEvents: "auto",
                 }}
-                onTouchStart={e => {
-                  const t = e.touches[0]
-                  setDocDrag({ startX: t.clientX, startY: t.clientY, dx: 0, dy: 0 })
-                }}
-                onTouchMove={e => {
-                  const t = e.touches[0]
-                  setDocDrag(prev => prev ? { ...prev, dx: t.clientX - prev.startX, dy: t.clientY - prev.startY } : null)
-                }}
-                onTouchEnd={e => {
-                  e.preventDefault()
-                  if (!docDrag) return
-                  if (canClose) closeDoc()
-                  else setDocDrag(null)
-                }}
-                onTouchCancel={() => setDocDrag(null)}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+                onTouchCancel={onTouchCancel}
               >
-                {/* Barra de título */}
                 <div className="flex items-center justify-between px-3 py-2 shrink-0"
                   style={{ backgroundColor: "rgba(0,0,0,0.65)", borderRadius: "1rem 1rem 0 0" }}>
                   <span className="text-white font-semibold text-xs">{docModal.title}</span>
                   <button
-                    onTouchEnd={e => { e.preventDefault(); e.stopPropagation(); closeDoc() }}
-                    onClick={closeDoc}
+                    onTouchEnd={e => { e.preventDefault(); e.stopPropagation(); closeTap() }}
+                    onClick={closeTap}
                     className="text-[#9ca3af] hover:text-white text-base leading-none ml-3"
                   >✕</button>
                 </div>
-                {/* Imagem */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={docModal.url}
@@ -1632,16 +1679,13 @@ export default function TatamePage() {
                   draggable={false}
                   style={{ display: "block", maxWidth: "min(80vw, 720px)", maxHeight: "74vh", width: "auto", height: "auto" }}
                 />
-                {/* Barra inferior — hint de swipe */}
-                <div style={{
-                  backgroundColor: canClose ? "rgba(22,163,74,0.9)" : "rgba(0,0,0,0.65)",
-                  padding: "7px 12px",
+                <div ref={docHintRef} style={{
+                  backgroundColor: "rgba(0,0,0,0.65)", padding: "7px 12px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   borderRadius: "0 0 1rem 1rem",
-                  transition: "background-color 0.15s",
                 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: canClose ? "#fff" : "#9ca3af" }}>
-                    {canClose ? "✓ Solte para fechar" : "↕ Arraste em qualquer direção para fechar"}
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af" }}>
+                    ↕ Arraste em qualquer direção para fechar
                   </span>
                 </div>
               </div>
