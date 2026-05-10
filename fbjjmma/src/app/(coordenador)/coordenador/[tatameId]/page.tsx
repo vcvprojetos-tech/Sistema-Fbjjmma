@@ -802,9 +802,9 @@ export default function TatamePage() {
             </button>
           )}
           <button
-            onClick={() => { setConsultaOpen(true); setConsultaResults(null); setConsultaSnapshot(null); fetchConsulta() }}
+            onClick={() => { setConsultaOpen(true); fetchConsulta() }}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
-            style={{ backgroundColor: "#0f172a", color: "#60a5fa", border: "1px solid #1e3a5f" }}
+            style={{ backgroundColor: "var(--btn-sched-bg)", color: "var(--btn-sched-fg)", border: "1px solid var(--btn-sched-br)" }}
           >
             🔍 Consulta
           </button>
