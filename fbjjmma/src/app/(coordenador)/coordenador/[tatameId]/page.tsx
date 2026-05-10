@@ -343,11 +343,14 @@ export default function TatamePage() {
       const data = await res.json()
       if (!res.ok) {
         setCallError({ matchId, msg: data.error || "Erro ao registrar chamada.", remaining: data.remaining })
+        return false
       } else {
         await load(true)
+        return true
       }
     } catch {
       setCallError({ matchId, msg: "Erro de conexão." })
+      return false
     } finally {
       setCallLoading(null)
     }
@@ -1077,7 +1080,7 @@ export default function TatamePage() {
                                                   return (
                                                     <button
                                                       key={n}
-                                                      onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
+                                                      onClick={async () => { if (!canCall) return; const ok = await registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition); if (ok) setCallMenu(null) }}
                                                       disabled={!canCall || !!callLoading || actionLoading}
                                                       className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
                                                       style={{ backgroundColor: done ? "#15803d" : n === 2 ? "var(--call-2-bg)" : n === 3 ? "var(--call-3-bg)" : "var(--surface-button)", color: done ? "#4ade80" : n === 2 ? "var(--call-2-color)" : n === 3 ? "var(--call-3-color)" : "var(--muted-foreground)" }}
@@ -1241,7 +1244,7 @@ export default function TatamePage() {
                                           return (
                                             <button
                                               key={n}
-                                              onClick={() => canCall && registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition)}
+                                              onClick={async () => { if (!canCall) return; const ok = await registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition); if (ok) setCallMenu(null) }}
                                               disabled={!canCall || !!callLoading || actionLoading}
                                               className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
                                               style={{ backgroundColor: done ? "#15803d" : n === 2 ? "var(--call-2-bg)" : n === 3 ? "var(--call-3-bg)" : "var(--surface-button)", color: done ? "#4ade80" : n === 2 ? "var(--call-2-color)" : n === 3 ? "var(--call-3-color)" : "var(--muted-foreground)" }}
