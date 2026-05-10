@@ -192,6 +192,20 @@ export default function TatamePage() {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
 
+  // Previne scroll nativo durante o swipe do modal de documento.
+  // React 17+ registra onTouchMove como passivo, então e.preventDefault() é
+  // ignorado nos handlers JSX. É necessário usar addEventListener nativo
+  // com { passive: false } para que o browser não entre em "modo scroll"
+  // durante o arrasto — o que impediria o primeiro toque após fechar de
+  // ser reconhecido como click (em vez de início de scroll).
+  useEffect(() => {
+    const card = docCardRef.current
+    if (!docModal || !card) return
+    const block = (e: TouchEvent) => e.preventDefault()
+    card.addEventListener("touchmove", block, { passive: false })
+    return () => card.removeEventListener("touchmove", block)
+  }, [docModal])
+
   const enterFullscreen = useCallback(() => {
     document.documentElement.requestFullscreen?.().catch(() => {})
     setShowOverlay(false)
