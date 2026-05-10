@@ -490,10 +490,10 @@ export default function TatamePage() {
     if (!b.bracketGroupId) return b.status === "PENDENTE" || b.status === "DESIGNADA"
     return !groupDone.has(b.bracketGroupId) && !groupEmAndamento.has(b.bracketGroupId)
   }))
-  const finalizadas = sortByStarted(tatame.brackets.filter(b => {
+  const finalizadas = [...tatame.brackets.filter(b => {
     if (!b.bracketGroupId) return b.status === "FINALIZADA" || b.status === "PREMIADA"
     return groupDone.has(b.bracketGroupId)
-  }))
+  })].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
   const selectedBracket = tatame.brackets.find(b => b.id === selectedId) ?? null
   const operador = tatame.operations[0]
 
