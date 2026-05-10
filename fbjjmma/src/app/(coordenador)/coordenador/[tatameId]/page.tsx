@@ -69,6 +69,8 @@ interface BracketData {
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
+  startedAt: string | null
+  updatedAt: string
   weightCategory: { id?: string; name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: BracketPositionData[]
   matches: MatchData[]
@@ -106,14 +108,16 @@ function catLabel(b: BracketData): string {
   return base
 }
 
-function sortBrackets(list: BracketData[]) {
-  return [...list].sort((a, b) => {
-    const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
-    const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
-    if (ageA !== ageB) return ageA - ageB
-    if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
-    return (a.weightCategory.maxWeight ?? 0) - (b.weightCategory.maxWeight ?? 0)
-  })
+function sortByStarted(list: BracketData[]) {
+  return [...list].sort((a, b) =>
+    new Date(a.startedAt ?? 0).getTime() - new Date(b.startedAt ?? 0).getTime()
+  )
+}
+
+function sortByDesignated(list: BracketData[]) {
+  return [...list].sort((a, b) =>
+    new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+  )
 }
 
 // Deve coincidir com CALL_INTERVAL_MS na rota chamada/route.ts
@@ -381,7 +385,7 @@ export default function TatamePage() {
   // Auto-seleciona a primeira em andamento ou pendente
   useEffect(() => {
     if (!tatame || selectedId) return
-    const active = sortBrackets(
+    const active = sortByStarted(
       tatame.brackets.filter(b => b.status === "EM_ANDAMENTO" || b.status === "PENDENTE" || b.status === "DESIGNADA")
     )
     if (active.length > 0) setSelectedId(active[0].id)
@@ -478,15 +482,15 @@ export default function TatamePage() {
       groupEmAndamento.add(b.bracketGroupId)
   }
 
-  const emAndamento = sortBrackets(tatame.brackets.filter(b => {
+  const emAndamento = sortByStarted(tatame.brackets.filter(b => {
     if (!b.bracketGroupId) return b.status === "EM_ANDAMENTO"
     return !groupDone.has(b.bracketGroupId) && groupEmAndamento.has(b.bracketGroupId)
   }))
-  const pendentes = sortBrackets(tatame.brackets.filter(b => {
+  const pendentes = sortByDesignated(tatame.brackets.filter(b => {
     if (!b.bracketGroupId) return b.status === "PENDENTE" || b.status === "DESIGNADA"
     return !groupDone.has(b.bracketGroupId) && !groupEmAndamento.has(b.bracketGroupId)
   }))
-  const finalizadas = sortBrackets(tatame.brackets.filter(b => {
+  const finalizadas = sortByStarted(tatame.brackets.filter(b => {
     if (!b.bracketGroupId) return b.status === "FINALIZADA" || b.status === "PREMIADA"
     return groupDone.has(b.bracketGroupId)
   }))

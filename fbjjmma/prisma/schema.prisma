@@ -369,6 +369,7 @@ model Bracket {
   // Após ambas finalizarem, uma "grande final" (isGrandFinal=true) é criada automaticamente.
   bracketGroupId   String?
   isGrandFinal     Boolean        @default(false)
+  startedAt        DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

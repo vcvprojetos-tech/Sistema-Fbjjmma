@@ -45,7 +45,7 @@ export async function POST(
           callTimes: [],
         },
       })
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
       if (bracket.tatameId) notifyTatame(bracket.tatameId)
       return NextResponse.json({ message: "Chave iniciada." })
     }
@@ -76,7 +76,7 @@ export async function POST(
           callTimes: [],
         },
       })
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
       if (bracket.tatameId) notifyTatame(bracket.tatameId)
       return NextResponse.json({ message: "Chave iniciada." })
     }
@@ -111,7 +111,7 @@ export async function POST(
       })
     }
 
-    await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+    await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
 
     // Propaga W.O.s: cria partidas das rodadas seguintes que já têm ambos atletas definidos
     await propagateBracket(bracketId)
