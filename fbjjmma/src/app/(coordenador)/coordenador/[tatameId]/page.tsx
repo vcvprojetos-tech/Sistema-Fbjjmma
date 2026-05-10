@@ -1594,6 +1594,7 @@ export default function TatamePage() {
             ;(document.activeElement as HTMLElement)?.blur()
             if (docOverlayRef.current) docOverlayRef.current.style.display = "none"
             if (docCardRef.current) {
+              docCardRef.current.style.pointerEvents = "none"
               docCardRef.current.style.transition = "transform 0.15s ease-out, opacity 0.15s ease-out"
               docCardRef.current.style.transform = `translate(${dx * 5}px,${dy * 5}px) rotate(${dx * 0.04}deg)`
               docCardRef.current.style.opacity = "0"
