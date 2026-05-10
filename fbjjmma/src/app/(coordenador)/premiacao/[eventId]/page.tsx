@@ -910,6 +910,15 @@ export default function PremiacaoPage() {
 
       {/* Modal de Consulta de Chaves */}
       {consultaOpen && (() => {
+        const closeConsulta = () => {
+          setConsultaOpen(false)
+          setConsultaSex("")
+          setConsultaAge("")
+          setConsultaBelt("")
+          setConsultaWeight("")
+          setConsultaQ("")
+          setConsultaSnapshot(null)
+        }
         const locColors: Record<string, { badgeBg: string; textColor: string }> = {
           tatame:    { badgeBg: "#15803d", textColor: "#4ade80" },
           premiacao: { badgeBg: "#1d4ed8", textColor: "#60a5fa" },
@@ -945,7 +954,7 @@ export default function PremiacaoPage() {
             <div
               className="fixed inset-0 z-50"
               style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
-              onClick={() => setConsultaOpen(false)}
+              onClick={closeConsulta}
             />
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ pointerEvents: "none" }}>
               <div
@@ -955,7 +964,7 @@ export default function PremiacaoPage() {
               >
                 <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
                   <p className="text-white font-bold text-base">🔍 Consulta de Chaves</p>
-                  <button onClick={() => setConsultaOpen(false)} className="text-[#6b7280] hover:text-white text-lg leading-none">✕</button>
+                  <button onClick={closeConsulta} className="text-[#6b7280] hover:text-white text-lg leading-none">✕</button>
                 </div>
                 <div className="px-4 pt-3 pb-2 space-y-2 shrink-0">
                   <div className="flex gap-2">
