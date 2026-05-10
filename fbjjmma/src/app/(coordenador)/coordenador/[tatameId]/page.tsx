@@ -170,6 +170,7 @@ export default function TatamePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [sideTab, setSideTab] = useState<"ativas" | "finalizadas">("ativas")
   const [actionLoading, setActionLoading] = useState(false)
+  const [optimisticCheckins, setOptimisticCheckins] = useState<Record<string, boolean>>({})
   const [error, setError] = useState("")
   const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string } | null>(null)
   const [pesoStep, setPesoStep] = useState(false)
@@ -317,6 +318,8 @@ export default function TatamePage() {
   }, [tatameId, getPin])
 
   const togglePresent = useCallback(async (matchId: string, bracketId: string, position: "p1" | "p2", current: boolean) => {
+    const key = `${matchId}-${position}`
+    setOptimisticCheckins(prev => ({ ...prev, [key]: !current }))
     try {
       await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}/chamada`, {
         method: "PATCH",
@@ -325,6 +328,7 @@ export default function TatamePage() {
       })
       await load(true)
     } catch { /* silencioso */ }
+    finally { setOptimisticCheckins(prev => { const n = { ...prev }; delete n[key]; return n }) }
   }, [getPin, load])
 
   const registrarChamada = useCallback(async (matchId: string, bracketId: string, callNumber: number, _autoWinnerId?: string, absentPosition?: "p1" | "p2" | null) => {
@@ -918,8 +922,8 @@ export default function TatamePage() {
                         const isDone = !!match.endedAt
                         const winnerIsP1 = match.winnerId === match.position1Id
                         const winnerIsP2 = match.winnerId === match.position2Id
-                        const p1Present = match.p1CheckedIn
-                        const p2Present = match.p2CheckedIn
+                        const p1Present = `${match.id}-p1` in optimisticCheckins ? optimisticCheckins[`${match.id}-p1`] : match.p1CheckedIn
+                        const p2Present = `${match.id}-p2` in optimisticCheckins ? optimisticCheckins[`${match.id}-p2`] : match.p2CheckedIn
                         const bothPresent = p1Present && p2Present
                         const calls = match.callTimes ?? []
                         const callErr = callError?.matchId === match.id ? callError : null
@@ -951,7 +955,7 @@ export default function TatamePage() {
                               <button
                                 onClick={() => !isDone && p1Name !== "BYE" && togglePresent(match.id, match._bracketId, "p1", p1Present)}
                                 disabled={isDone || p1Name === "BYE"}
-                                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors disabled:cursor-default"
+                                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors duration-100 disabled:cursor-default"
                                 style={{ backgroundColor: isDone && winnerIsP1 ? "#16a34a" : p1Present ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
                                 title={p1Present ? "Marcar como ausente" : "Marcar como presente"}
                               >
@@ -1000,7 +1004,7 @@ export default function TatamePage() {
                               <button
                                 onClick={() => !isDone && p2Name !== "BYE" && togglePresent(match.id, match._bracketId, "p2", p2Present)}
                                 disabled={isDone || p2Name === "BYE"}
-                                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors disabled:cursor-default"
+                                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors duration-100 disabled:cursor-default"
                                 style={{ backgroundColor: isDone && winnerIsP2 ? "#16a34a" : p2Present ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
                                 title={p2Present ? "Marcar como ausente" : "Marcar como presente"}
                               >
@@ -1168,7 +1172,7 @@ export default function TatamePage() {
                   {soloMatches.map(match => {
                     const p1 = match.position1
                     const p1Name = getAthleteName(p1)
-                    const p1Present = match.p1CheckedIn
+                    const p1Present = `${match.id}-p1` in optimisticCheckins ? optimisticCheckins[`${match.id}-p1`] : match.p1CheckedIn
                     const isMid = match._isMidBracket
                     const calls = match.callTimes ?? []
                     const callErr = callError?.matchId === match.id ? callError : null
@@ -1187,7 +1191,7 @@ export default function TatamePage() {
                               else togglePresent(match.id, match._bracketId, "p1", p1Present)
                             }}
                             disabled={actionLoading}
-                            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors"
+                            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors duration-100"
                             style={{ backgroundColor: (!isMid && p1Present) ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
                           >
                             {(!isMid && p1Present) ? "✓" : (p1?.position ?? "1")}
