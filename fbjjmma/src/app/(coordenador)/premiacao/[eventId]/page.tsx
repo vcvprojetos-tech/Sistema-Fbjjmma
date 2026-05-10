@@ -25,16 +25,16 @@ const AGE_GROUP_ORDER = [
   "ADULTO", "MASTER_1", "MASTER_2", "MASTER_3", "MASTER_4", "MASTER_5", "MASTER_6",
 ]
 
-const PLACE_CONFIG: Record<number, { label: string; color: string; bg: string; icon: string }> = {
-  1: { label: "1° Lugar", color: "#fbbf24", bg: "#78350f25", icon: "🥇" },
-  2: { label: "2° Lugar", color: "#d1d5db", bg: "#37415125", icon: "🥈" },
-  3: { label: "3° Lugar", color: "#c97941", bg: "#7c2d1225", icon: "🥉" },
+const PLACE_CONFIG: Record<number, { label: string; color: string; bg: string; border: string; icon: string }> = {
+  1: { label: "1° Lugar", color: "#fbbf24", bg: "#fbbf2428", border: "#fbbf2455", icon: "🥇" },
+  2: { label: "2° Lugar", color: "#c8d4e8", bg: "#94a3b828", border: "#94a3b855", icon: "🥈" },
+  3: { label: "3° Lugar", color: "#cd7f32", bg: "#cd7f3228", border: "#cd7f3255", icon: "🥉" },
 }
 
-const PLACE_CONFIG_LIGHT: Record<number, { label: string; color: string; bg: string; icon: string }> = {
-  1: { label: "1° Lugar", color: "#b45309", bg: "#fef9ec", icon: "🥇" },
-  2: { label: "2° Lugar", color: "#475569", bg: "#f1f5f9", icon: "🥈" },
-  3: { label: "3° Lugar", color: "#c2410c", bg: "#fff7ed", icon: "🥉" },
+const PLACE_CONFIG_LIGHT: Record<number, { label: string; color: string; bg: string; border: string; icon: string }> = {
+  1: { label: "1° Lugar", color: "#92400e", bg: "#fef3c7", border: "#f59e0b", icon: "🥇" },
+  2: { label: "2° Lugar", color: "#334155", bg: "#dde3ed", border: "#94a3b8", icon: "🥈" },
+  3: { label: "3° Lugar", color: "#7c2d12", bg: "#fed7aa", border: "#ea580c", icon: "🥉" },
 }
 
 const MEDAL_BY_PLACE: Record<number, string> = { 1: "OURO", 2: "PRATA", 3: "BRONZE" }
@@ -734,7 +734,7 @@ export default function PremiacaoPage() {
                             <div
                               key={pl.positionId}
                               className="rounded-xl overflow-hidden border"
-                              style={{ borderColor: `${cfg.color}25`, backgroundColor: cfg.bg }}
+                              style={{ borderColor: cfg.border, backgroundColor: cfg.bg }}
                             >
                               <div className="px-4 py-4 flex items-center gap-3">
                                 <span className="text-2xl shrink-0">{cfg.icon}</span>
