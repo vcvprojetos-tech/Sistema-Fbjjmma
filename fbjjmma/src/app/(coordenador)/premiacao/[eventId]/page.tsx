@@ -612,8 +612,8 @@ export default function PremiacaoPage() {
               ) : sideTab === "aguardando" ? (
                 pendentes.length === 0 ? (
                   <div className="flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
-                    <CheckCircle2 className="h-8 w-8 text-[#4ade80]" />
-                    <p className="text-[#4ade80] text-xs font-medium">Todas premiadas!</p>
+                    <CheckCircle2 className="h-8 w-8" style={{ color: "var(--hdr-done)" }} />
+                    <p className="text-xs font-medium" style={{ color: "var(--hdr-done)" }}>Todas premiadas!</p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1.5 px-2 py-2">
@@ -700,8 +700,8 @@ export default function PremiacaoPage() {
                           <p className="font-medium leading-tight mt-0.5 break-words" style={{ color: "#a78bfa", fontSize: "0.72rem" }}>{catLabel(b)}</p>
                           {placements.length > 0 && (
                             <div className="flex items-center gap-1 mt-1">
-                              <CheckCircle2 className="h-3 w-3 text-[#4ade80]" />
-                              <p className="text-xs text-[#4ade80]">{placements.length} premiado(s)</p>
+                              <CheckCircle2 className="h-3 w-3" style={{ color: "var(--hdr-done)" }} />
+                              <p className="text-xs" style={{ color: "var(--hdr-done)" }}>{placements.length} premiado(s)</p>
                             </div>
                           )}
                         </button>
@@ -774,12 +774,12 @@ export default function PremiacaoPage() {
                               <div className="px-4 py-4 flex items-center gap-3">
                                 <span className="text-2xl shrink-0">{cfg.icon}</span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold truncate" style={{ color: awarded ? "#4ade80" : "var(--card-foreground)" }}>{regName}</p>
+                                  <p className="text-sm font-bold truncate" style={{ color: awarded ? "var(--hdr-done)" : "var(--card-foreground)" }}>{regName}</p>
                                   {teamName && <p className="text-xs text-[#6b7280] truncate">{teamName}</p>}
                                   <p className="text-xs font-semibold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
                                 </div>
                                 {awarded ? (
-                                  <div className="flex flex-col items-center gap-0.5 text-[#4ade80] shrink-0">
+                                  <div className="flex flex-col items-center gap-0.5 shrink-0" style={{ color: "var(--hdr-done)" }}>
                                     <CheckCircle2 className="h-6 w-6" />
                                     <span className="text-xs font-bold">Premiado</span>
                                   </div>
