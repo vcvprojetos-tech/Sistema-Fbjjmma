@@ -231,6 +231,20 @@ export default function TatamePage() {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
 
+  useEffect(() => {
+    const enter = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
+    }
+    document.addEventListener("click", enter, { once: true })
+    document.addEventListener("keydown", enter, { once: true })
+    return () => {
+      document.removeEventListener("click", enter)
+      document.removeEventListener("keydown", enter)
+    }
+  }, [])
+
   // Previne scroll nativo durante o swipe do modal de documento.
   // React 17+ registra onTouchMove como passivo, então e.preventDefault() é
   // ignorado nos handlers JSX. É necessário usar addEventListener nativo

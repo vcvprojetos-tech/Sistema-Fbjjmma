@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -11,6 +11,20 @@ import { Label } from "@/components/ui/label"
 export default function LoginPage() {
   const router = useRouter()
   const [identifier, setIdentifier] = useState("")
+
+  useEffect(() => {
+    const enter = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
+    }
+    document.addEventListener("click", enter, { once: true })
+    document.addEventListener("keydown", enter, { once: true })
+    return () => {
+      document.removeEventListener("click", enter)
+      document.removeEventListener("keydown", enter)
+    }
+  }, [])
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
