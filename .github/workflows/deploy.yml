@@ -18,8 +18,6 @@ jobs:
           script: |
             set -e
             cd /var/www/fbjjmma
-            git pull
-            cd fbjjmma
+            git pull origin main
             npm run build
-            node prisma/sync-schema.js
-            pm2 restart fbjjmma
+            pm2 restart all
