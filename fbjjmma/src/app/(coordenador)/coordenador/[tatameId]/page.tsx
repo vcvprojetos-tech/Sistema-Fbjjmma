@@ -903,8 +903,8 @@ export default function TatamePage() {
               top: "50%",
               transform: "translateY(-50%)",
               transition: "right 200ms ease",
-              width: 20,
-              height: 64,
+              width: 28,
+              height: 88,
               backgroundColor: "var(--sidebar-surface)",
               border: "1px solid var(--border)",
               borderRight: "none",
@@ -915,7 +915,7 @@ export default function TatamePage() {
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1 }}>
+            <span style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1 }}>
               {sidebarOpen ? "›" : "‹"}
             </span>
           </button>
@@ -932,7 +932,7 @@ export default function TatamePage() {
 
                 {/* Controles */}
                 <div
-                  className="flex flex-col w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-l order-2"
+                  className="flex flex-col w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-l order-2 mr-7"
                   style={{ borderColor: "var(--border)" }}
                 >
                   {/* Cabeçalho da chave */}
