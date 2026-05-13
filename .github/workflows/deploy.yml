@@ -19,5 +19,6 @@ jobs:
             set -e
             cd /var/www/fbjjmma
             git pull origin main
+            cd fbjjmma
             npm run build
             pm2 restart all
