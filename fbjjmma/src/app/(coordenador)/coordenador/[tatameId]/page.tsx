@@ -208,7 +208,7 @@ export default function TatamePage() {
   const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
-  const [centerTab, setCenterTab] = useState<"controles" | "chave">("controles")
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [consultaOpen, setConsultaOpen] = useState(false)
   const [consultaQ, setConsultaQ] = useState("")
@@ -686,7 +686,7 @@ export default function TatamePage() {
                       rendered.push(
                         <button
                           key={b.bracketGroupId}
-                          onClick={() => { setSelectedId(group[0].id); setCenterTab("controles") }}
+                          onClick={() => { setSelectedId(group[0].id); setSidebarOpen(false) }}
                           className="w-full text-left px-3 py-3.5 rounded-md transition-colors"
                           style={{
                             border: "1px solid var(--border)",
@@ -710,7 +710,7 @@ export default function TatamePage() {
                       rendered.push(
                         <button
                           key={b.id}
-                          onClick={() => { setSelectedId(b.id); setCenterTab("controles") }}
+                          onClick={() => { setSelectedId(b.id); setSidebarOpen(false) }}
                           className="w-full text-left px-3 py-3.5 rounded-md transition-colors"
                           style={{
                             border: "1px solid var(--border)",
@@ -832,10 +832,28 @@ export default function TatamePage() {
           <p className="text-[#4b5563] text-sm">Aguarde o administrador atribuir as chaves.</p>
         </div>
       ) : (
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
 
-          {/* Coluna esquerda — abas Ativas / Finalizadas */}
-          <div className="w-44 md:w-52 lg:w-60 xl:w-64 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--sidebar-surface)" }}>
+          {/* Backdrop da gaveta */}
+          {sidebarOpen && (
+            <div
+              className="absolute inset-0 z-40"
+              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          {/* Gaveta lateral deslizante */}
+          <div
+            className="absolute top-0 left-0 h-full z-50 flex flex-col border-r overflow-hidden"
+            style={{
+              width: 256,
+              borderColor: "var(--border)",
+              backgroundColor: "var(--sidebar-surface)",
+              transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+              transition: "transform 200ms ease",
+            }}
+          >
             {/* Abas */}
             <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
               <button
@@ -881,46 +899,45 @@ export default function TatamePage() {
             </div>
           </div>
 
-          {/* Centro */}
+          {/* Lingüeta — abre/fecha a gaveta */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            className="absolute z-50"
+            style={{
+              left: sidebarOpen ? 256 : 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              transition: "left 200ms ease",
+              width: 20,
+              height: 64,
+              backgroundColor: "var(--sidebar-surface)",
+              border: "1px solid var(--border)",
+              borderLeft: "none",
+              borderRadius: "0 8px 8px 0",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1 }}>
+              {sidebarOpen ? "‹" : "›"}
+            </span>
+          </button>
+
+          {/* Conteúdo principal — ocupa toda a largura */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {/* Tab bar — apenas em telas < xl quando uma chave está selecionada */}
-            {bracket && (
-              <div className="xl:hidden flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
-                <button
-                  onClick={() => setCenterTab("controles")}
-                  className="flex-1 py-2.5 text-xs font-bold transition-colors"
-                  style={{
-                    color: centerTab === "controles" ? "var(--hdr-active)" : "var(--muted)",
-                    borderBottom: centerTab === "controles" ? "2px solid var(--hdr-active)" : "2px solid transparent",
-                    backgroundColor: "var(--background)",
-                  }}
-                >
-                  Controles
-                </button>
-                <button
-                  onClick={() => setCenterTab("chave")}
-                  className="flex-1 py-2.5 text-xs font-bold transition-colors"
-                  style={{
-                    color: centerTab === "chave" ? "var(--hdr-active)" : "var(--muted)",
-                    borderBottom: centerTab === "chave" ? "2px solid var(--hdr-active)" : "2px solid transparent",
-                    backgroundColor: "var(--background)",
-                  }}
-                >
-                  Ver Chave
-                </button>
-              </div>
-            )}
             {!bracket ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                 <ChevronRight className="h-10 w-10 text-[#374151]" />
-                <p className="text-[#6b7280]">Selecione uma chave na lista.</p>
+                <p className="text-[#6b7280]">Toque em <strong>›</strong> para selecionar uma chave.</p>
               </div>
             ) : (
               <div className="flex flex-1 overflow-hidden min-h-0">
 
                 {/* Controles */}
                 <div
-                  className={`${centerTab === "controles" ? "flex" : "hidden"} xl:flex flex-col w-full xl:w-96 xl:shrink-0 overflow-y-auto p-4 space-y-4 border-r`}
+                  className="flex flex-col w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-r"
                   style={{ borderColor: "var(--border)" }}
                 >
                   {/* Cabeçalho da chave */}
@@ -1512,7 +1529,7 @@ export default function TatamePage() {
                 </div>
 
                 {/* Visualização da chave */}
-                <div className={`${centerTab === "chave" ? "flex" : "hidden"} xl:flex flex-col flex-1 overflow-auto p-5 space-y-6 min-h-0`}>
+                <div className="flex flex-col flex-1 overflow-auto p-5 space-y-6 min-h-0">
                   {(() => {
                     const bracketsToShow = bracket.bracketGroupId && !bracket.isGrandFinal
                       ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId)
