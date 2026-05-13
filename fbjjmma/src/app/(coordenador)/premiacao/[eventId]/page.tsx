@@ -497,13 +497,27 @@ export default function PremiacaoPage() {
     )}
     {/* Overlay de entrada em tela cheia */}
     {showOverlay && (
-      <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <ThemeLogo style={{ width: 260, height: "auto", marginBottom: 24 }} />
         <div style={{ color: "var(--foreground)", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>Premiação</div>
         <div style={{ color: "var(--muted)", fontSize: "0.95rem", marginBottom: 32 }}>{eventName}</div>
-        <div style={{ backgroundColor: "var(--card)", border: "2px solid #dc2626", borderRadius: 12, padding: "16px 40px", color: "#dc2626", fontSize: "1.1rem", fontWeight: 700 }}>
-          Pressione OK para abrir em Tela Cheia
-        </div>
+        <button
+          onClick={enterFullscreen}
+          style={{ backgroundColor: "var(--card)", border: "2px solid #dc2626", borderRadius: 12, padding: "16px 40px", color: "#dc2626", fontSize: "1.1rem", fontWeight: 700, cursor: "pointer" }}
+        >
+          ⛶ Abrir em Tela Cheia
+        </button>
+        <button
+          onClick={() => setShowOverlay(false)}
+          style={{ marginTop: 16, background: "none", border: "none", color: "var(--muted)", fontSize: "0.85rem", cursor: "pointer" }}
+        >
+          Continuar sem tela cheia
+        </button>
+        <button
+          onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
+          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
+          {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
+        </button>
       </div>
     )}
 

@@ -7,19 +7,13 @@ import { ThemeLogo } from "@/components/ThemeLogo"
 export default function CoordenadorEntradaPage() {
   const router = useRouter()
   const [cpf, setCpf] = useState("")
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {
-    const enter = () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {})
-      }
-    }
-    document.addEventListener("click", enter, { once: true })
-    document.addEventListener("keydown", enter, { once: true })
-    return () => {
-      document.removeEventListener("click", enter)
-      document.removeEventListener("keydown", enter)
-    }
+    setIsFullscreen(!!document.fullscreenElement)
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener("fullscreenchange", onChange)
+    return () => document.removeEventListener("fullscreenchange", onChange)
   }, [])
 
   useEffect(() => {
@@ -32,6 +26,14 @@ export default function CoordenadorEntradaPage() {
     vv.addEventListener("resize", scroll)
     return () => vv.removeEventListener("resize", scroll)
   }, [])
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {})
+    }
+  }
   const [tatameNum, setTatameNum] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -70,9 +72,15 @@ export default function CoordenadorEntradaPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] overflow-y-auto px-4 py-8"
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] overflow-y-auto px-4 py-8 relative"
       style={{ backgroundColor: "var(--background)" }}
     >
+      <button
+        onClick={toggleFullscreen}
+        style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}
+      >
+        {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
+      </button>
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
           <ThemeLogo className="mx-auto mb-4" style={{ width: 260, height: "auto" }} />
