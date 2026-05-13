@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modo Claro — Coordenador</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f1f5f9; color: #1e293b; font-family: 'Segoe UI', sans-serif; font-size: 13px; }
+
+  /* HEADER */
+  .header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo { font-weight: 800; font-size: 15px; color: #1e293b; }
+  .logo span { display: block; font-size: 10px; font-weight: 400; color: #94a3b8; }
+  .tatame-pill {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 14px;
+  }
+  .tatame-pill .tname { font-weight: 700; font-size: 13px; color: #1e293b; }
+  .tatame-pill .top { font-size: 11px; color: #f59e0b; font-weight: 600; }
+  .header-stats { display: flex; gap: 20px; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 20px; font-weight: 800; line-height: 1; }
+  .stat .num.yellow { color: #d97706; }
+  .stat .num.blue { color: #3b82f6; }
+  .stat .num.green { color: #16a34a; }
+  .stat .lbl { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .user-name { font-size: 13px; color: #64748b; }
+  .btn-sync { background: #f1f5f9; border: 1px solid #e2e8f0; color: #64748b; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 15px; }
+
+  /* LAYOUT */
+  .main { display: flex; height: calc(100vh - 57px); }
+
+  /* LEFT SIDEBAR */
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-tabs { display: flex; border-bottom: 1px solid #e2e8f0; }
+  .sidebar-tab { flex: 1; padding: 10px 6px; text-align: center; font-size: 11px; font-weight: 600; cursor: pointer; color: #94a3b8; border-bottom: 2px solid transparent; }
+  .sidebar-tab.active { color: #d97706; border-bottom-color: #d97706; }
+  .sidebar-section { padding: 8px 10px 4px; font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .bracket-item {
+    margin: 4px 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #fef9ee;
+    border: 1px solid #fde68a;
+  }
+  .bracket-item .bnum { font-size: 10px; color: #92400e; font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .bracket-item .bname { font-size: 11px; font-weight: 700; color: #1e293b; line-height: 1.3; }
+  .bracket-item .binfo { font-size: 10px; color: #78716c; margin-top: 2px; }
+  .badge-em { background: #d97706; color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 9px; font-weight: 700; }
+
+  /* CENTER PANEL */
+  .center-panel {
+    width: 320px;
+    min-width: 320px;
+    border-right: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .center-scroll { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .center-scroll::-webkit-scrollbar { width: 4px; }
+  .center-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+  /* MATCH CARD */
+  .match-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .card-header {
+    padding: 7px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+  }
+  .card-header .badge-conf { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; padding: 1px 8px; border-radius: 10px; font-size: 9px; }
+  .card-header .badge-and { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 1px 8px; border-radius: 10px; font-size: 9px; }
+  .card-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+
+  /* ATHLETE ROW */
+  .athlete-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; background: #f8fafc; border-radius: 7px; border: 1px solid #f1f5f9; }
+  .athlete-left { display: flex; align-items: center; gap: 8px; }
+  .seed-badge { width: 22px; height: 22px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #475569; flex-shrink: 0; }
+  .aname { font-weight: 700; font-size: 12px; color: #1e293b; }
+  .ateam { font-size: 10px; color: #94a3b8; }
+  .tap-btn { background: #f1f5f9; border: 1px solid #e2e8f0; color: #64748b; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+  /* VS divider */
+  .vs-div { text-align: center; font-size: 9px; color: #cbd5e1; font-weight: 700; letter-spacing: 2px; }
+
+  /* WO BUTTONS */
+  .wo-row { display: flex; gap: 5px; margin-top: 4px; }
+  .btn-wo1 { flex: 1; background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; padding: 7px 6px; border-radius: 7px; font-size: 10px; font-weight: 700; cursor: pointer; text-align: center; }
+  .btn-wo2 { flex: 1; background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; padding: 7px 6px; border-radius: 7px; font-size: 10px; font-weight: 700; cursor: pointer; text-align: center; }
+  .btn-ambos { flex: 1; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 7px 6px; border-radius: 7px; font-size: 10px; font-weight: 700; cursor: pointer; text-align: center; }
+
+  /* SECTION LABEL */
+  .sec-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; padding: 4px 2px 2px; }
+
+  /* CONFIRM PRESENÇA */
+  .confirm-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .confirm-header { padding: 7px 12px; background: #fffbeb; border-bottom: 1px solid #fde68a; font-size: 11px; font-weight: 700; color: #92400e; }
+  .confirm-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .confirm-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: #f8fafc; border-radius: 7px; border: 1px solid #f1f5f9; }
+  .conf-btn { background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+  /* PENDING MATCHES NOTE */
+  .pending-note { font-size: 10px; color: #94a3b8; padding: 6px 4px; text-align: center; }
+
+  /* RIGHT PANEL */
+  .right-panel { flex: 1; background: #ffffff; display: flex; flex-direction: column; }
+  .right-header { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #64748b; background: #f8fafc; }
+  .right-header strong { color: #1e293b; }
+  .bracket-area { flex: 1; overflow: auto; padding: 20px; position: relative; }
+
+  /* BRACKET NODES */
+  .bnode { position: absolute; width: 155px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; font-size: 11px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .bnode .nnum { font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 2px; }
+  .bnode .nname { font-weight: 700; color: #1e293b; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bnode .nteam { font-size: 9px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bnode.active { border-color: #d97706; background: #fffbeb; }
+  .bnode.active .nnum { color: #d97706; }
+  .bnode.empty { background: #f8fafc; border-style: dashed; border-color: #cbd5e1; }
+  .bnode.empty .nname { color: #cbd5e1; font-style: italic; }
+
+  /* SVG lines */
+  .bracket-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  .bracket-svg line { stroke: #e2e8f0; stroke-width: 1.5; }
+
+  /* PODIUM */
+  .podium-box { position: absolute; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 14px; font-size: 11px; font-weight: 700; color: #92400e; text-align: center; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">FBJJMMA <span>Controle de Chaves</span></div>
+    <div class="tatame-pill">
+      <div class="tname">Rafael Torres Nascimento — Tatame 1</div>
+      <div class="top">Op: Rafael Torres Nascimento</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><div class="num yellow">1</div><div class="lbl">em andamento</div></div>
+    <div class="stat"><div class="num blue">0</div><div class="lbl">aguardando</div></div>
+    <div class="stat"><div class="num green">0</div><div class="lbl">finalizadas</div></div>
+  </div>
+  <div class="header-right">
+    <div class="user-name">Rafael Torres</div>
+    <button class="btn-sync">↻</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="sidebar-tab active">Ativas (1)</div>
+      <div class="sidebar-tab">Finalizadas (0)</div>
+    </div>
+    <div class="sidebar-section">Em andamento</div>
+    <div class="bracket-item">
+      <div class="bnum">Chave #41 <span class="badge-em">Em Andamento</span></div>
+      <div class="bname">M · Mirim · PENA · Branca</div>
+      <div class="binfo">até 23kg · 6 atletas · 0/4 partidas</div>
+    </div>
+  </div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+    <div class="center-scroll">
+
+      <!-- MATCH R1-P1 -->
+      <div class="match-card">
+        <div class="card-header">
+          R1 — P1 <span class="badge-conf">Confirme presença</span>
+        </div>
+        <div class="card-body">
+          <div class="athlete-row">
+            <div class="athlete-left">
+              <div class="seed-badge">1</div>
+              <div>
+                <div class="aname">Caio André Miranda d...</div>
+                <div class="ateam">Raiz Jiu Jitsu</div>
+              </div>
+            </div>
+            <button class="tap-btn">TAP</button>
+          </div>
+          <div class="vs-div">VS</div>
+          <div class="athlete-row">
+            <div class="athlete-left">
+              <div class="seed-badge">2</div>
+              <div>
+                <div class="aname">ARTHUR de Jesus La...</div>
+                <div class="ateam">CT Area 5</div>
+              </div>
+            </div>
+            <button class="tap-btn">TAP</button>
+          </div>
+          <div class="wo-row">
+            <button class="btn-wo1">W.O. — Caio</button>
+            <button class="btn-wo2">W.O. — ARTHUR</button>
+            <button class="btn-ambos">W.O. — Ambos Ausentes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MATCH R1-P3 -->
+      <div class="match-card">
+        <div class="card-header">
+          R1 — P3 <span class="badge-conf">Confirme presença</span>
+        </div>
+        <div class="card-body">
+          <div class="athlete-row">
+            <div class="athlete-left">
+              <div class="seed-badge">3</div>
+              <div>
+                <div class="aname">Arthur Pinto Bastos</div>
+                <div class="ateam">Raiz Jiu Jitsu</div>
+              </div>
+            </div>
+            <button class="tap-btn">TAP</button>
+          </div>
+          <div class="vs-div">VS</div>
+          <div class="athlete-row">
+            <div class="athlete-left">
+              <div class="seed-badge">4</div>
+              <div>
+                <div class="aname">Caio Luiz Oliveira da...</div>
+                <div class="ateam">CheckMat</div>
+              </div>
+            </div>
+            <button class="tap-btn">TAP</button>
+          </div>
+          <div class="wo-row">
+            <button class="btn-wo1">W.O. — Arthur</button>
+            <button class="btn-wo2">W.O. — Caio</button>
+            <button class="btn-ambos">W.O. — Ambos Ausentes</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pending-note">+ 2 luta(s) aguardando definição de atletas</div>
+
+      <!-- CONFIRMAÇÃO DE PRESENÇA -->
+      <div class="confirm-card">
+        <div class="confirm-header">Confirmação de Presença</div>
+        <div class="confirm-body">
+          <div class="confirm-row">
+            <div class="athlete-left">
+              <div class="seed-badge">1</div>
+              <div>
+                <div class="aname">Théo Lucca Moreira Dou...</div>
+                <div class="ateam">Nova União</div>
+              </div>
+            </div>
+            <button class="tap-btn">TAP</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: BRACKET -->
+  <div class="right-panel">
+    <div class="right-header">
+      <strong>Masculino | Mirim | PENA | Até 23kg | Branca | Chave: 41</strong>
+    </div>
+    <div class="bracket-area" style="min-height:500px;min-width:700px">
+
+      <svg class="bracket-svg" viewBox="0 0 700 520" preserveAspectRatio="none">
+        <!-- R1 left connectors -->
+        <line x1="165" y1="37" x2="195" y2="37"/>
+        <line x1="165" y1="97" x2="195" y2="97"/>
+        <line x1="195" y1="37" x2="195" y2="97"/>
+        <line x1="195" y1="67" x2="225" y2="67"/>
+
+        <line x1="165" y1="157" x2="195" y2="157"/>
+        <line x1="165" y1="217" x2="195" y2="217"/>
+        <line x1="195" y1="157" x2="195" y2="217"/>
+        <line x1="195" y1="187" x2="225" y2="187"/>
+
+        <line x1="165" y1="277" x2="195" y2="277"/>
+        <line x1="165" y1="337" x2="195" y2="337"/>
+        <line x1="195" y1="277" x2="195" y2="337"/>
+        <line x1="195" y1="307" x2="225" y2="307"/>
+
+        <line x1="165" y1="397" x2="195" y2="397"/>
+        <line x1="165" y1="457" x2="195" y2="457"/>
+        <line x1="195" y1="397" x2="195" y2="457"/>
+        <line x1="195" y1="427" x2="225" y2="427"/>
+
+        <!-- R2 connectors -->
+        <line x1="385" y1="67" x2="415" y2="67"/>
+        <line x1="385" y1="187" x2="415" y2="187"/>
+        <line x1="415" y1="67" x2="415" y2="187"/>
+        <line x1="415" y1="127" x2="445" y2="127"/>
+
+        <line x1="385" y1="307" x2="415" y2="307"/>
+        <line x1="385" y1="427" x2="415" y2="427"/>
+        <line x1="415" y1="307" x2="415" y2="427"/>
+        <line x1="415" y1="367" x2="445" y2="367"/>
+
+        <!-- Final connectors -->
+        <line x1="545" y1="127" x2="575" y2="127"/>
+        <line x1="545" y1="367" x2="575" y2="367"/>
+        <line x1="575" y1="127" x2="575" y2="367"/>
+        <line x1="575" y1="247" x2="605" y2="247"/>
+      </svg>
+
+      <!-- COLUMN 1: seeds -->
+      <div class="bnode active" style="top:20px;left:10px">
+        <div class="nnum">1</div><div class="nname">CAIO ANDRÉ MIRANDA DE SOUZA</div><div class="nteam">RAIZ JIU JITSU</div>
+      </div>
+      <div class="bnode" style="top:80px;left:10px">
+        <div class="nnum">9</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode active" style="top:140px;left:10px">
+        <div class="nnum">5</div><div class="nname">ARTHUR DE JESUS LACERDA</div><div class="nteam">CT AREA 5</div>
+      </div>
+      <div class="bnode" style="top:200px;left:10px">
+        <div class="nnum">13</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode active" style="top:260px;left:10px">
+        <div class="nnum">3</div><div class="nname">THÉO LUCCA MOREIRA DOURADO</div><div class="nteam">NOVA UNIÃO</div>
+      </div>
+      <div class="bnode" style="top:320px;left:10px">
+        <div class="nnum">11</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode active" style="top:380px;left:10px">
+        <div class="nnum">7</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode" style="top:440px;left:10px">
+        <div class="nnum">15</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+
+      <!-- COLUMN 2: R1 right side -->
+      <div class="bnode active" style="top:20px;right:380px">
+        <div class="nnum">2</div><div class="nname">ARTHUR PINTO BASTOS</div><div class="nteam">RAIZ JIU JITSU</div>
+      </div>
+      <div class="bnode" style="top:80px;right:380px">
+        <div class="nnum">10</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode active" style="top:140px;right:380px">
+        <div class="nnum">6</div><div class="nname">CAIO LUIZ OLIVEIRA DA COSTA</div><div class="nteam">CHECKMAT</div>
+      </div>
+      <div class="bnode" style="top:200px;right:380px">
+        <div class="nnum">14</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode active" style="top:260px;right:380px">
+        <div class="nnum">4</div><div class="nname">RICARDO MIGUEL VIEIRA BRAND...</div><div class="nteam">CT TEAM</div>
+      </div>
+      <div class="bnode" style="top:320px;right:380px">
+        <div class="nnum">12</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode" style="top:380px;right:380px">
+        <div class="nnum">8</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+      <div class="bnode" style="top:440px;right:380px">
+        <div class="nnum">16</div><div class="nname"></div><div class="nteam" style="color:#cbd5e1;font-style:italic">vazio</div>
+      </div>
+
+      <!-- COLUMN 3: semis left -->
+      <div class="bnode empty" style="top:50px;left:225px"><div class="nname">—</div></div>
+      <div class="bnode empty" style="top:170px;left:225px"><div class="nname">—</div></div>
+      <div class="bnode empty" style="top:290px;left:225px"><div class="nname">—</div></div>
+      <div class="bnode empty" style="top:410px;left:225px"><div class="nname">—</div></div>
+
+      <!-- COLUMN 4: semis right -->
+      <div class="bnode empty" style="top:50px;right:160px"><div class="nname">—</div></div>
+      <div class="bnode empty" style="top:170px;right:160px"><div class="nname">—</div></div>
+      <div class="bnode empty" style="top:290px;right:160px"><div class="nname">—</div></div>
+      <div class="bnode empty" style="top:410px;right:160px"><div class="nname">—</div></div>
+
+      <!-- COLUMN 5: finals -->
+      <div class="bnode empty" style="top:110px;left:445px"><div class="nname">—</div></div>
+      <div class="bnode empty" style="top:350px;left:445px"><div class="nname">—</div></div>
+
+      <!-- PODIUM -->
+      <div class="podium-box" style="top:220px;left:610px">🥇 1° Lugar</div>
+      <div class="podium-box" style="top:270px;left:610px;border-color:#cbd5e1;color:#64748b;background:#f8fafc">🥈 2° Lugar</div>
+      <div class="podium-box" style="top:320px;left:610px;border-color:#d97706;color:#92400e;background:#fffbeb">🥉 3° Lugar</div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

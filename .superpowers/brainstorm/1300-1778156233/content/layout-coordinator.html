@@ -1,0 +1,144 @@
+<h2>Layout do painel de ações do coordenador</h2>
+<p class="subtitle">Qual estrutura deixa o fluxo mais claro para quem vem do papel?</p>
+
+<div class="cards">
+
+  <!-- OPTION A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;padding:12px;font-family:sans-serif;font-size:12px;color:#eee;min-height:320px">
+        <!-- Bracket tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <div style="background:#f59e0b;color:#000;padding:4px 10px;border-radius:20px;font-weight:700;font-size:11px">M·Mirim·PENA</div>
+          <div style="background:#333;padding:4px 10px;border-radius:20px;font-size:11px">F·Adulto·LEVE</div>
+          <div style="background:#333;padding:4px 10px;border-radius:20px;font-size:11px">+3</div>
+        </div>
+        <!-- Step indicator -->
+        <div style="display:flex;align-items:center;margin-bottom:12px;gap:0">
+          <div style="background:#f59e0b;color:#000;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">1</div>
+          <div style="height:2px;background:#f59e0b;width:30px"></div>
+          <div style="background:#f59e0b;color:#000;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">2</div>
+          <div style="height:2px;background:#444;width:30px"></div>
+          <div style="background:#444;color:#888;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">3</div>
+          <div style="height:2px;background:#444;width:30px"></div>
+          <div style="background:#444;color:#888;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">4</div>
+          <div style="margin-left:8px;font-size:10px;color:#f59e0b;font-weight:600">PESAGEM</div>
+        </div>
+        <!-- Current step content -->
+        <div style="background:#252540;border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:10px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Confirmar presença</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div>
+              <div style="font-weight:700;font-size:13px">CAIO ANDRÉ MIRANDA</div>
+              <div style="font-size:10px;color:#888">Raiz Jiu Jitsu</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <div style="background:#22c55e;color:#fff;padding:8px 14px;border-radius:6px;font-weight:700;font-size:12px">✓ PRESENTE</div>
+              <div style="background:#ef4444;color:#fff;padding:8px 10px;border-radius:6px;font-weight:700;font-size:12px">✕ DESC.</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;font-size:13px">ARTHUR DE JESUS</div>
+              <div style="font-size:10px;color:#888">CT Area 5</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <div style="background:#22c55e;color:#fff;padding:8px 14px;border-radius:6px;font-weight:700;font-size:12px">✓ PRESENTE</div>
+              <div style="background:#ef4444;color:#fff;padding:8px 10px;border-radius:6px;font-weight:700;font-size:12px">✕ DESC.</div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:10px;color:#888">Confirme a presença de todos os atletas para avançar</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Passo a passo (wizard)</h3>
+      <p>O painel guia o coordenador etapa por etapa: Pesagem → Luta → Resultado. Só mostra as ações da etapa atual. Menos confusão, mas menos flexibilidade para alternar entre etapas.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;padding:12px;font-family:sans-serif;font-size:12px;color:#eee;min-height:320px">
+        <!-- Bracket tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <div style="background:#f59e0b;color:#000;padding:4px 10px;border-radius:20px;font-weight:700;font-size:11px">M·Mirim·PENA</div>
+          <div style="background:#333;padding:4px 10px;border-radius:20px;font-size:11px">F·Adulto·LEVE</div>
+          <div style="background:#333;padding:4px 10px;border-radius:20px;font-size:11px">+3</div>
+        </div>
+        <!-- Match card big -->
+        <div style="background:#252540;border:1px solid #f59e0b;border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="font-size:10px;color:#f59e0b;font-weight:700;margin-bottom:8px;text-transform:uppercase">R1 · Partida 1 · Em andamento</div>
+          <!-- Athlete 1 -->
+          <div style="background:#1e1e3a;border-radius:8px;padding:8px 10px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;font-size:13px">CAIO ANDRÉ MIRANDA</div>
+              <div style="font-size:10px;color:#888">Raiz Jiu Jitsu</div>
+            </div>
+            <div style="background:#22c55e;color:#fff;padding:10px 18px;border-radius:8px;font-weight:800;font-size:14px">VENCEU</div>
+          </div>
+          <!-- VS -->
+          <div style="text-align:center;font-size:10px;color:#555;margin:4px 0">VS</div>
+          <!-- Athlete 2 -->
+          <div style="background:#1e1e3a;border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;font-size:13px">ARTHUR DE JESUS</div>
+              <div style="font-size:10px;color:#888">CT Area 5</div>
+            </div>
+            <div style="background:#22c55e;color:#fff;padding:10px 18px;border-radius:8px;font-weight:800;font-size:14px">VENCEU</div>
+          </div>
+          <!-- Bottom actions -->
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <div style="background:#ef4444;color:#fff;padding:8px;border-radius:6px;font-size:11px;font-weight:700;flex:1;text-align:center">W.O. — Caio</div>
+            <div style="background:#ef4444;color:#fff;padding:8px;border-radius:6px;font-size:11px;font-weight:700;flex:1;text-align:center">W.O. — Arthur</div>
+            <div style="background:#7f1d1d;color:#fff;padding:8px;border-radius:6px;font-size:11px;font-weight:700;flex:1;text-align:center">Ambos Ausentes</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:10px;color:#888">↓ próxima partida aguardando</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Cards por partida</h3>
+      <p>Cada partida é um card grande com todos os botões de ação visíveis. O coordenador rola para ver as próximas partidas. Mais flexível, mas pode mostrar muitas opções ao mesmo tempo.</p>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;padding:12px;font-family:sans-serif;font-size:12px;color:#eee;min-height:320px">
+        <!-- Bracket tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <div style="background:#f59e0b;color:#000;padding:4px 10px;border-radius:20px;font-weight:700;font-size:11px">M·Mirim·PENA</div>
+          <div style="background:#333;padding:4px 10px;border-radius:20px;font-size:11px">F·Adulto·LEVE</div>
+          <div style="background:#333;padding:4px 10px;border-radius:20px;font-size:11px">+3</div>
+        </div>
+        <!-- Focus card -->
+        <div style="background:#f59e0b;border-radius:10px;padding:12px;margin-bottom:8px;color:#000">
+          <div style="font-size:10px;font-weight:700;margin-bottom:6px;text-transform:uppercase">⚡ Ação necessária agora</div>
+          <div style="font-size:13px;font-weight:800;margin-bottom:8px">Registrar resultado — R1 P1</div>
+          <div style="display:flex;gap:6px">
+            <div style="background:#000;color:#f59e0b;padding:12px;border-radius:8px;font-weight:800;font-size:13px;flex:1;text-align:center">CAIO<br/>VENCEU</div>
+            <div style="background:#000;color:#f59e0b;padding:12px;border-radius:8px;font-weight:800;font-size:13px;flex:1;text-align:center">ARTHUR<br/>VENCEU</div>
+          </div>
+        </div>
+        <!-- Queue -->
+        <div style="font-size:10px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Próximas ações</div>
+        <div style="background:#252540;border-radius:6px;padding:8px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+          <span>Confirmar presença — R1 P3</span>
+          <span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px">PESAGEM</span>
+        </div>
+        <div style="background:#252540;border-radius:6px;padding:8px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+          <span>Iniciar luta — R1 P5</span>
+          <span style="background:#8b5cf6;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px">AGUARDANDO</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Foco + fila de ações</h3>
+      <p>Destaca em amarelo a ação mais urgente no topo, com fila das próximas abaixo. O coordenador sempre sabe o que fazer primeiro. Exige lógica de prioridade no sistema.</p>
+    </div>
+  </div>
+
+</div>

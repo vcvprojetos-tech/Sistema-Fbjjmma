@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tela Completa — Coordenador</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f1a; color: #eee; font-family: 'Segoe UI', sans-serif; font-size: 14px; }
+
+  /* HEADER */
+  .header {
+    background: #1a1a2e;
+    border-bottom: 1px solid #2a2a4a;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-weight: 800; font-size: 15px; color: #f59e0b; }
+  .logo span { display: block; font-size: 10px; font-weight: 400; color: #888; }
+  .tatame-label { background: #252545; border-radius: 8px; padding: 6px 14px; }
+  .tatame-label .name { font-weight: 700; font-size: 14px; }
+  .tatame-label .op { font-size: 11px; color: #f59e0b; }
+  .header-stats { display: flex; gap: 16px; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 20px; font-weight: 800; }
+  .stat .num.yellow { color: #f59e0b; }
+  .stat .num.blue { color: #3b82f6; }
+  .stat .num.green { color: #22c55e; }
+  .stat .lbl { font-size: 10px; color: #888; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .coordinator-name { font-size: 13px; color: #ccc; }
+  .btn-sync { background: #252545; border: none; color: #888; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 16px; }
+
+  /* MAIN LAYOUT */
+  .main { display: flex; height: calc(100vh - 58px); }
+
+  /* LEFT PANEL */
+  .left-panel { width: 420px; min-width: 420px; border-right: 1px solid #2a2a4a; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* BRACKET TABS */
+  .bracket-tabs { padding: 10px 12px 0; background: #1a1a2e; border-bottom: 1px solid #2a2a4a; }
+  .tabs-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .tabs-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; }
+  .tabs-row::-webkit-scrollbar { height: 3px; }
+  .tabs-row::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+  .tab { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer; border: none; }
+  .tab.active { background: #f59e0b; color: #000; }
+  .tab.inactive { background: #252545; color: #aaa; }
+  .tab .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; margin-right: 4px; vertical-align: middle; }
+
+  /* ACTIONS AREA */
+  .actions { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .actions::-webkit-scrollbar { width: 4px; }
+  .actions::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  /* SECTION LABEL */
+  .section-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; padding: 0 2px; }
+
+  /* MATCH CARD */
+  .match-card { background: #1e1e3a; border: 1px solid #2a2a4a; border-radius: 12px; overflow: hidden; }
+  .match-card.active-match { border-color: #f59e0b; }
+  .match-card-header { padding: 8px 12px; background: #252545; display: flex; align-items: center; justify-content: space-between; }
+  .match-card-header .round { font-size: 11px; font-weight: 700; color: #f59e0b; }
+  .match-card-header .badge { font-size: 10px; background: #f59e0b22; color: #f59e0b; padding: 2px 8px; border-radius: 10px; }
+  .match-card-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* ATHLETE ROW */
+  .athlete-row { background: #141428; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .athlete-info .seed { display: inline-block; width: 20px; height: 20px; background: #333; border-radius: 50%; text-align: center; line-height: 20px; font-size: 10px; font-weight: 700; margin-right: 6px; }
+  .athlete-info .aname { font-weight: 700; font-size: 13px; }
+  .athlete-info .team { font-size: 10px; color: #888; margin-top: 1px; }
+  .athlete-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* BUTTONS */
+  .btn { border: none; border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.8; }
+  .btn-presente { background: #16a34a; color: #fff; }
+  .btn-desc { background: #dc2626; color: #fff; font-size: 11px; padding: 10px 10px; }
+  .btn-venceu { background: #f59e0b; color: #000; font-size: 14px; padding: 12px 20px; }
+  .btn-wo { background: #7f1d1d; color: #fca5a5; font-size: 11px; padding: 8px 10px; }
+  .btn-ambos { background: #451a03; color: #fdba74; font-size: 11px; padding: 8px 10px; }
+  .btn-iniciar { background: #1d4ed8; color: #fff; width: 100%; margin-top: 4px; padding: 12px; font-size: 14px; border-radius: 8px; }
+  .btn-avançar { background: #1d4ed8; color: #fff; width: 100%; padding: 12px; font-size: 14px; border-radius: 8px; }
+
+  /* VS divider */
+  .vs-divider { text-align: center; font-size: 10px; color: #444; font-weight: 700; letter-spacing: 2px; }
+
+  /* WO row */
+  .wo-row { display: flex; gap: 6px; padding: 0 0 4px; }
+  .wo-row .btn { flex: 1; text-align: center; }
+
+  /* SOLO CARD */
+  .solo-card { background: #1e1e3a; border: 1px solid #3b82f6; border-radius: 12px; overflow: hidden; }
+  .solo-card .match-card-header { background: #1e3a5f; }
+  .solo-card .match-card-header .round { color: #60a5fa; }
+  .solo-badge { background: #1e3a5f; color: #60a5fa; font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+
+  /* CONFIRMED badge */
+  .confirmed { display: flex; align-items: center; gap: 6px; }
+  .confirmed .tick { color: #22c55e; font-size: 16px; }
+  .confirmed .txt { color: #22c55e; font-size: 11px; font-weight: 700; }
+
+  /* RIGHT PANEL */
+  .right-panel { flex: 1; overflow: auto; display: flex; flex-direction: column; }
+  .right-panel-header { padding: 10px 16px; background: #1a1a2e; border-bottom: 1px solid #2a2a4a; font-size: 12px; color: #888; }
+  .right-panel-header strong { color: #eee; }
+  .bracket-canvas { flex: 1; padding: 16px; }
+
+  /* BRACKET SIMPLIFIED */
+  .bracket-wrap { transform-origin: top left; }
+  .bracket-row { display: flex; align-items: center; margin-bottom: 6px; gap: 0; }
+  .b-slot { width: 160px; background: #1e1e3a; border: 1px solid #2a2a4a; border-radius: 6px; padding: 6px 10px; font-size: 11px; }
+  .b-slot.winner { border-color: #f59e0b; background: #2a2500; }
+  .b-slot.empty { background: #141420; color: #444; border-style: dashed; }
+  .b-slot .sname { font-weight: 600; }
+  .b-slot .steam { font-size: 9px; color: #666; }
+  .b-connector { width: 20px; height: 2px; background: #333; }
+  .b-connector-v { width: 2px; background: #333; }
+  .b-center { display: flex; flex-direction: column; align-items: center; }
+  .podium-box { background: #2a2500; border: 1px solid #f59e0b; border-radius: 8px; padding: 8px 16px; text-align: center; font-size: 11px; font-weight: 700; color: #f59e0b; }
+
+  /* Finalizadas tab */
+  .tabs-main { display: flex; border-bottom: 1px solid #2a2a4a; background: #1a1a2e; }
+  .tab-main { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: #888; }
+  .tab-main.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">FBJJMMA <span>Controle de Chaves</span></div>
+    <div class="tatame-label">
+      <div class="name">Rafael Torres Nascimento — Tatame 1</div>
+      <div class="op">Op: Rafael Torres Nascimento</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><div class="num yellow">2</div><div class="lbl">em andamento</div></div>
+    <div class="stat"><div class="num blue">1</div><div class="lbl">aguardando</div></div>
+    <div class="stat"><div class="num green">0</div><div class="lbl">finalizadas</div></div>
+  </div>
+  <div class="header-right">
+    <div class="coordinator-name">Rafael Torres</div>
+    <button class="btn-sync">↻</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- TABS ATIVAS / FINALIZADAS -->
+    <div class="tabs-main">
+      <div class="tab-main active">Ativas (2)</div>
+      <div class="tab-main">Finalizadas (0)</div>
+    </div>
+
+    <!-- BRACKET TABS -->
+    <div class="bracket-tabs">
+      <div class="tabs-label">Chaves em andamento</div>
+      <div class="tabs-row">
+        <button class="tab active">M · Mirim · PENA · Branca</button>
+        <button class="tab inactive"><span class="dot"></span>F · Adulto · LEVE</button>
+        <button class="tab inactive">M · Juvenil · MÉDIO</button>
+        <button class="tab inactive">+2 chaves</button>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+
+      <!-- SECTION: PESAGEM -->
+      <div class="section-label">✦ Confirmação de presença</div>
+
+      <!-- Match card: pesagem -->
+      <div class="match-card">
+        <div class="match-card-header">
+          <span class="round">R1 · Partida 1</span>
+          <span class="badge">Aguardando confirmação</span>
+        </div>
+        <div class="match-card-body">
+          <div class="athlete-row">
+            <div class="athlete-info">
+              <span class="seed">1</span>
+              <span class="aname">Caio André Miranda d...</span>
+              <div class="team" style="padding-left:26px">Raiz Jiu Jitsu</div>
+            </div>
+            <div class="athlete-actions">
+              <button class="btn btn-presente">✓ Presente</button>
+              <button class="btn btn-desc">✕ Desc.</button>
+            </div>
+          </div>
+          <div class="vs-divider">VS</div>
+          <div class="athlete-row">
+            <div class="athlete-info">
+              <span class="seed">5</span>
+              <span class="aname">Arthur de Jesus Lacerda</span>
+              <div class="team" style="padding-left:26px">CT Area 5</div>
+            </div>
+            <div class="athlete-actions">
+              <button class="btn btn-presente">✓ Presente</button>
+              <button class="btn btn-desc">✕ Desc.</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Match card: um confirmado, outro não -->
+      <div class="match-card">
+        <div class="match-card-header">
+          <span class="round">R1 · Partida 3</span>
+          <span class="badge">Aguardando confirmação</span>
+        </div>
+        <div class="match-card-body">
+          <div class="athlete-row">
+            <div class="athlete-info">
+              <span class="seed">2</span>
+              <span class="aname">Arthur Pinto Bastos</span>
+              <div class="team" style="padding-left:26px">Raiz Jiu Jitsu</div>
+            </div>
+            <div class="confirmed">
+              <span class="tick">✓</span>
+              <span class="txt">Confirmado</span>
+            </div>
+          </div>
+          <div class="vs-divider">VS</div>
+          <div class="athlete-row">
+            <div class="athlete-info">
+              <span class="seed">6</span>
+              <span class="aname">Caio Luiz Oliveira da...</span>
+              <div class="team" style="padding-left:26px">CheckMat</div>
+            </div>
+            <div class="athlete-actions">
+              <button class="btn btn-presente">✓ Presente</button>
+              <button class="btn btn-desc">✕ Desc.</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: EM ANDAMENTO -->
+      <div class="section-label" style="margin-top:4px">⚡ Em andamento</div>
+
+      <!-- Match card: luta acontecendo -->
+      <div class="match-card active-match">
+        <div class="match-card-header">
+          <span class="round">R1 · Partida 2 · <span style="color:#22c55e">Lutando agora</span></span>
+          <span class="badge" style="background:#22c55e22;color:#22c55e">Em andamento</span>
+        </div>
+        <div class="match-card-body">
+          <div class="athlete-row">
+            <div class="athlete-info">
+              <span class="seed">3</span>
+              <span class="aname">Théo Lucca Moreira</span>
+              <div class="team" style="padding-left:26px">Nova União</div>
+            </div>
+            <button class="btn btn-venceu">🏆 Venceu</button>
+          </div>
+          <div class="vs-divider">VS</div>
+          <div class="athlete-row">
+            <div class="athlete-info">
+              <span class="seed">7</span>
+              <span class="aname">Ricardo Miguel Vieira</span>
+              <div class="team" style="padding-left:26px">CT Team</div>
+            </div>
+            <button class="btn btn-venceu">🏆 Venceu</button>
+          </div>
+          <div class="wo-row" style="margin-top:6px">
+            <button class="btn btn-wo">W.O. — Théo</button>
+            <button class="btn btn-wo">W.O. — Ricardo</button>
+            <button class="btn btn-ambos">Ambos Ausentes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: ATLETA SOLO (auto-avança) -->
+      <div class="section-label" style="margin-top:4px">👤 Atleta sozinho — confirme e avança</div>
+
+      <div class="solo-card">
+        <div class="match-card-header">
+          <span class="round" style="color:#60a5fa">R1 · Partida 4 · BYE</span>
+          <span class="solo-badge">Atleta aguardando</span>
+        </div>
+        <div class="match-card-body">
+          <div class="athlete-row">
+            <div class="athlete-info">
+              <span class="seed">4</span>
+              <span class="aname">Ricardo Miguel Vieira</span>
+              <div class="team" style="padding-left:26px">CT Team</div>
+            </div>
+            <button class="btn btn-avançar" style="width:auto;padding:10px 18px">✓ Confirmar e avançar</button>
+          </div>
+          <div style="font-size:10px;color:#60a5fa;padding:4px 2px 0">
+            ℹ O atleta avança automaticamente ao confirmar presença.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: BRACKET VIEW -->
+  <div class="right-panel">
+    <div class="right-panel-header">
+      <strong>Masculino | Mirim | PENA | Até 23kg | Branca | Chave: 41</strong>
+    </div>
+    <div class="bracket-canvas">
+
+      <!-- Bracket simplified representation -->
+      <div style="display:flex;gap:0;align-items:flex-start;padding:20px 10px;overflow-x:auto">
+
+        <!-- Column 1: Seeds -->
+        <div style="display:flex;flex-direction:column;gap:48px;margin-top:10px">
+          <div class="b-slot winner"><div class="sname">1 Caio André M.</div><div class="steam">Raiz Jiu Jitsu</div></div>
+          <div class="b-slot"><div class="sname">5 Arthur de Jesus</div><div class="steam">CT Area 5</div></div>
+          <div class="b-slot"><div class="sname">3 Théo Lucca M.</div><div class="steam">Nova União</div></div>
+          <div class="b-slot"><div class="sname">7 ...</div><div class="steam" style="color:#555">aguardando</div></div>
+          <div class="b-slot"><div class="sname">2 Arthur Pinto B.</div><div class="steam">Raiz Jiu Jitsu</div></div>
+          <div class="b-slot"><div class="sname">6 Caio Luiz O.</div><div class="steam">CheckMat</div></div>
+          <div class="b-slot"><div class="sname">4 Ricardo M.</div><div class="steam">CT Team</div></div>
+          <div class="b-slot empty"><div class="sname">BYE</div></div>
+        </div>
+
+        <!-- Connectors -->
+        <div style="display:flex;flex-direction:column;justify-content:space-around;height:520px;padding:34px 0">
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div style="width:20px;height:2px;background:#f59e0b"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div style="width:20px;height:2px;background:#333"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div style="width:20px;height:2px;background:#333"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div style="width:20px;height:2px;background:#333"></div>
+          </div>
+        </div>
+
+        <!-- Column 2: R1 results -->
+        <div style="display:flex;flex-direction:column;gap:96px;margin-top:58px">
+          <div class="b-slot winner"><div class="sname">→ Caio André</div><div class="steam">vencedor R1</div></div>
+          <div class="b-slot empty"><div class="sname">aguardando</div></div>
+          <div class="b-slot empty"><div class="sname">aguardando</div></div>
+          <div class="b-slot winner"><div class="sname">→ Ricardo M.</div><div class="steam">bye</div></div>
+        </div>
+
+        <!-- More connectors -->
+        <div style="display:flex;flex-direction:column;justify-content:space-around;height:520px;padding:80px 0">
+          <div style="width:20px;height:2px;background:#333"></div>
+          <div style="width:20px;height:2px;background:#333"></div>
+        </div>
+
+        <!-- Column 3: semis -->
+        <div style="display:flex;flex-direction:column;gap:180px;margin-top:130px">
+          <div class="b-slot empty"><div class="sname">?</div><div class="steam">semi-final</div></div>
+          <div class="b-slot empty"><div class="sname">?</div><div class="steam">semi-final</div></div>
+        </div>
+
+        <!-- Final connectors -->
+        <div style="display:flex;flex-direction:column;justify-content:center;height:520px;padding:0">
+          <div style="width:20px;height:2px;background:#333"></div>
+        </div>
+
+        <!-- Podium -->
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:200px">
+          <div class="podium-box">🥇 1° Lugar</div>
+          <div class="podium-box" style="border-color:#888;color:#aaa;background:#1a1a1a">🥈 2° Lugar</div>
+          <div class="podium-box" style="border-color:#cd7f32;color:#cd7f32;background:#1a1a1a">🥉 3° Lugar</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

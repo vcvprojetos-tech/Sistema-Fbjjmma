@@ -1,0 +1,100 @@
+<h2>CBJJ vs Sistema Atual — Diferenças de Chaveamento</h2>
+<p class="subtitle">Principais cenários onde as regras divergem</p>
+
+<style>
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+.box { border-radius: 10px; padding: 16px; }
+.box-atual { background: #1e293b; border: 1px solid #334155; }
+.box-cbjj  { background: #0f2b1e; border: 1px solid #166534; }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .05em;
+       padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; text-transform: uppercase; }
+.tag-atual { background:#334155; color:#94a3b8; }
+.tag-cbjj  { background:#166534; color:#86efac; }
+h3 { margin: 0 0 12px; font-size: 15px; color: #f1f5f9; }
+.match-row { display:flex; align-items:center; gap:8px; margin:6px 0; font-size:13px; }
+.pill { background:#1e40af; color:#bfdbfe; border-radius:4px; padding:2px 8px; font-size:12px; white-space:nowrap; }
+.pill.amber { background:#78350f; color:#fde68a; }
+.pill.green { background:#14532d; color:#86efac; }
+.pill.red   { background:#450a0a; color:#fca5a5; }
+.arrow { color:#64748b; }
+.divider { border:none; border-top:1px solid #1e293b; margin: 6px 0; }
+.badge { display:inline-flex; align-items:center; gap:4px; font-size:12px;
+         padding:3px 10px; border-radius:99px; font-weight:600; }
+.badge-warn { background:#422006; color:#fdba74; }
+.badge-ok   { background:#14532d; color:#86efac; }
+.note { font-size:12px; color:#64748b; margin-top:8px; }
+.section-title { font-size:13px; font-weight:700; color:#94a3b8; text-transform:uppercase;
+                 letter-spacing:.08em; margin: 20px 0 10px; border-bottom:1px solid #1e293b; padding-bottom:6px; }
+</style>
+
+<!-- ── 3 ATLETAS ── -->
+<div class="section-title">Chave de 3 Atletas</div>
+<div class="grid-2">
+  <div class="box box-atual">
+    <span class="tag tag-atual">Sistema Atual (FBJJMMA)</span>
+    <h3>Repescagem / 2ª chance</h3>
+    <div class="match-row"><span class="pill">R1</span> Atleta 1 vs Atleta 3</div>
+    <div class="match-row"><span class="pill amber">R2</span> Perdedor R1 vs Atleta 2</div>
+    <div class="match-row"><span class="pill green">R3</span> Vencedor R1 vs Vencedor R2</div>
+    <div class="note">Atleta 2 aguarda — joga apenas R2 ou R3. Total: 3 partidas.</div>
+    <div class="note">Desempate: resultado de cada luta individual.</div>
+  </div>
+  <div class="box box-cbjj">
+    <span class="tag tag-cbjj">CBJJ</span>
+    <h3>Round-Robin (todos vs todos)</h3>
+    <div class="match-row"><span class="pill">M1</span> Atleta 1 vs Atleta 2</div>
+    <div class="match-row"><span class="pill">M2</span> Atleta 2 vs Atleta 3</div>
+    <div class="match-row"><span class="pill">M3</span> Atleta 1 vs Atleta 3</div>
+    <div class="note">Cada atleta luta 2 vezes. Total: 3 partidas.</div>
+    <div class="note">Desempate: vitórias → pontos → vantagens → punições → árbitro.</div>
+  </div>
+</div>
+
+<!-- ── 4 ATLETAS ── -->
+<div class="section-title">Chave de 4 Atletas</div>
+<div class="grid-2">
+  <div class="box box-atual">
+    <span class="tag tag-atual">Sistema Atual</span>
+    <h3>Eliminatória simples, sem bronze</h3>
+    <div class="match-row"><span class="pill">SF1</span> Atleta 1 vs Atleta 4</div>
+    <div class="match-row"><span class="pill">SF2</span> Atleta 2 vs Atleta 3</div>
+    <hr class="divider">
+    <div class="match-row"><span class="pill green">Final</span> Venc. SF1 vs Venc. SF2</div>
+    <div class="note">Perdedores = 3° lugar empatado. Sem luta pelo bronze.</div>
+  </div>
+  <div class="box box-cbjj">
+    <span class="tag tag-cbjj">CBJJ</span>
+    <h3>Eliminatória + disputa de 3° lugar</h3>
+    <div class="match-row"><span class="pill">SF1</span> Atleta 1 vs Atleta 4</div>
+    <div class="match-row"><span class="pill">SF2</span> Atleta 2 vs Atleta 3</div>
+    <hr class="divider">
+    <div class="match-row"><span class="pill amber">Bronze</span> Perd. SF1 vs Perd. SF2</div>
+    <div class="match-row"><span class="pill green">Final</span> Venc. SF1 vs Venc. SF2</div>
+    <div class="note">4 atletas, 4 partidas. 3° lugar definido em luta.</div>
+  </div>
+</div>
+
+<!-- ── 5+ ATLETAS ── -->
+<div class="section-title">Chave de 5+ Atletas</div>
+<div class="grid-2">
+  <div class="box box-atual">
+    <span class="tag tag-atual">Sistema Atual</span>
+    <h3>Eliminatória + BYEs, sem bronze</h3>
+    <div class="note" style="font-size:13px;color:#cbd5e1;">Seeding espelhado para a próxima potência de 2.<br>Perdedores das semis = 3° lugar empatado (sem luta).</div>
+  </div>
+  <div class="box box-cbjj">
+    <span class="tag tag-cbjj">CBJJ</span>
+    <h3>Eliminatória + bronze nas semis</h3>
+    <div class="note" style="font-size:13px;color:#cbd5e1;">Seeding idêntico ao atual.<br>Perdedores das semifinais disputam o 3° lugar em luta.<br>Em chaves de 5–7 atletas com BYE, o perdedor do lado com BYE também disputa o bronze.</div>
+  </div>
+</div>
+
+<!-- ── RESUMO ── -->
+<div class="section-title">O que muda no sistema</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+  <span class="badge badge-warn">⚠ 3 atletas: lógica de round-robin nova</span>
+  <span class="badge badge-warn">⚠ 4+ atletas: luta pelo 3° lugar</span>
+  <span class="badge badge-ok">✓ Seeding: já compatível</span>
+  <span class="badge badge-ok">✓ Eliminatória ≥ 5: já compatível</span>
+</div>
+<p class="note" style="margin-top:12px;">Deslize para o terminal para continuar a conversa.</p>
