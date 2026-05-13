@@ -1,11 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 export default function CoordenadorEntradaPage() {
   const router = useRouter()
   const [cpf, setCpf] = useState("")
+
+  useEffect(() => {
+    const enter = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
+    }
+    document.addEventListener("click", enter, { once: true })
+    document.addEventListener("keydown", enter, { once: true })
+    return () => {
+      document.removeEventListener("click", enter)
+      document.removeEventListener("keydown", enter)
+    }
+  }, [])
   const [tatameNum, setTatameNum] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
