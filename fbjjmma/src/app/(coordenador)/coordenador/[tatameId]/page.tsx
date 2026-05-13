@@ -978,7 +978,7 @@ export default function TatamePage() {
                   </div>
 
                   {error && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg text-sm" style={{ backgroundColor: "#7f1d1d30", color: "#f87171" }}>
+                    <div className="flex items-center gap-2 p-3 rounded-lg text-sm" style={{ backgroundColor: "#991b1b", color: "#fca5a5" }}>
                       <AlertCircle className="h-4 w-4 shrink-0" />
                       <span>{error}</span>
                     </div>
@@ -1042,7 +1042,7 @@ export default function TatamePage() {
                         return (
                           <div key={match.id} className="rounded-xl border overflow-hidden"
                             style={{
-                              borderColor: isDone ? "#14532d40" : bothPresent ? "#16a34a60" : "var(--border-alt)",
+                              borderColor: isDone ? "#166534" : bothPresent ? "#16a34a" : "var(--border-alt)",
                               backgroundColor: "var(--card)",
                             }}>
                             <div className="px-3 py-2 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -1063,7 +1063,7 @@ export default function TatamePage() {
 
                             {/* Atleta 1 */}
                             <div className="w-full px-4 py-4 flex items-center gap-3"
-                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#14532d30" : "transparent") : "var(--surface-match)", borderBottom: "1px solid var(--border)" }}>
+                              style={{ backgroundColor: isDone ? (winnerIsP1 ? "#166534" : "transparent") : "var(--surface-match)", borderBottom: "1px solid var(--border)" }}>
                               <button
                                 onClick={() => !isDone && p1Name !== "BYE" && togglePresent(match.id, match._bracketId, "p1", p1Present)}
                                 disabled={isDone || p1Name === "BYE"}
@@ -1112,7 +1112,7 @@ export default function TatamePage() {
 
                             {/* Atleta 2 */}
                             <div className="w-full px-4 py-4 flex items-center gap-3"
-                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#14532d30" : "transparent") : "var(--surface-match)" }}>
+                              style={{ backgroundColor: isDone ? (winnerIsP2 ? "#166534" : "transparent") : "var(--surface-match)" }}>
                               <button
                                 onClick={() => !isDone && p2Name !== "BYE" && togglePresent(match.id, match._bracketId, "p2", p2Present)}
                                 disabled={isDone || p2Name === "BYE"}
@@ -1290,7 +1290,7 @@ export default function TatamePage() {
                     const callErr = callError?.matchId === match.id ? callError : null
                     return (
                       <div key={match.id} className="rounded-xl border overflow-hidden"
-                        style={{ borderColor: p1Present ? "#16a34a60" : "#78350f60", backgroundColor: "var(--card)" }}>
+                        style={{ borderColor: p1Present ? "#16a34a" : "#d97706", backgroundColor: "var(--card)" }}>
                         <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
                           <span className="text-xs font-semibold" style={{ color: isMid ? "var(--confirm-title)" : "#fbbf24" }}>
                             {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}

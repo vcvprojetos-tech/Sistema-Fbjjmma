@@ -630,8 +630,8 @@ export default function PremiacaoPage() {
                         >
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                            {isPending && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#78350f40", color: "#fbbf24" }}>PENDENTE</span>}
-                            {isAwarded && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#4a1d9640", color: "#a78bfa" }}>PREMIADA</span>}
+                            {isPending && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#92400e", color: "#fcd34d" }}>PENDENTE</span>}
+                            {isAwarded && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#5b21b6", color: "#d8b4fe" }}>PREMIADA</span>}
                           </div>
                           <p className="font-medium leading-tight break-words" style={{ color: "var(--foreground)", fontSize: "0.72rem" }}>{catLabel(b)}</p>
                           <div className="flex flex-col gap-0.5 mt-1">

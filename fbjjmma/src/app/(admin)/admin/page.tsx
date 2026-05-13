@@ -58,7 +58,7 @@ export default async function DashboardPage() {
               style={{ borderLeftColor: card.color }}
             >
               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${card.color}18` }}>
+                style={{ backgroundColor: "var(--card-alt)" }}>
                 <Icon className="h-5 w-5" style={{ color: card.color }} />
               </div>
               <div>

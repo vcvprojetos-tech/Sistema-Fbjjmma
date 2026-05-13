@@ -855,9 +855,9 @@ export default function EventoDetailPage() {
   }
 
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-    PENDENTE: { bg: "#92400e30", text: "#fbbf24" },
-    APROVADO: { bg: "#14532d30", text: "#4ade80" },
-    CANCELADO: { bg: "#7f1d1d30", text: "#f87171" },
+    PENDENTE: { bg: "#92400e", text: "#fcd34d" },
+    APROVADO: { bg: "#166534", text: "#86efac" },
+    CANCELADO: { bg: "#991b1b", text: "#fca5a5" },
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -1297,13 +1297,13 @@ export default function EventoDetailPage() {
                             <p className="text-xs text-[#6b7280]">Total na planilha</p>
                             <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>{importResult.total}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#14532d30" }}>
-                            <p className="text-xs text-[#4ade80]">Importados</p>
-                            <p className="text-xl font-bold text-[#4ade80]">{importResult.importados}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#166534" }}>
+                            <p className="text-xs text-[#86efac]">Importados</p>
+                            <p className="text-xl font-bold text-[#86efac]">{importResult.importados}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#7f1d1d30" }}>
-                            <p className="text-xs text-[#f87171]">Erros</p>
-                            <p className="text-xl font-bold text-[#f87171]">{importResult.erros.length}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#991b1b" }}>
+                            <p className="text-xs text-[#fca5a5]">Erros</p>
+                            <p className="text-xl font-bold text-[#fca5a5]">{importResult.erros.length}</p>
                           </div>
                         </div>
                         {importResult.erros.length > 0 && (
@@ -1594,11 +1594,11 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#7f1d1d30", text: "#dc2626" },
-                  DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
-                  EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                  FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
-                  PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
+                  PENDENTE: { bg: "#991b1b", text: "#fca5a5" },
+                  DESIGNADA: { bg: "#1e3a8a", text: "#93c5fd" },
+                  EM_ANDAMENTO: { bg: "#92400e", text: "#fcd34d" },
+                  FINALIZADA: { bg: "#166534", text: "#86efac" },
+                  PREMIADA: { bg: "#5b21b6", text: "#d8b4fe" },
                 }
                 const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
@@ -1632,8 +1632,8 @@ export default function EventoDetailPage() {
                     const totalAthletes = group.reduce((s, b) => s + b.positions.length, 0)
                     const groupTatameId = group[0].tatameId || ""
                     rendered.push(
-                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
-                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "#1a1000" }}>
+                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#d97706" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--card-alt)" }}>
                           <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
                           <button
                             className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
@@ -1943,17 +1943,17 @@ export default function EventoDetailPage() {
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
                       style={{
-                        borderColor: emEspera ? "#78350f40" : "#16a34a40",
-                        backgroundColor: emEspera ? "#1c1200" : "#0d1f0d",
+                        borderColor: emEspera ? "#d97706" : "#16a34a",
+                        backgroundColor: "var(--card)",
                       }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">{tatame.name}</span>
+                        <span className="font-semibold" style={{ color: "var(--foreground)" }}>{tatame.name}</span>
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
                           style={{
-                            backgroundColor: emEspera ? "#78350f40" : "#14532d40",
-                            color: emEspera ? "#fbbf24" : "#4ade80",
+                            backgroundColor: emEspera ? "#92400e" : "#166534",
+                            color: emEspera ? "#fcd34d" : "#86efac",
                           }}
                         >
                           {emEspera ? "AGUARDANDO" : "ATIVO"}
@@ -1995,8 +1995,8 @@ export default function EventoDetailPage() {
             </div>
             {/* Barra de ações em lote */}
             {selectionMode && selectedBrackets.size > 0 && (
-              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#60a5fa40", backgroundColor: "#0d1a2e" }}>
-                <span className="text-xs text-[#60a5fa] font-semibold">{selectedBrackets.size} selecionada(s)</span>
+              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#2563eb", backgroundColor: "#1e3a8a" }}>
+                <span className="text-xs text-[#93c5fd] font-semibold">{selectedBrackets.size} selecionada(s)</span>
                 <select
                   className="text-xs rounded border px-2 py-1"
                   style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
@@ -2042,11 +2042,11 @@ export default function EventoDetailPage() {
               const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#7f1d1d30",  text: "#dc2626" },
-                DESIGNADA:    { bg: "#1e3a5f40", text: "#60a5fa" },
-                EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                FINALIZADA:   { bg: "#14532d40", text: "#4ade80" },
-                PREMIADA:     { bg: "#4a1d9640", text: "#a78bfa" },
+                PENDENTE:     { bg: "#991b1b",  text: "#fca5a5" },
+                DESIGNADA:    { bg: "#1e3a8a", text: "#93c5fd" },
+                EM_ANDAMENTO: { bg: "#92400e", text: "#fcd34d" },
+                FINALIZADA:   { bg: "#166534", text: "#86efac" },
+                PREMIADA:     { bg: "#5b21b6", text: "#d8b4fe" },
               }
 
               const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [

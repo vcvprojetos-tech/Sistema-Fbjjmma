@@ -176,7 +176,7 @@ export default function AtletasPage() {
           const Icon = s.icon
           return (
             <div key={s.label} className="admin-stat-card" style={{ borderLeftColor: s.color }}>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${s.color}18` }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "var(--card-alt)" }}>
                 <Icon className="h-5 w-5" style={{ color: s.color }} />
               </div>
               <div>
