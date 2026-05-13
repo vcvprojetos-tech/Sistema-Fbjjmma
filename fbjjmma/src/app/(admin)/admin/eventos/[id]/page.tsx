@@ -2042,11 +2042,11 @@ export default function EventoDetailPage() {
               const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#991b1b",  text: "#fca5a5" },
-                DESIGNADA:    { bg: "#1e3a8a", text: "#93c5fd" },
-                EM_ANDAMENTO: { bg: "#92400e", text: "#fcd34d" },
-                FINALIZADA:   { bg: "#166534", text: "#86efac" },
-                PREMIADA:     { bg: "#5b21b6", text: "#d8b4fe" },
+                PENDENTE:     { bg: "#991b1b", text: "#ffffff" },
+                DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
+                EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
+                FINALIZADA:   { bg: "#166534", text: "#ffffff" },
+                PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
               }
 
               const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [

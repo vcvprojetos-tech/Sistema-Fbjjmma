@@ -275,7 +275,7 @@ export default function ChaveControlePage() {
               <h2 className="text-white font-semibold">
                 {currentMatches.length} luta(s) disponível(is)
               </h2>
-              <span className="text-xs text-[#fcd34d] px-2 py-1 rounded-full" style={{ backgroundColor: "#92400e" }}>
+              <span className="text-xs text-white px-2 py-1 rounded-full" style={{ backgroundColor: "#92400e" }}>
                 EM ANDAMENTO
               </span>
             </div>
