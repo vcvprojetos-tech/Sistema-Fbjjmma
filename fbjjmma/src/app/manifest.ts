@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "FBJJMMA",
     description: "Sistema de Premiação FBJJMMA",
     start_url: "/premiacao",
-    scope: "/",
+    scope: "/premiacao",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#dc2626",
