@@ -16,5 +16,5 @@ export function ThemeLogo({ className, style }: ThemeLogoProps) {
 
   const src = !mounted || resolvedTheme === "dark" ? "/logo2.png" : "/logo-color.png"
 
-  return <img src={src} alt="FBJJMMA" className={className} style={style} />
+  return <img src={src} alt="FBJJMMA" className={className} style={{ objectFit: "contain", ...style }} />
 }
