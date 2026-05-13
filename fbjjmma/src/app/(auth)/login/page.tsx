@@ -30,6 +30,11 @@ export default function LoginPage() {
       if (result?.error) {
         setError("CPF/e-mail ou senha inválidos.")
       } else {
+        try {
+          await document.documentElement.requestFullscreen()
+        } catch {
+          // navegador bloqueou fullscreen — continua mesmo assim
+        }
         router.push("/admin")
       }
     } catch {
