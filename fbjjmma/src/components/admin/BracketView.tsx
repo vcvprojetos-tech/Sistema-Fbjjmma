@@ -11,8 +11,7 @@ function useContainerScale(totalWidth: number, totalHeight: number) {
     const update = () => {
       const w = el.clientWidth
       if (w <= 0) return
-      // Nunca cresce além do tamanho natural — apenas encolhe em telas estreitas
-      setScale(Math.min(1, w / totalWidth))
+      setScale(w / totalWidth)
     }
     update()
     const ro = new ResizeObserver(update)
