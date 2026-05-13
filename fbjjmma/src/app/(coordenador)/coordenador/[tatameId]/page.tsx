@@ -275,6 +275,7 @@ export default function TatamePage() {
   }, [])
 
   useEffect(() => {
+    setIsFullscreen(!!document.fullscreenElement)
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener("fullscreenchange", onChange)
     return () => document.removeEventListener("fullscreenchange", onChange)
