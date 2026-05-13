@@ -840,12 +840,12 @@ export default function TatamePage() {
 
           {/* Gaveta lateral deslizante */}
           <div
-            className="absolute top-0 left-0 h-full z-50 flex flex-col border-r overflow-hidden"
+            className="absolute top-0 right-0 h-full z-50 flex flex-col border-l overflow-hidden"
             style={{
               width: 256,
               borderColor: "var(--border)",
               backgroundColor: "var(--sidebar-surface)",
-              transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+              transform: sidebarOpen ? "translateX(0)" : "translateX(100%)",
               transition: "transform 200ms ease",
             }}
           >
@@ -899,16 +899,16 @@ export default function TatamePage() {
             onClick={() => setSidebarOpen(v => !v)}
             className="absolute z-50"
             style={{
-              left: sidebarOpen ? 256 : 0,
+              right: sidebarOpen ? 256 : 0,
               top: "50%",
               transform: "translateY(-50%)",
-              transition: "left 200ms ease",
+              transition: "right 200ms ease",
               width: 20,
               height: 64,
               backgroundColor: "var(--sidebar-surface)",
               border: "1px solid var(--border)",
-              borderLeft: "none",
-              borderRadius: "0 8px 8px 0",
+              borderRight: "none",
+              borderRadius: "8px 0 0 8px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -916,7 +916,7 @@ export default function TatamePage() {
             }}
           >
             <span style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1 }}>
-              {sidebarOpen ? "‹" : "›"}
+              {sidebarOpen ? "›" : "‹"}
             </span>
           </button>
 
@@ -925,14 +925,14 @@ export default function TatamePage() {
             {!bracket ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                 <ChevronRight className="h-10 w-10 text-[#374151]" />
-                <p className="text-[#6b7280]">Toque em <strong>›</strong> para selecionar uma chave.</p>
+                <p className="text-[#6b7280]">Toque em <strong>‹</strong> para selecionar uma chave.</p>
               </div>
             ) : (
               <div className="flex flex-1 overflow-hidden min-h-0">
 
                 {/* Controles */}
                 <div
-                  className="flex flex-col w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-r"
+                  className="flex flex-col w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-l order-2"
                   style={{ borderColor: "var(--border)" }}
                 >
                   {/* Cabeçalho da chave */}
@@ -1524,7 +1524,7 @@ export default function TatamePage() {
                 </div>
 
                 {/* Visualização da chave */}
-                <div className="flex flex-col flex-1 overflow-auto p-5 space-y-6 min-h-0">
+                <div className="flex flex-col flex-1 overflow-auto p-5 space-y-6 min-h-0 order-1">
                   {(() => {
                     const bracketsToShow = bracket.bracketGroupId && !bracket.isGrandFinal
                       ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId)
