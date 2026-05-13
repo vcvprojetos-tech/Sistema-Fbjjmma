@@ -403,11 +403,11 @@ button, a, input, select, textarea, [role="button"] {
   font-weight: 600;
   white-space: nowrap;
 }
-.admin-badge-green  { background-color: #166534; color: #86efac; }
-.admin-badge-red    { background-color: #991b1b; color: #fca5a5; }
-.admin-badge-amber  { background-color: #92400e; color: #fcd34d; }
-.admin-badge-blue   { background-color: #1e3a8a; color: #93c5fd; }
-.admin-badge-purple { background-color: #5b21b6; color: #d8b4fe; }
+.admin-badge-green  { background-color: #166534; color: #ffffff; }
+.admin-badge-red    { background-color: #991b1b; color: #ffffff; }
+.admin-badge-amber  { background-color: #92400e; color: #ffffff; }
+.admin-badge-blue   { background-color: #1e3a8a; color: #ffffff; }
+.admin-badge-purple { background-color: #5b21b6; color: #ffffff; }
 .admin-badge-gray   { background-color: #374151; color: #d1d5db; }
 .light .admin-badge-green  { background-color: #16a34a; color: #ffffff; }
 .light .admin-badge-red    { background-color: #dc2626; color: #ffffff; }

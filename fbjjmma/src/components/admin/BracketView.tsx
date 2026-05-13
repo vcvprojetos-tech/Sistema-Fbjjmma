@@ -420,7 +420,7 @@ function ThreeAthleteBracket({
         }}>{posLabel}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: dimmed ? "var(--bracket-dimmed-text)" : clickable ? "#f87171" : "var(--bracket-card-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
+            <p style={{ fontSize: 9, color: dimmed ? "var(--bracket-dimmed-text)" : "var(--foreground)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
               {name.toUpperCase()}
             </p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
@@ -777,7 +777,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "var(--bracket-card-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (
@@ -854,7 +854,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "var(--bracket-card-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (

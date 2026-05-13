@@ -855,9 +855,9 @@ export default function EventoDetailPage() {
   }
 
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-    PENDENTE: { bg: "#92400e", text: "#fcd34d" },
-    APROVADO: { bg: "#166534", text: "#86efac" },
-    CANCELADO: { bg: "#991b1b", text: "#fca5a5" },
+    PENDENTE: { bg: "#92400e", text: "#ffffff" },
+    APROVADO: { bg: "#166534", text: "#ffffff" },
+    CANCELADO: { bg: "#991b1b", text: "#ffffff" },
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -1594,11 +1594,11 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#991b1b", text: "#fca5a5" },
-                  DESIGNADA: { bg: "#1e3a8a", text: "#93c5fd" },
-                  EM_ANDAMENTO: { bg: "#92400e", text: "#fcd34d" },
-                  FINALIZADA: { bg: "#166534", text: "#86efac" },
-                  PREMIADA: { bg: "#5b21b6", text: "#d8b4fe" },
+                  PENDENTE: { bg: "#991b1b", text: "#ffffff" },
+                  DESIGNADA: { bg: "#1e3a8a", text: "#ffffff" },
+                  EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
+                  FINALIZADA: { bg: "#166534", text: "#ffffff" },
+                  PREMIADA: { bg: "#5b21b6", text: "#ffffff" },
                 }
                 const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
@@ -1943,7 +1943,7 @@ export default function EventoDetailPage() {
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
                       style={{
-                        borderColor: emEspera ? "#d97706" : "#16a34a",
+                        borderColor: emEspera ? "#eab308" : "#16a34a",
                         backgroundColor: "var(--card)",
                       }}
                     >
@@ -1952,8 +1952,8 @@ export default function EventoDetailPage() {
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
                           style={{
-                            backgroundColor: emEspera ? "#92400e" : "#166534",
-                            color: emEspera ? "#fcd34d" : "#86efac",
+                            backgroundColor: emEspera ? "#ca8a04" : "#16a34a",
+                            color: "#ffffff",
                           }}
                         >
                           {emEspera ? "AGUARDANDO" : "ATIVO"}
