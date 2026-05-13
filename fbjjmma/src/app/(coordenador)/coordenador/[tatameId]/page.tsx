@@ -808,7 +808,7 @@ export default function TatamePage() {
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
           <div className="flex gap-2 lg:gap-3 text-xs">
-            {emAndamento.length > 0 && <span className="font-bold" style={{ color: "var(--hdr-active)" }}>{emAndamento.length} em and.</span>}
+            {emAndamento.length > 0 && <span className="font-bold" style={{ color: "var(--hdr-active)" }}>{emAndamento.length} em andamento</span>}
             <span className="hidden lg:inline font-bold" style={{ color: "var(--hdr-pending)" }}>{pendentes.length} aguardando</span>
             <span className="hidden lg:inline font-bold" style={{ color: "var(--hdr-done)" }}>{finalizadas.length} finalizadas</span>
           </div>
@@ -932,7 +932,7 @@ export default function TatamePage() {
 
                 {/* Controles */}
                 <div
-                  className="flex flex-col w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-l order-2 mr-7"
+                  className="flex flex-col w-96 shrink-0 overflow-y-auto p-4 space-y-4 border-l order-2 mr-7"
                   style={{ borderColor: "var(--border)" }}
                 >
                   {/* Cabeçalho da chave */}
