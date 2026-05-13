@@ -1938,17 +1938,24 @@ export default function EventoDetailPage() {
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
                   const emEspera = !operador
+                  // Cores adaptadas ao fundo do card
+                  const cardBg     = emEspera ? "#fef9c3" : "#dcfce7"
+                  const cardBorder = emEspera ? "#eab308" : "#16a34a"
+                  const titleColor = emEspera ? "#713f12" : "#14532d"
+                  const baseText   = emEspera ? "#78350f" : "#166534"
+                  const aguardandoColor  = "#1d4ed8"
+                  const emAndamentoColor = emEspera ? "#92400e" : "#ca8a04"
+                  const finalizadasColor = emEspera ? "#166534" : "#14532d"
+                  const operandoColor    = emEspera ? "#166534" : "#14532d"
+                  const reconexaoColor   = emEspera ? "#92400e" : "#ca8a04"
                   return (
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
-                      style={{
-                        borderColor: emEspera ? "#eab308" : "#16a34a",
-                        backgroundColor: "var(--card)",
-                      }}
+                      style={{ borderColor: cardBorder, backgroundColor: cardBg }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold" style={{ color: "var(--foreground)" }}>{tatame.name}</span>
+                        <span className="font-semibold" style={{ color: titleColor }}>{tatame.name}</span>
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
                           style={{
@@ -1959,24 +1966,28 @@ export default function EventoDetailPage() {
                           {emEspera ? "AGUARDANDO" : "ATIVO"}
                         </span>
                       </div>
-                      <div className="text-xs text-[#6b7280] space-y-1">
+                      <div className="text-xs space-y-1" style={{ color: baseText }}>
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
-                        <p style={{ color: "#60a5fa" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
-                        <p style={{ color: "#fbbf24" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
-                        <p style={{ color: "#4ade80" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
+                        <p style={{ color: aguardandoColor }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
+                        <p style={{ color: emAndamentoColor }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
+                        <p style={{ color: finalizadasColor }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
                         {operador ? (
-                          <p className="text-[#4ade80]">
+                          <p style={{ color: operandoColor }}>
                             Operando: {operador.user.name} desde{" "}
                             {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         ) : (
-                          <p className="text-[#fbbf24]">Aguardando reconexão...</p>
+                          <p style={{ color: reconexaoColor }}>Aguardando reconexão...</p>
                         )}
                       </div>
                       <div className="flex justify-end">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-[#dc2626]" onClick={() => excluirTatame(tatame.id)}>
+                        <button
+                          className="h-8 w-8 p-0 flex items-center justify-center rounded hover:text-[#dc2626] transition-colors"
+                          style={{ color: baseText, backgroundColor: "transparent", border: "none" }}
+                          onClick={() => excluirTatame(tatame.id)}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   )
