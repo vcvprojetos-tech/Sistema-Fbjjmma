@@ -903,19 +903,19 @@ export default function TatamePage() {
               top: "50%",
               transform: "translateY(-50%)",
               transition: "right 200ms ease",
-              width: 28,
+              width: 32,
               height: 88,
-              backgroundColor: "var(--sidebar-surface)",
-              border: "1px solid var(--border)",
-              borderRight: "none",
+              backgroundColor: "#dc2626",
+              border: "none",
               borderRadius: "8px 0 0 8px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              boxShadow: "-3px 0 10px rgba(0,0,0,0.4)",
             }}
           >
-            <span style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1 }}>
+            <span style={{ fontSize: 16, color: "#ffffff", fontWeight: 700, lineHeight: 1 }}>
               {sidebarOpen ? "›" : "‹"}
             </span>
           </button>
