@@ -207,6 +207,7 @@ export default function TatamePage() {
   const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
+  const [centerTab, setCenterTab] = useState<"controles" | "chave">("controles")
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [consultaOpen, setConsultaOpen] = useState(false)
   const [consultaQ, setConsultaQ] = useState("")
@@ -684,7 +685,7 @@ export default function TatamePage() {
                       rendered.push(
                         <button
                           key={b.bracketGroupId}
-                          onClick={() => setSelectedId(group[0].id)}
+                          onClick={() => { setSelectedId(group[0].id); setCenterTab("controles") }}
                           className="w-full text-left px-3 py-3.5 rounded-md transition-colors"
                           style={{
                             border: "1px solid var(--border)",
@@ -708,7 +709,7 @@ export default function TatamePage() {
                       rendered.push(
                         <button
                           key={b.id}
-                          onClick={() => setSelectedId(b.id)}
+                          onClick={() => { setSelectedId(b.id); setCenterTab("controles") }}
                           className="w-full text-left px-3 py-3.5 rounded-md transition-colors"
                           style={{
                             border: "1px solid var(--border)",
@@ -786,7 +787,7 @@ export default function TatamePage() {
           {tatame.event.schedule && (
             <button
               onClick={() => setDocModal({ title: "Cronograma do Evento", url: tatame.event.schedule! })}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
               style={{ backgroundColor: "var(--btn-sched-bg)", color: "var(--btn-sched-fg)", border: "1px solid var(--btn-sched-br)" }}
             >
               📅 Cronograma
@@ -795,7 +796,7 @@ export default function TatamePage() {
           {tatame.event.pesoDoc && (
             <button
               onClick={() => setDocModal({ title: "Tabela de Peso", url: tatame.event.pesoDoc! })}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
               style={{ backgroundColor: "var(--btn-peso-bg)", color: "var(--btn-peso-fg)", border: "1px solid var(--btn-peso-br)" }}
             >
               ⚖️ Tabela de Peso
@@ -803,17 +804,17 @@ export default function TatamePage() {
           )}
           <button
             onClick={() => { setConsultaOpen(true); fetchConsulta() }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
             style={{ backgroundColor: "var(--btn-sched-bg)", color: "var(--btn-sched-fg)", border: "1px solid var(--btn-sched-br)" }}
           >
             🔍 Consulta
           </button>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-3 text-xs">
-            {emAndamento.length > 0 && <span className="font-bold" style={{ color: "var(--hdr-active)" }}>{emAndamento.length} em andamento</span>}
-            <span className="font-bold" style={{ color: "var(--hdr-pending)" }}>{pendentes.length} aguardando</span>
-            <span className="font-bold" style={{ color: "var(--hdr-done)" }}>{finalizadas.length} finalizadas</span>
+        <div className="flex items-center gap-2 lg:gap-4">
+          <div className="flex gap-2 lg:gap-3 text-xs">
+            {emAndamento.length > 0 && <span className="font-bold" style={{ color: "var(--hdr-active)" }}>{emAndamento.length} em and.</span>}
+            <span className="hidden lg:inline font-bold" style={{ color: "var(--hdr-pending)" }}>{pendentes.length} aguardando</span>
+            <span className="hidden lg:inline font-bold" style={{ color: "var(--hdr-done)" }}>{finalizadas.length} finalizadas</span>
           </div>
           <span className="font-mono font-bold text-sm tabular-nums" style={{ color: "var(--foreground)" }}>
             {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Bahia" })}
@@ -833,7 +834,7 @@ export default function TatamePage() {
         <div className="flex flex-1 overflow-hidden">
 
           {/* Coluna esquerda — abas Ativas / Finalizadas */}
-          <div className="w-64 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--sidebar-surface)" }}>
+          <div className="w-44 md:w-52 lg:w-60 xl:w-64 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--sidebar-surface)" }}>
             {/* Abas */}
             <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
               <button
@@ -881,16 +882,46 @@ export default function TatamePage() {
 
           {/* Centro */}
           <div className="flex-1 overflow-hidden flex flex-col">
+            {/* Tab bar — apenas em telas < xl quando uma chave está selecionada */}
+            {bracket && (
+              <div className="xl:hidden flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
+                <button
+                  onClick={() => setCenterTab("controles")}
+                  className="flex-1 py-2.5 text-xs font-bold transition-colors"
+                  style={{
+                    color: centerTab === "controles" ? "var(--hdr-active)" : "var(--muted)",
+                    borderBottom: centerTab === "controles" ? "2px solid var(--hdr-active)" : "2px solid transparent",
+                    backgroundColor: "var(--background)",
+                  }}
+                >
+                  Controles
+                </button>
+                <button
+                  onClick={() => setCenterTab("chave")}
+                  className="flex-1 py-2.5 text-xs font-bold transition-colors"
+                  style={{
+                    color: centerTab === "chave" ? "var(--hdr-active)" : "var(--muted)",
+                    borderBottom: centerTab === "chave" ? "2px solid var(--hdr-active)" : "2px solid transparent",
+                    backgroundColor: "var(--background)",
+                  }}
+                >
+                  Ver Chave
+                </button>
+              </div>
+            )}
             {!bracket ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                 <ChevronRight className="h-10 w-10 text-[#374151]" />
                 <p className="text-[#6b7280]">Selecione uma chave na lista.</p>
               </div>
             ) : (
-              <div className="flex flex-1 overflow-hidden">
+              <div className="flex flex-1 overflow-hidden min-h-0">
 
                 {/* Controles */}
-                <div className="w-96 shrink-0 overflow-y-auto p-4 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div
+                  className={`${centerTab === "controles" ? "flex" : "hidden"} xl:flex flex-col w-full xl:w-96 xl:shrink-0 overflow-y-auto p-4 space-y-4 border-r`}
+                  style={{ borderColor: "var(--border)" }}
+                >
                   {/* Cabeçalho da chave */}
                   <div className="rounded-xl border p-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -1481,7 +1512,7 @@ export default function TatamePage() {
                 </div>
 
                 {/* Visualização da chave */}
-                <div className="flex-1 overflow-auto p-5 space-y-6 min-h-0">
+                <div className={`${centerTab === "chave" ? "flex" : "hidden"} xl:flex flex-col flex-1 overflow-auto p-5 space-y-6 min-h-0`}>
                   {(() => {
                     const bracketsToShow = bracket.bracketGroupId && !bracket.isGrandFinal
                       ? tatame.brackets.filter(b => b.bracketGroupId === bracket.bracketGroupId)
