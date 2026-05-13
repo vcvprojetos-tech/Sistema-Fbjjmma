@@ -17,6 +17,7 @@ import {
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -76,7 +77,7 @@ export default function AdminLayout({
           style={{ borderColor: "var(--border)" }}
         >
           <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#dc262618", border: "1px solid #dc262630" }}>
-            <img src="/logo2.png" alt="FBJJMMA" className="w-6 h-6 object-contain" />
+            <ThemeLogo className="w-6 h-6 object-contain" />
           </div>
           <div>
             <p className="font-black text-sm leading-tight tracking-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>

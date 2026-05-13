@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 export default function CoordenadorEntradaPage() {
   const router = useRouter()
@@ -74,7 +75,7 @@ export default function CoordenadorEntradaPage() {
     >
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <img src="/logo2.png" alt="FBJJMMA" className="w-16 h-16 object-contain mx-auto mb-4" />
+          <ThemeLogo className="w-16 h-16 object-contain mx-auto mb-4" />
           <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             Controle de Tatame
           </h1>

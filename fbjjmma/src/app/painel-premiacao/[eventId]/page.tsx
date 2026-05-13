@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 const AGE_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -240,7 +241,7 @@ export default function PainelPremiacaoPage() {
       {showOverlay && (
         <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#f0f4f8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo2.png" alt="FBJJMMA" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
+          <ThemeLogo style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
           <div style={{ color: "#1e293b", fontSize: "1.5rem", fontWeight: 900, marginBottom: 12 }}>
             Painel de Premiação
           </div>
@@ -273,7 +274,7 @@ export default function PainelPremiacaoPage() {
         <div style={{ height: TOPBAR_H, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#ffffff", borderRadius: 10, padding: "0 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: "1px solid #e2e8f0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo2.png" alt="FBJJMMA" style={{ width: 34, height: 34, objectFit: "contain" }} />
+            <ThemeLogo style={{ width: 34, height: 34, objectFit: "contain" }} />
             <div>
               <div style={{ color: "#1e293b", fontWeight: 900, fontSize: 20 }}>{data.event.name}</div>
               <div style={{ color: "#64748b", fontSize: 13 }}>Painel de Premiação — Entrega de Medalhas</div>

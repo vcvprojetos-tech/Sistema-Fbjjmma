@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { RefreshCw, AlertCircle, ChevronRight, Trophy } from "lucide-react"
 import Link from "next/link"
 import BracketView from "@/components/admin/BracketView"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 const AGE_GROUP_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -772,7 +773,7 @@ export default function TatamePage() {
       {showOverlay && (
         <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0a0a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo2.png" alt="FBJJMMA" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
+          <ThemeLogo style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
           <div style={{ color: "#ffffff", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>
             {tatame.name}
           </div>
