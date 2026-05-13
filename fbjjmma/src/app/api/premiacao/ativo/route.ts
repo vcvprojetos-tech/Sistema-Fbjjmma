@@ -7,7 +7,7 @@ export async function GET() {
       where: {
         deletedAt: null,
       },
-      orderBy: { startDate: "desc" },
+      orderBy: { createdAt: "desc" },
       select: { id: true, name: true },
     })
 
