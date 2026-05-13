@@ -6,7 +6,7 @@ export async function GET() {
     const event = await prisma.event.findFirst({
       where: {
         deletedAt: null,
-        status: { in: ["EM_ANDAMENTO", "INSCRICOES_ENCERRADAS", "INSCRICOES_ABERTAS"] },
+        status: { notIn: ["RASCUNHO"] },
       },
       orderBy: { startDate: "desc" },
       select: { id: true, name: true },
