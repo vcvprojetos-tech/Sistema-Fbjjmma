@@ -404,7 +404,7 @@ button, a, input, select, textarea, [role="button"] {
   white-space: nowrap;
 }
 .admin-badge-green  { background-color: #166534; color: #ffffff; }
-.admin-badge-red    { background-color: #991b1b; color: #ffffff; }
+.admin-badge-red    { background-color: #dc2626; color: #ffffff; }
 .admin-badge-amber  { background-color: #92400e; color: #ffffff; }
 .admin-badge-blue   { background-color: #1e3a8a; color: #ffffff; }
 .admin-badge-purple { background-color: #5b21b6; color: #ffffff; }

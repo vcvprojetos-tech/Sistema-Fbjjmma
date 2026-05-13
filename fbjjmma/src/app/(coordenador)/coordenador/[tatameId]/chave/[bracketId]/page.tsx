@@ -246,7 +246,7 @@ export default function ChaveControlePage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg text-sm" style={{ backgroundColor: "#991b1b", color: "#fca5a5" }}>
+        <div className="flex items-center gap-2 p-3 rounded-lg text-sm" style={{ backgroundColor: "#dc2626", color: "#fca5a5" }}>
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>

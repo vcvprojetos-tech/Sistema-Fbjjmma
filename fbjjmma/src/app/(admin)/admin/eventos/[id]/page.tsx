@@ -857,7 +857,7 @@ export default function EventoDetailPage() {
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
     PENDENTE: { bg: "#92400e", text: "#ffffff" },
     APROVADO: { bg: "#166534", text: "#ffffff" },
-    CANCELADO: { bg: "#991b1b", text: "#ffffff" },
+    CANCELADO: { bg: "#dc2626", text: "#ffffff" },
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -937,7 +937,7 @@ export default function EventoDetailPage() {
               onClick={finalizarEvento}
               disabled={finalizarLoading}
               className="admin-btn text-xs font-bold"
-              style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #991b1b" }}
+              style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
             >
               {finalizarLoading ? "..." : "Finalizar Evento"}
             </button>
@@ -1301,7 +1301,7 @@ export default function EventoDetailPage() {
                             <p className="text-xs text-[#86efac]">Importados</p>
                             <p className="text-xl font-bold text-[#86efac]">{importResult.importados}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#991b1b" }}>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#dc2626" }}>
                             <p className="text-xs text-[#fca5a5]">Erros</p>
                             <p className="text-xl font-bold text-[#fca5a5]">{importResult.erros.length}</p>
                           </div>
@@ -1594,7 +1594,7 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#991b1b", text: "#ffffff" },
+                  PENDENTE: { bg: "#dc2626", text: "#ffffff" },
                   DESIGNADA: { bg: "#1e3a8a", text: "#ffffff" },
                   EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
                   FINALIZADA: { bg: "#166534", text: "#ffffff" },
@@ -2053,7 +2053,7 @@ export default function EventoDetailPage() {
               const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#991b1b", text: "#ffffff" },
+                PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
                 DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
                 EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
                 FINALIZADA:   { bg: "#166534", text: "#ffffff" },

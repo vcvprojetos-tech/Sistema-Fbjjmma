@@ -14,7 +14,7 @@ const badgeVariants = cva(
         secondary:
           "bg-[var(--card-alt)] text-[var(--foreground)] border border-[var(--border-alt)]",
         destructive:
-          "bg-[#991b1b] text-white",
+          "bg-[#dc2626] text-white",
         outline:
           "border border-[var(--border-alt)] text-[var(--foreground)]",
         success:
