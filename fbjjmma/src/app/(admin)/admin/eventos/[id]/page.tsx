@@ -2239,68 +2239,66 @@ export default function EventoDetailPage() {
         <div className="space-y-6">
 
           {/* Painel de Chamadas */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
-              </div>
+          <div className="admin-card">
+            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.75rem" }}>
+              <span>Painel de Chamadas</span>
             </div>
+            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
             <div className="flex gap-3 flex-wrap">
               <a href={`/painel/${id}?painel=1`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#dc2626" }}>
+                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: "#dc2626", color: "#ffffff" }}>
                 Abrir Painel 1 (1ª metade)
               </a>
               <a href={`/painel/${id}?painel=2`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#b91c1c" }}>
+                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: "#dc2626", color: "#ffffff" }}>
                 Abrir Painel 2 (2ª metade)
               </a>
               <a href={`/painel/${id}`} target="_blank" rel="noopener noreferrer"
                 className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
-                style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                style={{ backgroundColor: "#374151", color: "#ffffff" }}>
                 Painel Completo
               </a>
             </div>
           </div>
 
           {/* Painel de Premiação */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Premiação</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
-              </div>
+          <div className="admin-card">
+            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.75rem" }}>
+              <span>Painel de Premiação</span>
             </div>
+            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
             <div className="flex gap-3 flex-wrap">
               <a href={`/painel-premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ backgroundColor: "#92400e" }}>
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{ backgroundColor: "#5b21b6", color: "#ffffff" }}>
                 Abrir Painel de Premiação
               </a>
             </div>
           </div>
 
           {/* Backup das Chaves Finalizadas */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+          <div className="admin-card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-semibold text-sm">Backup das Chaves Finalizadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">
+                <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.25rem" }}>
+                  <span>Backup das Chaves Finalizadas</span>
+                </div>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>
                   Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
                 </p>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex gap-2 flex-shrink-0 ml-4">
                 <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                  style={{ backgroundColor: "#0f766e" }}>
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: "#0f766e", color: "#ffffff" }}>
                   <Download className="w-4 h-4" />
                   Ver / Imprimir Chaves
                 </a>
                 <a href={`/api/admin/eventos/${id}/backup`} download
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                  style={{ backgroundColor: "#374151", color: "#ffffff" }}>
                   JSON
                 </a>
               </div>
@@ -2308,31 +2306,34 @@ export default function EventoDetailPage() {
           </div>
 
           {/* Documentos para Coordenadores */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <p className="text-white font-semibold text-sm mb-1">Documentos para Coordenadores</p>
-            <p className="text-[#6b7280] text-xs mb-4">Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
+          <div className="admin-card">
+            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.25rem" }}>
+              <span>Documentos para Coordenadores</span>
+            </div>
+            <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* Cronograma */}
-              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-                <p className="text-white text-xs font-semibold">📅 Cronograma do Evento</p>
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>📅 Cronograma do Evento</p>
                 {event?.schedule ? (
                   <div className="flex items-center gap-2">
                     <a href={event.schedule} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-[#60a5fa] underline truncate flex-1">
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
                       Ver arquivo atual
                     </a>
-                    <span className="text-[#4ade80] text-xs">✓ Anexado</span>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
                     <button
                       onClick={() => { if (confirm("Remover o cronograma?")) removeDoc("schedule") }}
-                      className="text-[#ef4444] hover:text-[#dc2626] text-xs font-bold ml-1"
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
                       title="Remover">✕</button>
                   </div>
                 ) : (
-                  <p className="text-[#6b7280] text-xs">Nenhum arquivo anexado</p>
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
                 )}
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="px-3 py-1.5 rounded text-xs font-semibold text-white"
-                    style={{ backgroundColor: "#1d4ed8" }}>
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
                     {event?.schedule ? "Substituir" : "Anexar"}
                   </span>
                   <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
@@ -2359,30 +2360,31 @@ export default function EventoDetailPage() {
                       e.target.value = ""
                     }}
                   />
-                  <span className="text-[#6b7280] text-xs">PDF, PNG ou JPG</span>
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
                 </label>
               </div>
               {/* Tabela de Peso */}
-              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-                <p className="text-white text-xs font-semibold">⚖️ Tabela de Peso</p>
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>⚖️ Tabela de Peso</p>
                 {event?.pesoDoc ? (
                   <div className="flex items-center gap-2">
                     <a href={event.pesoDoc} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-[#60a5fa] underline truncate flex-1">
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
                       Ver arquivo atual
                     </a>
-                    <span className="text-[#4ade80] text-xs">✓ Anexado</span>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
                     <button
                       onClick={() => { if (confirm("Remover a tabela de peso?")) removeDoc("pesoDoc") }}
-                      className="text-[#ef4444] hover:text-[#dc2626] text-xs font-bold ml-1"
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
                       title="Remover">✕</button>
                   </div>
                 ) : (
-                  <p className="text-[#6b7280] text-xs">Nenhum arquivo anexado</p>
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
                 )}
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="px-3 py-1.5 rounded text-xs font-semibold text-white"
-                    style={{ backgroundColor: "#1d4ed8" }}>
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
                     {event?.pesoDoc ? "Substituir" : "Anexar"}
                   </span>
                   <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
@@ -2409,14 +2411,14 @@ export default function EventoDetailPage() {
                       e.target.value = ""
                     }}
                   />
-                  <span className="text-[#6b7280] text-xs">PDF, PNG ou JPG</span>
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
                 </label>
               </div>
             </div>
           </div>
 
           {/* Link Coordenador de Premiação */}
-          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
+          <div className="admin-card space-y-2" style={{ borderColor: "#5b21b6" }}>
             <div className="flex items-center gap-2">
               <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
             </div>
