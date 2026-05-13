@@ -78,7 +78,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md px-4">
         {/* Logo / Branding */}
         <div className="flex flex-col items-center mb-8">
-          <ThemeLogo className="w-24 h-24 object-contain mb-4" />
+          <ThemeLogo className="w-40 h-40 object-contain mb-4" />
           <h1 className="text-2xl font-bold text-white tracking-wider">
             FBJJMMA
           </h1>
