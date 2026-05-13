@@ -25,6 +25,17 @@ export default function LoginPage() {
       document.removeEventListener("keydown", enter)
     }
   }, [])
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const scroll = () => {
+      const el = document.activeElement
+      if (el instanceof HTMLElement) el.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+    vv.addEventListener("resize", scroll)
+    return () => vv.removeEventListener("resize", scroll)
+  }, [])
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -60,7 +71,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-[100dvh] flex flex-col items-center justify-center overflow-y-auto py-8"
       style={{ backgroundColor: "var(--background)" }}
     >
       <div className="w-full max-w-md px-4">

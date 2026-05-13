@@ -229,7 +229,17 @@ export default function TatamePage() {
   const [showOverlay, setShowOverlay] = useState(true)
   const [undoLoading, setUndoLoading] = useState(false)
   const [now, setNow] = useState(() => new Date())
+  const [vvBottom, setVvBottom] = useState(0)
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => setVvBottom(Math.max(0, window.innerHeight - vv.height - vv.offsetTop))
+    vv.addEventListener("resize", update)
+    vv.addEventListener("scroll", update)
+    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update) }
+  }, [])
 
   useEffect(() => {
     const enter = () => {
@@ -1930,10 +1940,10 @@ export default function TatamePage() {
               style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
               onClick={closeConsulta}
             />
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ pointerEvents: "none" }}>
+            <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center p-4" style={{ bottom: vvBottom, pointerEvents: "none" }}>
               <div
                 className="w-full max-w-lg rounded-2xl flex flex-col"
-                style={{ backgroundColor: "var(--card-alt)", maxHeight: "85vh", pointerEvents: "auto" }}
+                style={{ backgroundColor: "var(--card-alt)", maxHeight: "100%", pointerEvents: "auto" }}
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border)" }}>

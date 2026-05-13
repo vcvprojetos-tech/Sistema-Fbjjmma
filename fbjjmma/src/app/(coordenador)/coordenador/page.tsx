@@ -20,6 +20,17 @@ export default function CoordenadorEntradaPage() {
       document.removeEventListener("keydown", enter)
     }
   }, [])
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const scroll = () => {
+      const el = document.activeElement
+      if (el instanceof HTMLElement) el.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+    vv.addEventListener("resize", scroll)
+    return () => vv.removeEventListener("resize", scroll)
+  }, [])
   const [tatameNum, setTatameNum] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -58,7 +69,7 @@ export default function CoordenadorEntradaPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4"
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] overflow-y-auto px-4 py-8"
       style={{ backgroundColor: "var(--background)" }}
     >
       <div className="w-full max-w-sm space-y-6">
