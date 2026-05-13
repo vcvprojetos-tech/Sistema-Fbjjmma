@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { isPanelVisible } from "@/lib/panel-visibility"
 
 async function verificarAcesso(req: NextRequest, tatameId: string): Promise<boolean> {
   const session = await auth()
@@ -78,7 +79,14 @@ export async function GET(
   })
 
   if (!tatame) return NextResponse.json({ error: "Tatame não encontrado." }, { status: 404 })
-  return NextResponse.json(tatame)
+
+  return NextResponse.json({
+    ...tatame,
+    brackets: tatame.brackets.map(b => ({
+      ...b,
+      inPanel: isPanelVisible(tatameId, b.id),
+    })),
+  })
 }
 
 // Coordenador desconecta: encerra a operação ativa

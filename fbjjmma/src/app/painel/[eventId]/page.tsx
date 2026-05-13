@@ -269,6 +269,26 @@ export default function PainelPage() {
     return () => clearInterval(iv)
   }, [fetchData])
 
+  // Informa ao servidor quais brackets estão visíveis neste painel
+  useEffect(() => {
+    if (!data) return
+    const allTatames = data.tatames
+    const total = allTatames.length
+    const splitAt = total <= 4 ? total : Math.ceil(total / 2)
+    const myTatames = !painelNum ? allTatames
+      : painelNum === "1" ? allTatames.slice(0, splitAt)
+      : allTatames.slice(splitAt)
+    for (const tatame of myTatames) {
+      const groups = filterGroupsToFit(getGroupsForTatame(tatame, visibleBracketsRef.current), CONTENT_H)
+      const visibleIds = groups.map(g => g.bracketId)
+      fetch(`/api/painel/${eventId}/visible`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tatameId: tatame.id, bracketIds: visibleIds }),
+      }).catch(() => {})
+    }
+  }, [data, eventId, painelNum])
+
   // Registra 1ª chamada no momento em que cada bracket aparece no painel
   useEffect(() => {
     if (!data) return

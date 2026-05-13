@@ -69,6 +69,7 @@ interface BracketData {
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
+  inPanel?: boolean
   startedAt: string | null
   updatedAt: string
   weightCategory: { id?: string; name: string; ageGroup: string; sex: string; maxWeight: number }
@@ -938,9 +939,8 @@ export default function TatamePage() {
                             ↩ Desfazer
                           </button>
                         )}
-                        {bracket.status === "EM_ANDAMENTO" &&
-                          !bracket.matches.some(m => ((m.callTimes as {call:number}[]|null) ?? []).some(c => c.call === 1)) && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ backgroundColor: "#1e3a5f40", color: "#60a5fa", border: "1px solid #1e3a5f80" }}>
+                        {bracket.status === "EM_ANDAMENTO" && !bracket.inPanel && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ backgroundColor: "#450a0a", color: "#f87171", border: "1px solid #7f1d1d" }}>
                             Fora do Painel
                           </span>
                         )}
