@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "FBJJMMA - Federação Baiana de Jiu-Jitsu e MMA",
   description: "Sistema de gestão da Federação Baiana de Jiu-Jitsu e MMA",
   icons: {
-    icon: "/logo-color.png",
+    icon: "/favicon.ico",
     apple: "/logo-color.png",
   },
   openGraph: {
