@@ -764,7 +764,7 @@ export default function PremiacaoPage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Colocações — coluna fixa esquerda */}
-                <div className="w-72 shrink-0 overflow-y-auto p-4 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div className="w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho */}
                   <div
                     className="rounded-xl border p-3"
@@ -834,7 +834,7 @@ export default function PremiacaoPage() {
                                       }
                                     }}
                                     disabled={isAwardingNow || !pl.registration}
-                                    className="px-5 py-3 rounded-xl font-bold text-base transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                                    className="px-3 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
                                     style={{ backgroundColor: "#dc2626", color: "#fff" }}
                                   >
                                     {isAwardingNow ? "..." : "Premiar"}
