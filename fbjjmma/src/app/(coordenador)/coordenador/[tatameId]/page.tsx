@@ -779,16 +779,11 @@ export default function TatamePage() {
             <h1 className="text-base font-bold leading-tight" style={{ color: "var(--foreground)" }}>{tatame.name}</h1>
             <p className="text-[#6b7280] text-xs">{tatame.event.name}</p>
           </div>
-          {operador && (
-            <span className="text-xs font-medium hidden xl:inline" style={{ color: "var(--hdr-op)" }}>
-              · Op: {operador.user.name}
-            </span>
-          )}
-          {/* Botões de documento — apenas em telas grandes */}
+          {/* Botões de consulta rápida */}
           {tatame.event.schedule && (
             <button
               onClick={() => setDocModal({ title: "Cronograma do Evento", url: tatame.event.schedule! })}
-              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
               style={{ backgroundColor: "var(--btn-sched-bg)", color: "var(--btn-sched-fg)", border: "1px solid var(--btn-sched-br)" }}
             >
               📅 Cronograma
@@ -797,26 +792,25 @@ export default function TatamePage() {
           {tatame.event.pesoDoc && (
             <button
               onClick={() => setDocModal({ title: "Tabela de Peso", url: tatame.event.pesoDoc! })}
-              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
               style={{ backgroundColor: "var(--btn-peso-bg)", color: "var(--btn-peso-fg)", border: "1px solid var(--btn-peso-br)" }}
             >
               ⚖️ Tabela de Peso
             </button>
           )}
-        </div>
-        <div className="flex items-center gap-2 lg:gap-3 shrink-0">
-          {/* Consulta — sempre visível no lado direito */}
           <button
             onClick={() => { setConsultaOpen(true); fetchConsulta() }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
             style={{ backgroundColor: "var(--btn-sched-bg)", color: "var(--btn-sched-fg)", border: "1px solid var(--btn-sched-br)" }}
           >
-            🔍 <span className="hidden sm:inline">Consulta</span>
+            🔍 Consulta
           </button>
+        </div>
+        <div className="flex items-center gap-2 lg:gap-4">
           <div className="flex gap-2 lg:gap-3 text-xs">
             {emAndamento.length > 0 && <span className="font-bold" style={{ color: "var(--hdr-active)" }}>{emAndamento.length} em and.</span>}
-            <span className="hidden xl:inline font-bold" style={{ color: "var(--hdr-pending)" }}>{pendentes.length} aguardando</span>
-            <span className="hidden xl:inline font-bold" style={{ color: "var(--hdr-done)" }}>{finalizadas.length} finalizadas</span>
+            <span className="hidden lg:inline font-bold" style={{ color: "var(--hdr-pending)" }}>{pendentes.length} aguardando</span>
+            <span className="hidden lg:inline font-bold" style={{ color: "var(--hdr-done)" }}>{finalizadas.length} finalizadas</span>
           </div>
           <span className="font-mono font-bold text-sm tabular-nums" style={{ color: "var(--foreground)" }}>
             {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Bahia" })}
