@@ -908,42 +908,39 @@ export default function EventoDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/admin/eventos">
-          <Button variant="ghost" size="icon">
+          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
+          </button>
         </Link>
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="admin-page-title">
               {eventLoading ? "Carregando..." : event?.name || "Evento"}
-            </h1>
+            </p>
             {event?.status === "ENCERRADO" && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#7f1d1d40", color: "#f87171", border: "1px solid #f8717144" }}>
-                ENCERRADO
-              </span>
+              <span className="admin-badge admin-badge-red">ENCERRADO</span>
             )}
           </div>
-          <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
+          <p className="admin-page-subtitle">Gerenciamento do evento</p>
         </div>
         {event && (
           event.status === "ENCERRADO" ? (
-            <Button
+            <button
               onClick={reabrirEvento}
               disabled={finalizarLoading}
-              variant="outline"
-              className="text-xs"
+              className="admin-btn admin-btn-ghost text-xs"
             >
               {finalizarLoading ? "..." : "Reabrir Evento"}
-            </Button>
+            </button>
           ) : (
-            <Button
+            <button
               onClick={finalizarEvento}
               disabled={finalizarLoading}
-              className="text-xs font-bold"
+              className="admin-btn text-xs font-bold"
               style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #991b1b" }}
             >
               {finalizarLoading ? "..." : "Finalizar Evento"}
-            </Button>
+            </button>
           )
         )}
       </div>

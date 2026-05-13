@@ -1,9 +1,7 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { Plus, Pencil, Trash2, UserCheck, UserX } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 interface User {
@@ -25,12 +23,12 @@ const ROLE_LABELS: Record<string, string> = {
   CUSTOM: "Personalizado",
 }
 
-const ROLE_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  PRESIDENTE: { bg: "#92400e30", text: "#fbbf24", border: "#92400e60" },
-  COORDENADOR_GERAL: { bg: "#1e3a5f30", text: "#60a5fa", border: "#1e3a5f60" },
-  COORDENADOR_TATAME: { bg: "#4c1d9530", text: "#c084fc", border: "#4c1d9560" },
-  ATLETA: { bg: "var(--card-alt)", text: "#9ca3af", border: "var(--border-alt)" },
-  CUSTOM: { bg: "var(--card-alt)", text: "#9ca3af", border: "var(--border-alt)" },
+const ROLE_CLS: Record<string, string> = {
+  PRESIDENTE: "admin-badge admin-badge-amber",
+  COORDENADOR_GERAL: "admin-badge admin-badge-blue",
+  COORDENADOR_TATAME: "admin-badge admin-badge-purple",
+  ATLETA: "admin-badge admin-badge-gray",
+  CUSTOM: "admin-badge admin-badge-gray",
 }
 
 function maskCPF(cpf: string): string {
@@ -79,137 +77,103 @@ export default function UsuariosPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Usuários</h1>
-          <p className="text-[#6b7280] text-sm mt-1">
-            Gerencie os usuários administrativos da federação
-          </p>
+          <p className="admin-page-title">Usuários</p>
+          <p className="admin-page-subtitle">Gerencie os usuários administrativos da federação</p>
         </div>
         <Link href="/admin/usuarios/novo">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
+          <button className="admin-btn admin-btn-primary">
+            <Plus className="h-3.5 w-3.5" />
             Novo Usuário
-          </Button>
+          </button>
         </Link>
       </div>
 
-      <div
-        className="rounded-lg border overflow-hidden"
-        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
-      >
+      {/* Table */}
+      <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="admin-table">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-10">
-                  #
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                  Nome
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden md:table-cell">
-                  CPF
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden sm:table-cell">
-                  E-mail
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                  Perfil
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                  Ativo
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                  Ações
-                </th>
+              <tr>
+                <th className="w-10">#</th>
+                <th>Nome</th>
+                <th className="hidden md:table-cell">CPF</th>
+                <th className="hidden sm:table-cell">E-mail</th>
+                <th>Perfil</th>
+                <th>Ativo</th>
+                <th className="text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-[#6b7280]">
+                  <td colSpan={7} className="py-10 text-center" style={{ color: "var(--muted)" }}>
                     Carregando...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-[#6b7280]">
+                  <td colSpan={7} className="py-10 text-center" style={{ color: "var(--muted)" }}>
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
               ) : (
-                users.map((user, index) => {
-                  const roleStyle = ROLE_STYLES[user.role] || ROLE_STYLES.CUSTOM
-                  return (
-                    <tr
-                      key={user.id}
-                      style={{ borderBottom: "1px solid var(--card-alt)" }}
-                      className="hover:bg-[var(--card-alt)] transition-colors"
-                    >
-                      <td className="px-4 py-3 text-[#6b7280]">{index + 1}</td>
-                      <td className="px-4 py-3">
-                        <p className="text-white font-medium">{user.name}</p>
-                        {user.phone && (
-                          <p className="text-xs text-[#6b7280]">{user.phone}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-[#9ca3af] hidden md:table-cell font-mono text-xs">
-                        {maskCPF(user.cpf)}
-                      </td>
-                      <td className="px-4 py-3 text-[#9ca3af] hidden sm:table-cell text-xs">
-                        {user.email}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full border"
-                          style={{
-                            backgroundColor: roleStyle.bg,
-                            color: roleStyle.text,
-                            borderColor: roleStyle.border,
-                          }}
+                users.map((user, index) => (
+                  <tr key={user.id}>
+                    <td style={{ color: "var(--muted)" }}>{index + 1}</td>
+                    <td>
+                      <p className="font-semibold" style={{ color: "var(--foreground)" }}>{user.name}</p>
+                      {user.phone && (
+                        <p className="text-[11px] mt-0.5" style={{ color: "var(--muted)" }}>{user.phone}</p>
+                      )}
+                    </td>
+                    <td className="hidden md:table-cell font-mono" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+                      {maskCPF(user.cpf)}
+                    </td>
+                    <td className="hidden sm:table-cell" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+                      {user.email}
+                    </td>
+                    <td>
+                      <span className={ROLE_CLS[user.role] || "admin-badge admin-badge-gray"}>
+                        {ROLE_LABELS[user.role] || user.role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={user.isActive ? "admin-badge admin-badge-green" : "admin-badge admin-badge-red"}>
+                        {user.isActive ? "Ativo" : "Inativo"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center"
+                          title={user.isActive ? "Desativar" : "Ativar"}
+                          onClick={() => handleToggleActive(user)}
                         >
-                          {ROLE_LABELS[user.role] || user.role}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={user.isActive ? "success" : "destructive"}>
-                          {user.isActive ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            title={user.isActive ? "Desativar" : "Ativar"}
-                            onClick={() => handleToggleActive(user)}
-                          >
-                            {user.isActive ? (
-                              <UserX className="h-3.5 w-3.5 text-[#d97706]" />
-                            ) : (
-                              <UserCheck className="h-3.5 w-3.5 text-green-400" />
-                            )}
-                          </Button>
-                          <Link href={`/admin/usuarios/${user.id}/editar`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:text-[#dc2626]"
-                            onClick={() => handleDelete(user.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
+                          {user.isActive ? (
+                            <UserX className="h-3.5 w-3.5 text-[#d97706]" />
+                          ) : (
+                            <UserCheck className="h-3.5 w-3.5 text-green-400" />
+                          )}
+                        </button>
+                        <Link href={`/admin/usuarios/${user.id}/editar`}>
+                          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Editar">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        </Link>
+                        <button
+                          className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center hover:text-[#dc2626]"
+                          onClick={() => handleDelete(user.id)}
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
