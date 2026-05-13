@@ -75,7 +75,7 @@ export default function CoordenadorEntradaPage() {
     >
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <ThemeLogo className="w-16 h-16 object-contain mx-auto mb-4" />
+          <ThemeLogo className="mx-auto mb-4" style={{ width: 260, height: "auto" }} />
           <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             Controle de Tatame
           </h1>

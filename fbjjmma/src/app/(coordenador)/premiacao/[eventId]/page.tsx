@@ -499,7 +499,7 @@ export default function PremiacaoPage() {
     {showOverlay && (
       <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0a0a0a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <ThemeLogo style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
+        <ThemeLogo style={{ width: 260, height: "auto", marginBottom: 24 }} />
         <div style={{ color: "#ffffff", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>Premiação</div>
         <div style={{ color: "#6b7280", fontSize: "0.95rem", marginBottom: 32 }}>{eventName}</div>
         <div style={{ backgroundColor: "#1a1a1a", border: "2px solid #dc2626", borderRadius: 12, padding: "16px 40px", color: "#fca5a5", fontSize: "1.1rem", fontWeight: 700 }}>
