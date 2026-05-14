@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import { useTheme } from "next-themes"
 import { useParams } from "next/navigation"
 import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -314,6 +315,8 @@ const FiltersBar = React.memo(function FiltersBar({
 
 export default function EventoDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme !== "light"
   const [tab, setTab] = useState<Tab>("evento")
   const [event, setEvent] = useState<Event | null>(null)
   const [eventLoading, setEventLoading] = useState(true)
@@ -1859,8 +1862,8 @@ export default function EventoDetailPage() {
                       key={tatame.id}
                       className="rounded-lg border p-3"
                       style={{
-                        borderColor: emEspera ? "#78350f40" : "#16a34a40",
-                        backgroundColor: emEspera ? "#1c1200" : "#0d1f0d",
+                        borderColor: emEspera ? (isDark ? "#78350f60" : "#d9770660") : (isDark ? "#16a34a40" : "#16a34a50"),
+                        backgroundColor: emEspera ? (isDark ? "#1c1200" : "#fffbeb") : (isDark ? "#0d1f0d" : "#f0fdf4"),
                       }}
                     >
                       {/* Header: nome + badge + lixeira */}
