@@ -1,11 +1,17 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 import { LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
 export default function CoordenadorLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const logoSrc = mounted && resolvedTheme === "light" ? "/logo-color.png" : "/logo2.png"
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--background)" }}>
@@ -14,7 +20,7 @@ export default function CoordenadorLayout({ children }: { children: React.ReactN
         style={{ backgroundColor: "var(--background)", borderColor: "var(--border)" }}
       >
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="FBJJMMA" style={{ width: 32, height: 32, objectFit: "contain", flexShrink: 0 }} />
+          <img src={logoSrc} alt="FBJJMMA" style={{ width: 32, height: 32, objectFit: "contain", flexShrink: 0 }} />
           <div>
             <p className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
             <p className="text-xs leading-tight" style={{ color: "var(--muted)" }}>Controle de Chaves</p>
