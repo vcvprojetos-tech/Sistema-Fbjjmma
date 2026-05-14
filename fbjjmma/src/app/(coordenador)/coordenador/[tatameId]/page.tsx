@@ -772,7 +772,9 @@ export default function TatamePage() {
       {/* Overlay de entrada em tela cheia */}
       {showOverlay && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <ThemeLogo style={{ width: 260, height: "auto", marginBottom: 24 }} />
+          <div style={{ width: 80, height: 80, overflow: "hidden", marginBottom: 24 }}>
+            <ThemeLogo className="w-full h-full" />
+          </div>
           <div style={{ color: "var(--foreground)", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>
             {tatame.name}
           </div>
