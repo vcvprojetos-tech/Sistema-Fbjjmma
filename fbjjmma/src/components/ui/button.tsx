@@ -18,7 +18,7 @@ const buttonVariants = cva(
         secondary:
           "bg-[var(--card-alt)] text-[color:var(--foreground)] hover:bg-[var(--border)]",
         ghost:
-          "bg-transparent text-[color:var(--muted-foreground)] hover:bg-[var(--card-alt)] hover:text-[color:var(--foreground)]",
+          "bg-transparent hover:bg-[var(--card-alt)]",
         link:
           "text-[#dc2626] underline-offset-4 hover:underline bg-transparent p-0 h-auto",
       },
