@@ -43,10 +43,13 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, style, ...props }, ref) => {
+    const ghostStyle: React.CSSProperties =
+      variant === "ghost" ? { color: "var(--muted-foreground)" } : {}
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
+        style={{ ...ghostStyle, ...style }}
         ref={ref}
         {...props}
       />
