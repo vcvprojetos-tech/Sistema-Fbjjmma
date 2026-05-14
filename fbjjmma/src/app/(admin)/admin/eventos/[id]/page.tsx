@@ -1552,7 +1552,7 @@ export default function EventoDetailPage() {
                     const groupTatameId = group[0].tatameId || ""
                     rendered.push(
                       <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
-                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "#1a1000" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--card-alt)" }}>
                           <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
                           <button
                             className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
