@@ -2,8 +2,10 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
+import { authConfig } from "@/lib/auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
       name: "credentials",
@@ -19,7 +21,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const identifier = credentials.identifier as string
         const password = credentials.password as string
 
-        // Determine if identifier is CPF or email
         const isCpf = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/.test(identifier)
 
         const user = await prisma.user.findFirst({
@@ -28,7 +29,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             : { email: identifier },
         })
 
-        // Also try raw CPF digits if formatted not found
         let resolvedUser = user
         if (!resolvedUser && isCpf) {
           const rawCpf = identifier.replace(/\D/g, "")
@@ -52,31 +52,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.name = user.name
-        token.cpf = (user as { cpf?: string }).cpf
-        token.role = (user as { role?: string }).role
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string
-        session.user.name = token.name as string
-        session.user.cpf = token.cpf as string
-        session.user.role = token.role as string
-      }
-      return session
-    },
-  },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
 })
