@@ -14,11 +14,11 @@ const buttonVariants = cva(
         destructive:
           "bg-[#dc2626] text-white hover:bg-[#b91c1c]",
         outline:
-          "border border-[var(--border-alt)] bg-transparent hover:bg-[var(--card-alt)]",
+          "border border-[var(--border-alt)] bg-transparent text-[color:var(--foreground)] hover:bg-[var(--card-alt)]",
         secondary:
-          "bg-[var(--card-alt)] hover:bg-[var(--border)]",
+          "bg-[var(--card-alt)] text-[color:var(--foreground)] hover:bg-[var(--border)]",
         ghost:
-          "bg-transparent hover:bg-[var(--card-alt)]",
+          "bg-transparent text-[color:var(--muted-foreground)] hover:bg-[var(--card-alt)] hover:text-[color:var(--foreground)]",
         link:
           "text-[#dc2626] underline-offset-4 hover:underline bg-transparent p-0 h-auto",
       },
