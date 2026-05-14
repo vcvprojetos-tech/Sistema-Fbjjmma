@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server"
 export function middleware(req: NextRequest) {
   const { nextUrl } = req
 
-  const isAdminRoute = nextUrl.pathname.startsWith("/admin")
+  const isAdminRoute = nextUrl.pathname === "/admin" || nextUrl.pathname.startsWith("/admin/")
   const isApiAdminRoute = nextUrl.pathname.startsWith("/api/admin")
 
   const sessionToken =
