@@ -7,11 +7,10 @@ export function middleware(req: NextRequest) {
   const isAdminRoute = nextUrl.pathname.startsWith("/admin")
   const isApiAdminRoute = nextUrl.pathname.startsWith("/api/admin")
 
-  const sessionToken =
-    req.cookies.get("authjs.session-token")?.value ||
-    req.cookies.get("__Secure-authjs.session-token")?.value
-
-  const isLoggedIn = !!sessionToken
+  const cookieHeader = req.headers.get("cookie") || ""
+  const isLoggedIn =
+    cookieHeader.includes("authjs.session-token=") ||
+    cookieHeader.includes("__Secure-authjs.session-token=")
 
   if ((isAdminRoute || isApiAdminRoute) && !isLoggedIn) {
     const loginUrl = new URL("/login", nextUrl.origin)
