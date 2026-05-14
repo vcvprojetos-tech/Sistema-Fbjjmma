@@ -324,7 +324,7 @@ export default function AtletasPage() {
                       <div className="flex items-center justify-end gap-1">
                         <Link href={`/admin/atletas/${athlete.id}/editar`}>
                           <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Editar">
-                            <Pencil className="h-3.5 w-3.5 adm-icon-blue" />
+                            <Pencil className="h-3.5 w-3.5" style={{ stroke: "#3b82f6", color: "#3b82f6" }} />
                           </button>
                         </Link>
                         <button
@@ -332,7 +332,7 @@ export default function AtletasPage() {
                           onClick={() => handleDelete(athlete.id)}
                           title="Excluir"
                         >
-                          <Trash2 className="h-3.5 w-3.5 adm-icon-red" />
+                          <Trash2 className="h-3.5 w-3.5" style={{ stroke: "#dc2626", color: "#dc2626" }} />
                         </button>
                       </div>
                     </td>
