@@ -24,7 +24,7 @@ export function ThemeLogo({ className, style }: ThemeLogoProps) {
       className={className}
       style={{
         objectFit: "contain",
-        transform: isDark ? "none" : "scale(2)",
+        transform: isDark ? "none" : "scale(3.5)",
         transformOrigin: "center",
         ...style,
       }}
