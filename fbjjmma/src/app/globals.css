@@ -389,6 +389,8 @@ button, a, input, select, textarea, [role="button"] {
   background-color: var(--card-alt);
   color: var(--foreground);
 }
+.light .admin-btn-ghost { color: #374151; border-color: #d0d7de; }
+.light .admin-btn-ghost:hover:not(:disabled) { background-color: #f3f4f6; color: #111827; }
 .admin-btn-danger { background-color: #7f1d1d30; color: #f87171; border: 1px solid #7f1d1d40; }
 .admin-btn-danger:hover:not(:disabled) { background-color: #7f1d1d50; }
 .light .admin-btn-danger { background-color: #dc2626; color: #ffffff; border-color: #dc2626; }

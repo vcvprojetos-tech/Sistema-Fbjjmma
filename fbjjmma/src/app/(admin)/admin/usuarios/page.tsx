@@ -153,22 +153,22 @@ export default function UsuariosPage() {
                           onClick={() => handleToggleActive(user)}
                         >
                           {user.isActive ? (
-                            <UserX className="h-3.5 w-3.5 text-[#d97706]" />
+                            <UserX className="h-3.5 w-3.5" style={{ color: "#d97706" }} />
                           ) : (
-                            <UserCheck className="h-3.5 w-3.5 text-green-400" />
+                            <UserCheck className="h-3.5 w-3.5" style={{ color: "#16a34a" }} />
                           )}
                         </button>
                         <Link href={`/admin/usuarios/${user.id}/editar`}>
                           <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Editar">
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-3.5 w-3.5" style={{ color: "#3b82f6" }} />
                           </button>
                         </Link>
                         <button
-                          className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center hover:text-[#dc2626]"
+                          className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center"
                           onClick={() => handleDelete(user.id)}
                           title="Excluir"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" style={{ color: "#dc2626" }} />
                         </button>
                       </div>
                     </td>

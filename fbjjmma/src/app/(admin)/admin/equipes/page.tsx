@@ -126,7 +126,7 @@ export default function EquipesPage() {
                       <div className="flex items-center justify-end gap-1">
                         <Link href={`/admin/equipes/${team.id}/editar`}>
                           <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Editar">
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-3.5 w-3.5" style={{ color: "#3b82f6" }} />
                           </button>
                         </Link>
                         <button
@@ -134,7 +134,7 @@ export default function EquipesPage() {
                           onClick={() => handleDelete(team.id)}
                           title="Excluir"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" style={{ color: "#dc2626" }} />
                         </button>
                       </div>
                     </td>
