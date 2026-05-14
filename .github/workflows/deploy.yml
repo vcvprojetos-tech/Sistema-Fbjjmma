@@ -23,6 +23,7 @@ jobs:
             git pull origin main
             echo "==> Compilando..."
             cd fbjjmma
+            rm -rf .next
             npm run build
             echo "==> Reiniciando servidor..."
             pm2 restart all
