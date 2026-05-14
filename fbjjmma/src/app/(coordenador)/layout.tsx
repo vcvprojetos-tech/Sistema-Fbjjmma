@@ -15,7 +15,7 @@ export default function CoordenadorLayout({ children }: { children: React.ReactN
         style={{ backgroundColor: "#0a0a0a", borderColor: "#222222" }}
       >
         <div className="flex items-center gap-2">
-          <ThemeLogo className="w-8 h-8 object-contain flex-shrink-0" />
+          <img src="/logo2.png" alt="FBJJMMA" className="w-8 h-8 object-contain flex-shrink-0" />
           <div>
             <p className="font-bold text-sm leading-tight" style={{ color: "#ffffff" }}>FBJJMMA</p>
             <p className="text-xs leading-tight" style={{ color: "#6b7280" }}>Controle de Chaves</p>
