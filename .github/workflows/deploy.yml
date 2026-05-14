@@ -1,4 +1,4 @@
-﻿name: Deploy para VPS
+name: Deploy para VPS
 
 on:
   push:
@@ -15,10 +15,15 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
+          command_timeout: 30m
           script: |
             set -e
+            echo "==> Atualizando código..."
             cd /var/www/fbjjmma
             git pull origin main
+            echo "==> Compilando..."
             cd fbjjmma
             npm run build
+            echo "==> Reiniciando servidor..."
             pm2 restart all
+            echo "==> Deploy concluído!"
