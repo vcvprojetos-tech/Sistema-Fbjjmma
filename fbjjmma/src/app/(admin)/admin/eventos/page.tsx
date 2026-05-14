@@ -194,12 +194,12 @@ export default function EventosPage() {
                             <>
                               <Link href={`/admin/eventos/${event.id}`}>
                                 <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Gerenciar">
-                                  <Eye className="h-3.5 w-3.5" style={{ stroke: "#6366f1", color: "#6366f1" }} />
+                                  <Eye size={14} color="#6366f1" />
                                 </button>
                               </Link>
                               <Link href={`/admin/eventos/${event.id}/editar`}>
                                 <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Editar">
-                                  <Pencil className="h-3.5 w-3.5" style={{ stroke: "#3b82f6", color: "#3b82f6" }} />
+                                  <Pencil size={14} color="#3b82f6" />
                                 </button>
                               </Link>
                               <button
@@ -207,7 +207,7 @@ export default function EventosPage() {
                                 onClick={() => handleDelete(event.id)}
                                 title="Excluir"
                               >
-                                <Trash2 className="h-3.5 w-3.5" style={{ stroke: "#dc2626", color: "#dc2626" }} />
+                                <Trash2 size={14} color="#dc2626" />
                               </button>
                             </>
                           ) : (
