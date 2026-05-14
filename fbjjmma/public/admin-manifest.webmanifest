@@ -1,6 +1,6 @@
 {
-  "name": "FBJJMMA Admin",
-  "short_name": "Admin",
+  "name": "Sistema FBJJMMA",
+  "short_name": "FBJJMMA",
   "description": "Painel Administrativo FBJJMMA",
   "start_url": "/admin",
   "scope": "/",
