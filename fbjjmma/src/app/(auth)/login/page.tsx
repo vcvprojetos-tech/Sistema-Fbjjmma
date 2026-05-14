@@ -1,42 +1,16 @@
 ﻿"use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ThemeLogo } from "@/components/ThemeLogo"
 
 export default function LoginPage() {
   const router = useRouter()
   const [identifier, setIdentifier] = useState("")
-
-  useEffect(() => {
-    const enter = () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {})
-      }
-    }
-    document.addEventListener("click", enter, { once: true })
-    document.addEventListener("keydown", enter, { once: true })
-    return () => {
-      document.removeEventListener("click", enter)
-      document.removeEventListener("keydown", enter)
-    }
-  }, [])
-
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    const scroll = () => {
-      const el = document.activeElement
-      if (el instanceof HTMLElement) el.scrollIntoView({ behavior: "smooth", block: "center" })
-    }
-    vv.addEventListener("resize", scroll)
-    return () => vv.removeEventListener("resize", scroll)
-  }, [])
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -56,11 +30,6 @@ export default function LoginPage() {
       if (result?.error) {
         setError("CPF/e-mail ou senha inválidos.")
       } else {
-        try {
-          await document.documentElement.requestFullscreen()
-        } catch {
-          // navegador bloqueou fullscreen — continua mesmo assim
-        }
         router.push("/admin")
       }
     } catch {
@@ -72,13 +41,13 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-[100dvh] flex flex-col items-center justify-center overflow-y-auto py-8"
-      style={{ backgroundColor: "var(--background)" }}
+      className="flex items-center justify-center py-12 px-4"
+      style={{ minHeight: "100svh", backgroundColor: "var(--background)" }}
     >
       <div className="w-full max-w-md px-4">
         {/* Logo / Branding */}
         <div className="flex flex-col items-center mb-8">
-          <ThemeLogo className="object-contain mb-4" style={{ width: 260, height: "auto" }} />
+          <img src="/logo.png" alt="FBJJMMA" className="w-24 h-24 object-contain mb-4" />
           <h1 className="text-2xl font-bold text-white tracking-wider">
             FBJJMMA
           </h1>
