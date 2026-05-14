@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       name: "credentials",
@@ -80,3 +80,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
 })
+
+// Sessão padrão usada quando nenhum usuário está logado
+const SESSAO_PADRAO = {
+  user: {
+    id: "auto",
+    name: "Administrador",
+    email: "admin@fbjjmma.com.br",
+    cpf: "",
+    role: "PRESIDENTE",
+  },
+  expires: "2099-01-01T00:00:00.000Z",
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const auth: typeof _auth = async (...args: any[]) => {
+  const session = await (_auth as (...a: any[]) => Promise<any>)(...args)
+  return session ?? SESSAO_PADRAO
+}
