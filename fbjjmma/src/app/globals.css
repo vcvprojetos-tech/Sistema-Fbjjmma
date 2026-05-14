@@ -164,7 +164,6 @@ body {
 /* Touch UX — remove 300ms delay em todos os elementos interativos */
 button, a, input, select, textarea, [role="button"] {
   touch-action: manipulation;
-  color: inherit;
 }
 
 /* Scroll suave com momentum no iOS */

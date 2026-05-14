@@ -42,14 +42,22 @@ export interface ButtonProps
   asChild?: boolean
 }
 
+const VARIANT_COLORS: Record<string, string> = {
+  default:     "#ffffff",
+  destructive: "#ffffff",
+  outline:     "var(--foreground)",
+  secondary:   "var(--foreground)",
+  ghost:       "var(--muted-foreground)",
+  link:        "#dc2626",
+}
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, style, ...props }, ref) => {
-    const ghostStyle: React.CSSProperties =
-      variant === "ghost" ? { color: "var(--muted-foreground)" } : {}
+    const variantColor = VARIANT_COLORS[variant ?? "default"]
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
-        style={{ ...ghostStyle, ...style }}
+        style={{ color: variantColor, ...style }}
         ref={ref}
         {...props}
       />

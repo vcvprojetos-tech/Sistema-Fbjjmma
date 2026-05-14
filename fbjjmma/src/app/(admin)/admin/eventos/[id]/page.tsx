@@ -2108,8 +2108,8 @@ export default function EventoDetailPage() {
                   {pendentes.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Pendentes</span>
-                        <span className="text-xs text-[#6b7280]">({pendentes.length})</span>
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: "#b45309", color: "#ffffff" }}>Pendentes</span>
+                        <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>({pendentes.length})</span>
                         {selectionMode && (
                           <button
                             className="text-xs text-[#60a5fa] hover:text-white transition-colors ml-1"
@@ -2131,8 +2131,8 @@ export default function EventoDetailPage() {
                   {finalizadas.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>Finalizadas</span>
-                        <span className="text-xs text-[#6b7280]">({finalizadas.length})</span>
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: "#166534", color: "#ffffff" }}>Finalizadas</span>
+                        <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>({finalizadas.length})</span>
                       </div>
                       <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
                         {renderGroupedList(finalizadas, false)}
