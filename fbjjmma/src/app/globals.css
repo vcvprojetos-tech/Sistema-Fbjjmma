@@ -254,13 +254,6 @@ button, a, input, select, textarea, [role="button"] {
 .light .btn-wo-solo { color: #ffffff; background-color: #dc2626; border-color: #dc2626; }
 .light .btn-wo-solo:hover:not(:disabled) { background-color: #b91c1c; border-color: #b91c1c; }
 
-/* ── Ícones de ação das tabelas admin — cores fixas ───────────────────────── */
-.adm-icon-blue   { color: #3b82f6 !important; stroke: #3b82f6 !important; fill: none !important; }
-.adm-icon-red    { color: #dc2626 !important; stroke: #dc2626 !important; fill: none !important; }
-.adm-icon-amber  { color: #d97706 !important; stroke: #d97706 !important; fill: none !important; }
-.adm-icon-green  { color: #16a34a !important; stroke: #16a34a !important; fill: none !important; }
-.adm-icon-indigo { color: #6366f1 !important; stroke: #6366f1 !important; fill: none !important; }
-
 /* ── Admin Panel — Design System ─────────────────────────────────────────── */
 
 /* Cabeçalho de página */
