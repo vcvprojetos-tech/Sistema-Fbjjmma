@@ -1871,10 +1871,9 @@ export default function EventoDetailPage() {
                         <div className="min-w-0">
                           <span className="font-semibold text-sm text-white block truncate">{tatame.name}</span>
                           <span
-                            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium inline-block mt-0.5"
+                            className="text-[10px] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5 text-white"
                             style={{
-                              backgroundColor: emEspera ? "#78350f40" : "#14532d40",
-                              color: emEspera ? "#fbbf24" : "#4ade80",
+                              backgroundColor: emEspera ? "#d97706" : "#16a34a",
                             }}
                           >
                             {emEspera ? "AGUARDANDO" : "ATIVO"}
