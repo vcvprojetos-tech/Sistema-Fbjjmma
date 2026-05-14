@@ -1,20 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useTheme } from "next-themes"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 export default function CoordenadorEntradaPage() {
   const router = useRouter()
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const [cpf, setCpf] = useState("")
   const [tatameNum, setTatameNum] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-
-  useEffect(() => setMounted(true), [])
-  const logoSrc = mounted && resolvedTheme === "light" ? "/logo-color.png" : "/logo2.png"
 
   function formatCPF(value: string) {
     const digits = value.replace(/\D/g, "").slice(0, 11)
@@ -55,7 +50,9 @@ export default function CoordenadorEntradaPage() {
     >
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <img src={logoSrc} alt="FBJJMMA" style={{ width: 56, height: 56, objectFit: "contain", display: "block", margin: "0 auto 1rem" }} />
+          <div style={{ width: 80, height: 80, overflow: "hidden", margin: "0 auto 1rem" }}>
+            <ThemeLogo className="w-full h-full" />
+          </div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             Controle de Tatame
           </h1>
