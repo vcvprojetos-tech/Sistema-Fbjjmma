@@ -75,6 +75,7 @@ export default function LoginPage() {
       className="min-h-[100dvh] flex flex-col items-center justify-center overflow-y-auto py-8"
       style={{ backgroundColor: "var(--background)" }}
     >
+      <link rel="manifest" href="/admin-manifest.webmanifest" />
       <div className="w-full max-w-md px-4">
         {/* Logo / Branding */}
         <div className="flex flex-col items-center mb-8">
