@@ -67,6 +67,7 @@ type Tab =
 interface Event {
   id: string
   name: string
+  status: string
   typeId: string
   state: string
   city: string
@@ -85,6 +86,7 @@ interface Event {
   isVisible: boolean
   banner: string | null
   schedule: string | null
+  pesoDoc: string | null
   about: string | null
   paymentInfo: string | null
   prize: string | null
@@ -318,6 +320,27 @@ export default function EventoDetailPage() {
   const [event, setEvent] = useState<Event | null>(null)
   const [eventLoading, setEventLoading] = useState(true)
 
+  async function removeDoc(field: "schedule" | "pesoDoc") {
+    if (!event) return
+    const fd = new FormData()
+    fd.append(field === "schedule" ? "removeSchedule" : "removePesoDoc", "true")
+    fd.append("name", event.name); fd.append("typeId", event.typeId)
+    fd.append("state", event.state); fd.append("city", event.city)
+    fd.append("location", event.location); fd.append("date", event.date)
+    fd.append("registrationDeadline", event.registrationDeadline)
+    fd.append("correctionDeadline", event.correctionDeadline)
+    fd.append("paymentDeadline", event.paymentDeadline)
+    fd.append("checkinRelease", event.checkinRelease)
+    fd.append("bracketRelease", event.bracketRelease)
+    fd.append("weightTableId", event.weightTableId)
+    fd.append("value", String(event.value))
+    fd.append("hasAbsolute", String(event.hasAbsolute))
+    fd.append("registrationOpen", String(event.registrationOpen))
+    fd.append("isVisible", String(event.isVisible))
+    const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+    if (res.ok) { const updated = await res.json(); setEvent(updated) }
+  }
+
   // Valores tab
   const [valoresData, setValoresData] = useState<CategoryValue[]>([])
   const [valoresLoading, setValoresLoading] = useState(false)
@@ -368,6 +391,42 @@ export default function EventoDetailPage() {
   const [resultadoLoading, setResultadoLoading] = useState(false)
   const [resultadoEdits, setResultadoEdits] = useState<Record<string, Partial<Registration>>>({})
   const [resultadoSaving, setResultadoSaving] = useState(false)
+
+  // Finalizar evento
+  const [finalizarLoading, setFinalizarLoading] = useState(false)
+
+  const finalizarEvento = useCallback(async () => {
+    if (!confirm("Finalizar este evento? Coordenadores não poderão mais criar tatames para ele.")) return
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ENCERRADO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
+
+  const reabrirEvento = useCallback(async () => {
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "EM_ANDAMENTO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
 
   // Modal inscrição
   const [inscreverOpen, setInscreverOpen] = useState(false)
@@ -796,9 +855,9 @@ export default function EventoDetailPage() {
   }
 
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-    PENDENTE: { bg: "#92400e30", text: "#fbbf24" },
-    APROVADO: { bg: "#14532d30", text: "#4ade80" },
-    CANCELADO: { bg: "#7f1d1d30", text: "#f87171" },
+    PENDENTE: { bg: "#92400e", text: "#ffffff" },
+    APROVADO: { bg: "#166534", text: "#ffffff" },
+    CANCELADO: { bg: "#dc2626", text: "#ffffff" },
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -849,16 +908,41 @@ export default function EventoDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/admin/eventos">
-          <Button variant="ghost" size="icon">
+          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
+          </button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-            {eventLoading ? "Carregando..." : event?.name || "Evento"}
-          </h1>
-          <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="admin-page-title">
+              {eventLoading ? "Carregando..." : event?.name || "Evento"}
+            </p>
+            {event?.status === "ENCERRADO" && (
+              <span className="admin-badge admin-badge-red">ENCERRADO</span>
+            )}
+          </div>
+          <p className="admin-page-subtitle">Gerenciamento do evento</p>
         </div>
+        {event && (
+          event.status === "ENCERRADO" ? (
+            <button
+              onClick={reabrirEvento}
+              disabled={finalizarLoading}
+              className="admin-btn admin-btn-ghost text-xs"
+            >
+              {finalizarLoading ? "..." : "Reabrir Evento"}
+            </button>
+          ) : (
+            <button
+              onClick={finalizarEvento}
+              disabled={finalizarLoading}
+              className="admin-btn text-xs font-bold"
+              style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
+            >
+              {finalizarLoading ? "..." : "Finalizar Evento"}
+            </button>
+          )
+        )}
       </div>
 
       {/* Tabs */}
@@ -1213,13 +1297,13 @@ export default function EventoDetailPage() {
                             <p className="text-xs text-[#6b7280]">Total na planilha</p>
                             <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>{importResult.total}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#14532d30" }}>
-                            <p className="text-xs text-[#4ade80]">Importados</p>
-                            <p className="text-xl font-bold text-[#4ade80]">{importResult.importados}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#166534" }}>
+                            <p className="text-xs text-[#86efac]">Importados</p>
+                            <p className="text-xl font-bold text-[#86efac]">{importResult.importados}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#7f1d1d30" }}>
-                            <p className="text-xs text-[#f87171]">Erros</p>
-                            <p className="text-xl font-bold text-[#f87171]">{importResult.erros.length}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#dc2626" }}>
+                            <p className="text-xs text-[#fca5a5]">Erros</p>
+                            <p className="text-xl font-bold text-[#fca5a5]">{importResult.erros.length}</p>
                           </div>
                         </div>
                         {importResult.erros.length > 0 && (
@@ -1510,11 +1594,11 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#7f1d1d30", text: "#dc2626" },
-                  DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
-                  EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                  FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
-                  PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
+                  PENDENTE: { bg: "#dc2626", text: "#ffffff" },
+                  DESIGNADA: { bg: "#1e3a8a", text: "#ffffff" },
+                  EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
+                  FINALIZADA: { bg: "#166534", text: "#ffffff" },
+                  PREMIADA: { bg: "#5b21b6", text: "#ffffff" },
                 }
                 const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
@@ -1548,8 +1632,8 @@ export default function EventoDetailPage() {
                     const totalAthletes = group.reduce((s, b) => s + b.positions.length, 0)
                     const groupTatameId = group[0].tatameId || ""
                     rendered.push(
-                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
-                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "#1a1000" }}>
+                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#d97706" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--card-alt)" }}>
                           <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
                           <button
                             className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
@@ -1854,45 +1938,56 @@ export default function EventoDetailPage() {
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
                   const emEspera = !operador
+                  // Cores adaptadas ao fundo do card
+                  const cardBg     = emEspera ? "#fef9c3" : "#dcfce7"
+                  const cardBorder = emEspera ? "#eab308" : "#16a34a"
+                  const titleColor = emEspera ? "#713f12" : "#14532d"
+                  const baseText   = emEspera ? "#78350f" : "#166534"
+                  const aguardandoColor  = "#1d4ed8"
+                  const emAndamentoColor = emEspera ? "#92400e" : "#ca8a04"
+                  const finalizadasColor = emEspera ? "#166534" : "#14532d"
+                  const operandoColor    = emEspera ? "#166534" : "#14532d"
+                  const reconexaoColor   = emEspera ? "#92400e" : "#ca8a04"
                   return (
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
-                      style={{
-                        borderColor: emEspera ? "#78350f40" : "#16a34a40",
-                        backgroundColor: emEspera ? "#1c1200" : "#0d1f0d",
-                      }}
+                      style={{ borderColor: cardBorder, backgroundColor: cardBg }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">{tatame.name}</span>
+                        <span className="font-semibold" style={{ color: titleColor }}>{tatame.name}</span>
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
                           style={{
-                            backgroundColor: emEspera ? "#78350f40" : "#14532d40",
-                            color: emEspera ? "#fbbf24" : "#4ade80",
+                            backgroundColor: emEspera ? "#ca8a04" : "#16a34a",
+                            color: "#ffffff",
                           }}
                         >
                           {emEspera ? "AGUARDANDO" : "ATIVO"}
                         </span>
                       </div>
-                      <div className="text-xs text-[#6b7280] space-y-1">
+                      <div className="text-xs space-y-1" style={{ color: baseText }}>
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
-                        <p style={{ color: "#60a5fa" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
-                        <p style={{ color: "#fbbf24" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
-                        <p style={{ color: "#4ade80" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
+                        <p style={{ color: aguardandoColor }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
+                        <p style={{ color: emAndamentoColor }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
+                        <p style={{ color: finalizadasColor }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
                         {operador ? (
-                          <p className="text-[#4ade80]">
+                          <p style={{ color: operandoColor }}>
                             Operando: {operador.user.name} desde{" "}
                             {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         ) : (
-                          <p className="text-[#fbbf24]">Aguardando reconexão...</p>
+                          <p style={{ color: reconexaoColor }}>Aguardando reconexão...</p>
                         )}
                       </div>
                       <div className="flex justify-end">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-[#dc2626]" onClick={() => excluirTatame(tatame.id)}>
+                        <button
+                          className="h-8 w-8 p-0 flex items-center justify-center rounded hover:text-[#dc2626] transition-colors"
+                          style={{ color: baseText, backgroundColor: "transparent", border: "none" }}
+                          onClick={() => excluirTatame(tatame.id)}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   )
@@ -1911,8 +2006,8 @@ export default function EventoDetailPage() {
             </div>
             {/* Barra de ações em lote */}
             {selectionMode && selectedBrackets.size > 0 && (
-              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#60a5fa40", backgroundColor: "#0d1a2e" }}>
-                <span className="text-xs text-[#60a5fa] font-semibold">{selectedBrackets.size} selecionada(s)</span>
+              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#2563eb", backgroundColor: "#1e3a8a" }}>
+                <span className="text-xs text-[#93c5fd] font-semibold">{selectedBrackets.size} selecionada(s)</span>
                 <select
                   className="text-xs rounded border px-2 py-1"
                   style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
@@ -1958,11 +2053,11 @@ export default function EventoDetailPage() {
               const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#7f1d1d30",  text: "#dc2626" },
-                DESIGNADA:    { bg: "#1e3a5f40", text: "#60a5fa" },
-                EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                FINALIZADA:   { bg: "#14532d40", text: "#4ade80" },
-                PREMIADA:     { bg: "#4a1d9640", text: "#a78bfa" },
+                PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
+                DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
+                EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
+                FINALIZADA:   { bg: "#166534", text: "#ffffff" },
+                PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
               }
 
               const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [
@@ -2026,7 +2121,7 @@ export default function EventoDetailPage() {
                   } else if (!bracket.bracketGroupId) {
                     const catLabel = `${getBracketLabel(bracket)} | Chave: ${bracket.bracketNumber}`
                     const isSoloWO = bracket.positions.length === 1 && bracket.matches.some(m => m.position1Id !== null && m.position2Id === null && m.isWO)
-                    const sc = isSoloWO ? { bg: "#78350f40", text: "#f97316" } : (statusColors[bracket.status] || statusColors.PENDENTE)
+                    const sc = isSoloWO ? { bg: "#92400e", text: "#ffffff" } : (statusColors[bracket.status] || statusColors.PENDENTE)
                     const statusLabel = isSoloWO ? "W.O." : bracket.status
                     rows.push(
                       <div
@@ -2144,76 +2239,186 @@ export default function EventoDetailPage() {
         <div className="space-y-6">
 
           {/* Painel de Chamadas */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
-              </div>
+          <div className="admin-card">
+            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.75rem" }}>
+              <span>Painel de Chamadas</span>
             </div>
+            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
             <div className="flex gap-3 flex-wrap">
               <a href={`/painel/${id}?painel=1`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#dc2626" }}>
+                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: "#dc2626", color: "#ffffff" }}>
                 Abrir Painel 1 (1ª metade)
               </a>
               <a href={`/painel/${id}?painel=2`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#b91c1c" }}>
+                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: "#dc2626", color: "#ffffff" }}>
                 Abrir Painel 2 (2ª metade)
               </a>
               <a href={`/painel/${id}`} target="_blank" rel="noopener noreferrer"
                 className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
-                style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                style={{ backgroundColor: "#374151", color: "#ffffff" }}>
                 Painel Completo
               </a>
             </div>
           </div>
 
           {/* Painel de Premiação */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Premiação</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
-              </div>
+          <div className="admin-card">
+            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.75rem" }}>
+              <span>Painel de Premiação</span>
             </div>
+            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
             <div className="flex gap-3 flex-wrap">
               <a href={`/painel-premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ backgroundColor: "#92400e" }}>
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{ backgroundColor: "#5b21b6", color: "#ffffff" }}>
                 Abrir Painel de Premiação
               </a>
             </div>
           </div>
 
           {/* Backup das Chaves Finalizadas */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+          <div className="admin-card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-semibold text-sm">Backup das Chaves Finalizadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">
+                <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.25rem" }}>
+                  <span>Backup das Chaves Finalizadas</span>
+                </div>
+                <p className="text-xs" style={{ color: "var(--muted)" }}>
                   Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
                 </p>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex gap-2 flex-shrink-0 ml-4">
                 <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                  style={{ backgroundColor: "#0f766e" }}>
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: "#0f766e", color: "#ffffff" }}>
                   <Download className="w-4 h-4" />
                   Ver / Imprimir Chaves
                 </a>
                 <a href={`/api/admin/eventos/${id}/backup`} download
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                  style={{ backgroundColor: "#374151", color: "#ffffff" }}>
                   JSON
                 </a>
               </div>
             </div>
           </div>
 
+          {/* Documentos para Coordenadores */}
+          <div className="admin-card">
+            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.25rem" }}>
+              <span>Documentos para Coordenadores</span>
+            </div>
+            <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Cronograma */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>📅 Cronograma do Evento</p>
+                {event?.schedule ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.schedule} target="_blank" rel="noopener noreferrer"
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover o cronograma?")) removeDoc("schedule") }}
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
+                      title="Remover">✕</button>
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
+                    {event?.schedule ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("schedule", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
+                </label>
+              </div>
+              {/* Tabela de Peso */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>⚖️ Tabela de Peso</p>
+                {event?.pesoDoc ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.pesoDoc} target="_blank" rel="noopener noreferrer"
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover a tabela de peso?")) removeDoc("pesoDoc") }}
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
+                      title="Remover">✕</button>
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
+                    {event?.pesoDoc ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("pesoDoc", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           {/* Link Coordenador de Premiação */}
-          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
+          <div className="admin-card space-y-2" style={{ borderColor: "#5b21b6" }}>
             <div className="flex items-center gap-2">
               <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
             </div>

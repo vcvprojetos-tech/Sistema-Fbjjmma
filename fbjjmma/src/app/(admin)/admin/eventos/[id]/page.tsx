@@ -1513,11 +1513,11 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#7f1d1d30", text: "#dc2626" },
-                  DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
-                  EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                  FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
-                  PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
+                  PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
+                  DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
+                  EM_ANDAMENTO: { bg: "#b45309", text: "#ffffff" },
+                  FINALIZADA:   { bg: "#166534", text: "#ffffff" },
+                  PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
                 }
                 const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
@@ -1965,11 +1965,11 @@ export default function EventoDetailPage() {
               const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#7f1d1d30",  text: "#dc2626" },
-                DESIGNADA:    { bg: "#1e3a5f40", text: "#60a5fa" },
-                EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                FINALIZADA:   { bg: "#14532d40", text: "#4ade80" },
-                PREMIADA:     { bg: "#4a1d9640", text: "#a78bfa" },
+                PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
+                DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
+                EM_ANDAMENTO: { bg: "#b45309", text: "#ffffff" },
+                FINALIZADA:   { bg: "#166534", text: "#ffffff" },
+                PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
               }
 
               const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [
@@ -2033,7 +2033,7 @@ export default function EventoDetailPage() {
                   } else if (!bracket.bracketGroupId) {
                     const catLabel = `${getBracketLabel(bracket)} | Chave: ${bracket.bracketNumber}`
                     const isSoloWO = bracket.positions.length === 1 && bracket.matches.some(m => m.position1Id !== null && m.position2Id === null && m.isWO)
-                    const sc = isSoloWO ? { bg: "#78350f40", text: "#f97316" } : (statusColors[bracket.status] || statusColors.PENDENTE)
+                    const sc = isSoloWO ? { bg: "#92400e", text: "#ffffff" } : (statusColors[bracket.status] || statusColors.PENDENTE)
                     const statusLabel = isSoloWO ? "W.O." : bracket.status
                     rows.push(
                       <div
