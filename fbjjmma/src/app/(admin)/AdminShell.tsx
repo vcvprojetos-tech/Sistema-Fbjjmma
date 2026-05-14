@@ -76,8 +76,8 @@ export default function AdminShell({
           className="flex items-center gap-3 px-5 py-4 border-b"
           style={{ borderColor: "var(--border)" }}
         >
-          <div className="w-14 h-14 flex-shrink-0">
-            <ThemeLogo className="w-full h-full object-contain" />
+          <div className="w-14 h-14 flex-shrink-0 overflow-hidden">
+            <ThemeLogo className="w-full h-full" />
           </div>
           <div>
             <p className="font-black text-sm leading-tight tracking-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
