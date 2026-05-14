@@ -1869,11 +1869,12 @@ export default function EventoDetailPage() {
                       {/* Header: nome + badge + lixeira */}
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">
-                          <span className="font-semibold text-sm text-white block truncate">{tatame.name}</span>
+                          <span className="font-semibold text-sm block truncate" style={{ color: isDark ? "#ffffff" : "#111827" }}>{tatame.name}</span>
                           <span
-                            className="text-[10px] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5 text-white"
+                            className="text-[10px] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5"
                             style={{
                               backgroundColor: emEspera ? "#d97706" : "#16a34a",
+                              color: "#ffffff",
                             }}
                           >
                             {emEspera ? "AGUARDANDO" : "ATIVO"}
@@ -1885,19 +1886,19 @@ export default function EventoDetailPage() {
                       </div>
                       {/* Stats em grid 2 colunas */}
                       <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] mb-1.5">
-                        <span style={{ color: "#6b7280" }}>Atribuídas: <span className="text-white">{tatame.brackets.length}</span></span>
-                        <span style={{ color: "#60a5fa" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
-                        <span style={{ color: "#fbbf24" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
-                        <span style={{ color: "#4ade80" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
+                        <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>Atribuídas: <span style={{ color: isDark ? "#ffffff" : "#111827", fontWeight: 600 }}>{tatame.brackets.length}</span></span>
+                        <span style={{ color: isDark ? "#60a5fa" : "#1d4ed8" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
+                        <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
+                        <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
                       </div>
                       {/* Operador */}
                       <div className="text-[11px]">
                         {operador ? (
-                          <span className="text-[#4ade80]">
+                          <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>
                             {operador.user.name} desde {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         ) : (
-                          <span className="text-[#fbbf24]">Aguardando reconexão...</span>
+                          <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Aguardando reconexão...</span>
                         )}
                       </div>
                     </div>
