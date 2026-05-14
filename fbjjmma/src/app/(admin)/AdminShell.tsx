@@ -52,7 +52,6 @@ export default function AdminShell({
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--background)" }}>
-      <link rel="manifest" href="/admin-manifest.webmanifest" />
       {/* Sidebar overlay for mobile */}
       {sidebarOpen && (
         <div
