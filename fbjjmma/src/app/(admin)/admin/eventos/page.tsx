@@ -3,7 +3,22 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Plus, Search, Pencil, Trash2, RotateCcw, Image as ImageIcon, Eye } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+
+const iconBtnStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: 32,
+  height: 32,
+  padding: 0,
+  border: "1px solid var(--border-alt)",
+  borderRadius: 6,
+  background: "transparent",
+  cursor: "pointer",
+}
 
 interface EventType {
   id: string
@@ -64,12 +79,20 @@ export default function EventosPage() {
     loadEvents()
   }
 
-  const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-    RASCUNHO: { label: "Rascunho", cls: "admin-badge admin-badge-gray" },
-    INSCRICOES_ABERTAS: { label: "Inscrições Abertas", cls: "admin-badge admin-badge-green" },
-    INSCRICOES_ENCERRADAS: { label: "Inscrições Encerradas", cls: "admin-badge admin-badge-amber" },
-    EM_ANDAMENTO: { label: "Em Andamento", cls: "admin-badge admin-badge-blue" },
-    ENCERRADO: { label: "Encerrado", cls: "admin-badge admin-badge-gray" },
+  const STATUS_COLORS: Record<string, string> = {
+    RASCUNHO: "#6b7280",
+    INSCRICOES_ABERTAS: "#16a34a",
+    INSCRICOES_ENCERRADAS: "#d97706",
+    EM_ANDAMENTO: "#2563eb",
+    ENCERRADO: "#6b7280",
+  }
+
+  const STATUS_LABELS: Record<string, string> = {
+    RASCUNHO: "Rascunho",
+    INSCRICOES_ABERTAS: "Inscrições Abertas",
+    INSCRICOES_ENCERRADAS: "Inscrições Encerradas",
+    EM_ANDAMENTO: "Em Andamento",
+    ENCERRADO: "Encerrado",
   }
 
   return (
@@ -77,14 +100,16 @@ export default function EventosPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="admin-page-title">Eventos</p>
-          <p className="admin-page-subtitle">Gerencie os eventos da federação</p>
+          <h1 className="text-2xl font-bold text-white">Eventos</h1>
+          <p className="text-[#6b7280] text-sm mt-1">
+            Gerencie os eventos da federação
+          </p>
         </div>
         <Link href="/admin/eventos/novo">
-          <button className="admin-btn admin-btn-primary">
-            <Plus className="h-3.5 w-3.5" />
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
             Novo Evento
-          </button>
+          </Button>
         </Link>
       </div>
 
@@ -117,112 +142,130 @@ export default function EventosPage() {
       </div>
 
       {/* Table */}
-      <div className="admin-card overflow-hidden">
+      <div
+        className="rounded-lg border overflow-hidden"
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+      >
         <div className="overflow-x-auto">
-          <table className="admin-table">
+          <table className="w-full text-sm">
             <thead>
-              <tr>
-                <th className="w-10">#</th>
-                <th className="w-16">Banner</th>
-                <th>Nome</th>
-                <th>Data</th>
-                <th className="hidden md:table-cell">Tabela de Peso</th>
-                <th className="hidden lg:table-cell">Status</th>
-                <th className="text-right">Ações</th>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-10">
+                  #
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-16">
+                  Banner
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                  Nome
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                  Data
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden md:table-cell">
+                  Tabela de Peso
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden lg:table-cell">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center" style={{ color: "var(--muted)" }}>
+                  <td colSpan={7} className="px-4 py-10 text-center text-[#6b7280]">
                     Carregando...
                   </td>
                 </tr>
               ) : events.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center" style={{ color: "var(--muted)" }}>
+                  <td colSpan={7} className="px-4 py-10 text-center text-[#6b7280]">
                     Nenhum evento encontrado.
                   </td>
                 </tr>
               ) : (
-                events.map((event, index) => {
-                  const st = STATUS_CONFIG[event.status] ?? { label: event.status, cls: "admin-badge admin-badge-gray" }
-                  return (
-                    <tr key={event.id}>
-                      <td style={{ color: "var(--muted)" }}>{index + 1}</td>
-                      <td>
-                        {event.banner ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={event.banner}
-                            alt={event.name}
-                            className="w-12 h-8 object-cover rounded"
-                          />
-                        ) : (
-                          <div
-                            className="w-12 h-8 rounded flex items-center justify-center"
-                            style={{ backgroundColor: "var(--card-alt)" }}
-                          >
-                            <ImageIcon className="h-4 w-4" style={{ color: "var(--muted)" }} />
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        <Link
-                          href={`/admin/eventos/${event.id}`}
-                          className="font-semibold hover:text-[#dc2626] transition-colors"
-                          style={{ color: "var(--foreground)" }}
+                events.map((event, index) => (
+                  <tr
+                    key={event.id}
+                    style={{ borderBottom: "1px solid var(--card-alt)" }}
+                    className="hover:bg-[var(--card-alt)] transition-colors"
+                  >
+                    <td className="px-4 py-3 text-[#6b7280]">{index + 1}</td>
+                    <td className="px-4 py-3">
+                      {event.banner ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={event.banner}
+                          alt={event.name}
+                          className="w-12 h-8 object-cover rounded"
+                        />
+                      ) : (
+                        <div
+                          className="w-12 h-8 rounded flex items-center justify-center"
+                          style={{ backgroundColor: "var(--card-alt)" }}
                         >
-                          {event.name}
-                        </Link>
-                        <p className="text-[11px] mt-0.5" style={{ color: "var(--muted)" }}>
-                          {event.city}, {event.state} &bull; {event.type.name}
-                        </p>
-                      </td>
-                      <td className="whitespace-nowrap tabular-nums" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
-                        {new Date(event.date).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="hidden md:table-cell" style={{ color: "var(--muted)" }}>
-                        {event.weightTable.name}
-                      </td>
-                      <td className="hidden lg:table-cell">
-                        <span className={st.cls}>{st.label}</span>
-                      </td>
-                      <td>
-                        <div className="flex items-center justify-end gap-1">
-                          {tab === "ativos" ? (
-                            <>
-                              <Link href={`/admin/eventos/${event.id}`}>
-                                <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Gerenciar">
-                                  <Eye size={14} color="#6366f1" />
-                                </button>
-                              </Link>
-                              <Link href={`/admin/eventos/${event.id}/editar`}>
-                                <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Editar">
-                                  <Pencil size={14} color="#3b82f6" />
-                                </button>
-                              </Link>
-                              <button
-                                className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center"
-                                onClick={() => handleDelete(event.id)}
-                                title="Excluir"
-                              >
-                                <Trash2 size={14} color="#dc2626" />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center hover:text-green-400"
-                              title="Restaurar"
-                            >
-                              <RotateCcw className="h-3.5 w-3.5" />
-                            </button>
-                          )}
+                          <ImageIcon className="h-4 w-4 text-[var(--border-alt)]" />
                         </div>
-                      </td>
-                    </tr>
-                  )
-                })
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/admin/eventos/${event.id}`}
+                        className="text-white font-medium hover:text-[#dc2626] transition-colors"
+                      >
+                        {event.name}
+                      </Link>
+                      <p className="text-[#6b7280] text-xs">
+                        {event.city}, {event.state} &bull; {event.type.name}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-[#9ca3af] whitespace-nowrap">
+                      {new Date(event.date).toLocaleDateString("pt-BR")}
+                    </td>
+                    <td className="px-4 py-3 text-[#9ca3af] hidden md:table-cell">
+                      {event.weightTable.name}
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <span
+                        className="text-xs px-2 py-1 rounded-full"
+                        style={{
+                          backgroundColor: `${STATUS_COLORS[event.status] || "#6b7280"}20`,
+                          color: STATUS_COLORS[event.status] || "#9ca3af",
+                        }}
+                      >
+                        {STATUS_LABELS[event.status] || event.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+                        {tab === "ativos" ? (
+                          <>
+                            <Link href={`/admin/eventos/${event.id}`}>
+                              <button style={iconBtnStyle} title="Gerenciar">
+                                <Eye size={14} color="#6366f1" />
+                              </button>
+                            </Link>
+                            <Link href={`/admin/eventos/${event.id}/editar`}>
+                              <button style={iconBtnStyle} title="Editar">
+                                <Pencil size={14} color="#3b82f6" />
+                              </button>
+                            </Link>
+                            <button style={iconBtnStyle} onClick={() => handleDelete(event.id)} title="Excluir">
+                              <Trash2 size={14} color="#dc2626" />
+                            </button>
+                          </>
+                        ) : (
+                          <button style={iconBtnStyle} title="Restaurar">
+                            <RotateCcw size={14} color="#16a34a" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
