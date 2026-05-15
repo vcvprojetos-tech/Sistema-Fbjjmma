@@ -16,6 +16,7 @@ import {
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -171,29 +172,33 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
         {/* Top bar */}
         <header
-          className="flex items-center justify-between px-4 lg:px-6 h-14 border-b flex-shrink-0"
+          className="flex items-center justify-between px-4 h-14 border-b flex-shrink-0"
           style={{ backgroundColor: "var(--background)", borderColor: "var(--border)" }}
         >
-          {/* Esquerda: nome + cargo */}
-          <div className="hidden sm:block">
-            <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-              {session?.user?.name || "Usuário"}
-            </p>
-            <p className="text-xs" style={{ color: "var(--muted)" }}>
-              {ROLE_LABELS[session?.user?.role || ""] || session?.user?.role}
-            </p>
+          {/* Esquerda: logo + nome da federação */}
+          <div className="flex items-center gap-2">
+            <div style={{ width: 44, height: 44, overflow: "hidden", flexShrink: 0 }}>
+              <ThemeLogo className="w-full h-full" />
+            </div>
+            <div>
+              <p className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
+              <p className="text-xs leading-tight" style={{ color: "var(--muted)" }}>Painel Administrativo</p>
+            </div>
           </div>
-          <div className="sm:hidden" />
-          {/* Direita: tema + sair */}
+          {/* Direita: nome do operador + tema + sair */}
           <div className="flex items-center gap-3">
+            {session?.user && (
+              <span className="text-sm hidden sm:inline" style={{ color: "var(--muted-foreground)" }}>
+                {session.user.name}
+              </span>
+            )}
             <ThemeToggle />
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="flex items-center gap-2 text-sm transition-colors hover:text-[#dc2626]"
+              className="transition-colors hover:text-[#dc2626]"
               style={{ color: "var(--muted)" }}
             >
               <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sair</span>
             </button>
           </div>
         </header>

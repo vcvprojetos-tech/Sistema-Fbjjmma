@@ -191,21 +191,26 @@ export default function AdminShell({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
         {/* Top bar */}
         <header
-          className="flex items-center justify-between px-4 lg:px-6 h-12 border-b flex-shrink-0"
+          className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
           style={{ backgroundColor: "var(--sidebar-surface)", borderColor: "var(--border)" }}
         >
-          {/* Esquerda: nome + cargo */}
-          <div className="hidden sm:block">
-            <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>
-              {session?.user?.name || "Usuário"}
-            </p>
-            <p className="text-[10px]" style={{ color: "var(--muted)" }}>
-              {ROLE_LABELS[session?.user?.role || ""] || session?.user?.role}
-            </p>
-          </div>
-          <div className="sm:hidden" />
-          {/* Direita: tema */}
+          {/* Esquerda: logo + nome da federação */}
           <div className="flex items-center gap-2">
+            <div style={{ width: 38, height: 38, overflow: "hidden", flexShrink: 0 }}>
+              <ThemeLogo className="w-full h-full" />
+            </div>
+            <div>
+              <p className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
+              <p className="text-[10px] leading-tight" style={{ color: "var(--muted)" }}>Painel Administrativo</p>
+            </div>
+          </div>
+          {/* Direita: nome do operador + tema */}
+          <div className="flex items-center gap-2">
+            {session?.user && (
+              <span className="text-xs hidden sm:inline" style={{ color: "var(--muted-foreground)" }}>
+                {session.user.name}
+              </span>
+            )}
             <ThemeToggle />
           </div>
         </header>
