@@ -2236,81 +2236,83 @@ export default function EventoDetailPage() {
 
       {/* TAB: OPERAÇÕES */}
       {tab === "operacoes" && (
-        <div className="space-y-6">
+        <div style={{ margin: "-1.5rem -1.5rem -1.5rem", padding: "1.5rem", backgroundColor: "var(--card-alt)", minHeight: 400 }}>
+          <div className="space-y-4 max-w-3xl">
 
           {/* Painel de Chamadas */}
-          <div className="admin-card">
-            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.75rem" }}>
-              <span>Painel de Chamadas</span>
-            </div>
-            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
-            <div className="flex gap-3 flex-wrap">
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>📺 Painel de Chamadas</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <a href={`/painel/${id}?painel=1`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
-                style={{ backgroundColor: "#dc2626", color: "#ffffff" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#dc2626", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Abrir Painel 1 (1ª metade)
               </a>
               <a href={`/painel/${id}?painel=2`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
-                style={{ backgroundColor: "#dc2626", color: "#ffffff" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#dc2626", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Abrir Painel 2 (2ª metade)
               </a>
               <a href={`/painel/${id}`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
-                style={{ backgroundColor: "#374151", color: "#ffffff" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#374151", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Painel Completo
               </a>
             </div>
           </div>
 
           {/* Painel de Premiação */}
-          <div className="admin-card">
-            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.75rem" }}>
-              <span>Painel de Premiação</span>
-            </div>
-            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
-            <div className="flex gap-3 flex-wrap">
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>🏆 Painel de Premiação</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <a href={`/painel-premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-                style={{ backgroundColor: "#5b21b6", color: "#ffffff" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#5b21b6", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Abrir Painel de Premiação
               </a>
             </div>
           </div>
 
           {/* Backup das Chaves Finalizadas */}
-          <div className="admin-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.25rem" }}>
-                  <span>Backup das Chaves Finalizadas</span>
-                </div>
-                <p className="text-xs" style={{ color: "var(--muted)" }}>
-                  Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
-                </p>
-              </div>
-              <div className="flex gap-2 flex-shrink-0 ml-4">
-                <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "#0f766e", color: "#ffffff" }}>
-                  <Download className="w-4 h-4" />
-                  Ver / Imprimir Chaves
-                </a>
-                <a href={`/api/admin/eventos/${id}/backup`} download
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "#374151", color: "#ffffff" }}>
-                  JSON
-                </a>
-              </div>
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>💾 Backup das Chaves Finalizadas</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "0.5rem 1rem", backgroundColor: "#0f766e", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                <Download className="w-4 h-4" />
+                Ver / Imprimir Chaves
+              </a>
+              <a href={`/api/admin/eventos/${id}/backup`} download
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#374151", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                Exportar JSON
+              </a>
             </div>
           </div>
 
-          {/* Documentos para Coordenadores */}
-          <div className="admin-card">
-            <div className="admin-card-header" style={{ border: "none", padding: 0, marginBottom: "0.25rem" }}>
-              <span>Documentos para Coordenadores</span>
+          {/* Coordenador de Premiação */}
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid #5b21b6" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>🎖️ Coordenador de Premiação</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 8, border: "1px solid var(--border-alt)", backgroundColor: "var(--card-alt)", padding: "0.5rem 0.75rem", marginBottom: "0.75rem" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace" }}>
+                {typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}
+              </span>
+              <button
+                style={{ fontSize: "0.75rem", color: "#ffffff", backgroundColor: "#5b21b6", border: "none", borderRadius: 6, padding: "0.25rem 0.625rem", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+                onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/premiacao/${id}`)}
+              >
+                Copiar
+              </button>
             </div>
-            <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
+            <a href={`/premiacao/${id}`} target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#5b21b6", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+              Abrir página de premiação →
+            </a>
+          </div>
+
+          {/* Documentos para Coordenadores */}
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>📄 Documentos para Coordenadores</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* Cronograma */}
               <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
@@ -2417,28 +2419,8 @@ export default function EventoDetailPage() {
             </div>
           </div>
 
-          {/* Link Coordenador de Premiação */}
-          <div className="admin-card space-y-2" style={{ borderColor: "#5b21b6" }}>
-            <div className="flex items-center gap-2">
-              <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
-            </div>
-            <p className="text-xs text-[#6b7280]">Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--card)" }}>
-              <span className="text-xs text-[#9ca3af] flex-1 truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}</span>
-              <button
-                className="text-xs text-[#a78bfa] hover:text-white font-semibold shrink-0 transition-colors"
-                onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/premiacao/${id}`)}
-              >
-                Copiar
-              </button>
-            </div>
-            <a href={`/premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-              className="inline-block text-xs text-[#a78bfa] underline hover:text-white">
-              Abrir página de premiação →
-            </a>
-          </div>
-
-        </div>
+          </div>{/* fim space-y-4 */}
+        </div>{/* fim fundo cinza */}
       )}
 
             {/* Modal de visualização de chave */}
