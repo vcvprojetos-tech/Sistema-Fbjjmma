@@ -597,6 +597,8 @@ export default function TatamePage() {
       .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
       .map(m => ({
         ...m,
+        // Fallback: se position1 vier null da API, busca em b.positions pelo id
+        position1: m.position1 ?? b.positions.find(p => p.id === m.position1Id) ?? null,
         _bracketId: b.id,
         _isMidBracket: b.positions.length > 1,
         // Atleta já confirmou presença em round anterior (venceu uma partida real)
