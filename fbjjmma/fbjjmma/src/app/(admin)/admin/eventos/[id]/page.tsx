@@ -2040,11 +2040,11 @@ export default function EventoDetailPage() {
             </div>
             {/* Barra de ações em lote */}
             {selectionMode && selectedBrackets.size > 0 && (
-              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#2563eb", backgroundColor: "#1e3a8a" }}>
-                <span className="text-xs text-[#93c5fd] font-semibold">{selectedBrackets.size} selecionada(s)</span>
+              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <span className="text-xs font-semibold" style={{ color: "#3b82f6" }}>{selectedBrackets.size} selecionada(s)</span>
                 <select
                   className="text-xs rounded border px-2 py-1"
-                  style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)" }}
                   defaultValue=""
                   onChange={(e) => { if (e.target.value !== "") { bulkAtribuir(e.target.value === "__none__" ? null : e.target.value); e.target.value = "" } }}
                   disabled={bulkLoading}
@@ -2053,10 +2053,10 @@ export default function EventoDetailPage() {
                   <option value="__none__">Sem tatame</option>
                   {tatames.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
-                <Button size="sm" variant="outline" onClick={bulkReiniciar} disabled={bulkLoading} className="text-[#fbbf24] border-[#fbbf2440] hover:bg-[#fbbf2410]">
+                <Button size="sm" onClick={bulkReiniciar} disabled={bulkLoading} style={{ backgroundColor: "#d97706", color: "#ffffff", border: "none" }}>
                   <RotateCcw className="h-3 w-3 mr-1" /> Reiniciar
                 </Button>
-                <Button size="sm" variant="outline" onClick={bulkExcluir} disabled={bulkLoading} className="text-[#f87171] border-[#f8717140] hover:bg-[#f8717110]">
+                <Button size="sm" onClick={bulkExcluir} disabled={bulkLoading} style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none" }}>
                   <Trash2 className="h-3 w-3 mr-1" /> Excluir
                 </Button>
               </div>
