@@ -44,6 +44,21 @@ const PADDING = 10
 const POS_LABEL_W = 16 // space for position number label beside athlete card
 const LINE_COLOR = "#555"
 
+// ThreeAthleteBracket — constantes de layout no nível de módulo (evita inline components)
+const T3_PAD = 22
+const T3_CW = 140
+const T3_CH = 44
+const T3_VG = 6
+const T3_DROP_GAP = 60
+const T3_BLX = T3_PAD + T3_CW          // = 162
+const T3_RBX = T3_BLX + 10              // = 172
+const T3_RBW = 32
+const T3_RBH = 20
+const T3_PBLX = T3_RBX + T3_RBW + 8    // = 212
+const T3_FX = T3_PBLX + 8               // = 220
+const T3_FBW = 80
+const T3_FBH = 44
+
 const AGE_GROUP_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
   INFANTIL_B: "Infantil B", INFANTO_JUVENIL_A: "Infanto Juvenil A",
@@ -156,7 +171,7 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
   if (woMatches.length === 0) return null
 
   // Expande cada partida W.O. em entradas individuais por atleta
-  const entries: { key: string; name: string; label: string; woType?: string | null; calls: Array<{ call: number; at: string }>; endedAt?: string | null }[] = []
+  const entries: { key: string; name: string; label: string; calls: Array<{ call: number; at: string }> }[] = []
   for (const m of woMatches) {
     const isSolo = m.position2Id === null
     const isDoubleWO = !isSolo && m.winnerId === null && !!m.position1Id && !!m.position2Id
@@ -167,8 +182,8 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const reg2 = posIdMap.get(m.position2Id!)?.registration ?? null
       const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
       const p2Calls = allCalls.filter(c => c.pos === "p2" || !c.pos)
-      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), woType: m.woType, calls: p1Calls, endedAt: m.endedAt })
-      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), woType: m.woType, calls: p2Calls, endedAt: m.endedAt })
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(m.woType, m.woWeight1 ?? null, m.woReason), calls: p1Calls })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(m.woType, m.woWeight2 ?? null, m.woReason), calls: p2Calls })
     } else if (m.position1Id) {
       if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
@@ -178,48 +193,33 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
       const loserPos = loserId === m.position1Id ? "p1" : "p2"
       const loserCalls = allCalls.filter(c => c.pos === loserPos || !c.pos)
-      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), woType: m.woType, calls: loserCalls, endedAt: m.endedAt })
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), calls: loserCalls })
     }
   }
 
   if (entries.length === 0) return null
-
-  const allAbsent = entries.every(e => e.woType === "AUSENCIA" || !e.woType)
-  const allDescl = entries.every(e => e.woType === "PESO" || e.woType === "DESCLASSIFICACAO")
-  const sectionTitle = allAbsent ? "W.O." : allDescl ? "Desclassificados" : "W.O. / Desclassificados"
-
   return (
     <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
-      <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{sectionTitle}</p>
+      <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>W.O.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        {entries.map(e => {
-          const isAbsence = e.woType === "AUSENCIA" || !e.woType
-          const endLabel = isAbsence ? "W.O." : "Desc."
-          const endColor = isAbsence ? "#dc2626" : "#a855f7"
-          return (
-            <div key={e.key}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
-                <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600 }}>{e.name}</span>
-                <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
-              </div>
-              {(e.calls.length > 0 || e.endedAt) && (
-                <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
-                  {e.calls.sort((a, b) => a.call - b.call).map(c => (
-                    <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
-                      <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
-                    </span>
-                  ))}
-                  {e.endedAt && (
-                    <span style={{ fontSize: 8, color: "#9ca3af" }}>
-                      <span style={{ color: endColor, fontWeight: 700 }}>{endLabel}</span> {fmtTime(e.endedAt)}
-                    </span>
-                  )}
-                </div>
-              )}
+        {entries.map(e => (
+          <div key={e.key}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
+              <span style={{ fontSize: 9, color: "#d1d5db", fontWeight: 600 }}>{e.name}</span>
+              <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
             </div>
-          )
-        })}
+            {e.calls.length > 0 && (
+              <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
+                {e.calls.sort((a, b) => a.call - b.call).map(c => (
+                  <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
+                    <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -229,8 +229,8 @@ function shortName(reg: Reg | null): string {
   const full = reg?.athlete?.user.name ?? reg?.guestName ?? ""
   if (!full) return ""
   const words = full.trim().split(/\s+/)
-  if (words.length === 1) return words[0].toUpperCase()
-  return (words[0] + " " + words[words.length - 1].substring(0, 1) + ".").toUpperCase()
+  if (words.length === 1) return words[0].substring(0, 6).toUpperCase()
+  return (words[0].substring(0, 1) + "." + words[words.length - 1].substring(0, 5)).toUpperCase()
 }
 
 interface SlotEntry { posId: string | null; isWinner: boolean; hasPotential: boolean }
@@ -345,8 +345,7 @@ function ThreeAthleteBracket({
   const m1LoserId = m1WinnerId
     ? (m1WinnerId === m1!.position1Id ? m1!.position2Id : m1!.position1Id)
     : null
-  // Se M1 foi W.O., o perdedor não entra na repescagem — slot fica vazio
-  const m1LoserPos = (m1LoserId && !m1?.isWO) ? (posIdMap3.get(m1LoserId) ?? null) : null
+  const m1LoserPos = m1LoserId ? (posIdMap3.get(m1LoserId) ?? null) : null
 
   const m2WinnerId = m2?.winnerId ?? null
   const m2LoserId = m2WinnerId
@@ -412,8 +411,8 @@ function ThreeAthleteBracket({
         onClick={clickable ? () => onAthleteClick!(reg!.id) : undefined}
         style={{
           position: "absolute", left: PAD, top, width: CW, height: CH,
-          border: `1px solid ${name && !dimmed ? "var(--bracket-card-border)" : dimmed && name ? "var(--bracket-dimmed-border)" : "var(--border)"}`,
-          backgroundColor: name ? (dimmed ? "var(--bracket-dimmed-bg)" : "var(--bracket-card-bg)") : "var(--card)",
+          border: `1px solid ${name && !dimmed ? "#2d3748" : dimmed && name ? "#3d3020" : "var(--border)"}`,
+          backgroundColor: name ? (dimmed ? "#151008" : "#1a1f2e") : "var(--card)",
           borderRadius: 2, padding: "3px 7px",
           display: "flex", flexDirection: "column", justifyContent: "center",
           boxSizing: "border-box", overflow: "hidden",
@@ -424,11 +423,11 @@ function ThreeAthleteBracket({
         {/* position label, outside left edge */}
         <span style={{
           position: "absolute", left: -18, top: "50%", transform: "translateY(-50%)",
-          fontSize: 10, color: dimmed ? "#f59e0b" : "var(--foreground)", fontWeight: 700, userSelect: "none",
+          fontSize: 10, color: dimmed ? "#f59e0b" : "#3b82f6", fontWeight: 700, userSelect: "none",
         }}>{posLabel}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: dimmed ? "var(--bracket-dimmed-text)" : "var(--foreground)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
+            <p style={{ fontSize: 9, color: dimmed ? "#a07830" : clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
               {name.toUpperCase()}
             </p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>
@@ -436,7 +435,7 @@ function ThreeAthleteBracket({
             </p>
           </>
         ) : (
-          <p style={{ fontSize: 9, color: "var(--muted)", margin: 0 }}>{emptyText}</p>
+          <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>{emptyText}</p>
         )}
       </div>
     )
@@ -447,13 +446,13 @@ function ThreeAthleteBracket({
     return (
       <div style={{
         position: "absolute", left: RBX, top, width: RBW, height: RBH,
-        border: `1px solid ${label ? "var(--bracket-card-border)" : "var(--border)"}`,
-        backgroundColor: label ? "var(--bracket-card-bg)" : "var(--background)",
+        border: `1px solid ${label ? "#2d3748" : "#2a2a2a"}`,
+        backgroundColor: label ? "#1a1f2e" : "var(--background)",
         borderRadius: 2, boxSizing: "border-box",
         display: "flex", alignItems: "center", justifyContent: "center",
         opacity: inactive ? 0.25 : 1,
       }}>
-        {label && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{label}</span>}
+        {label && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{label}</span>}
       </div>
     )
   }
@@ -525,8 +524,8 @@ function ThreeAthleteBracket({
           {/* Final box */}
           <div style={{
             position: "absolute", left: FX, top: finalBoxTop, width: FBW, height: FBH,
-            border: `1px solid ${finalWinnerId ? "var(--bracket-gold-border)" : m2Active ? "var(--bracket-card-border)" : "var(--border)"}`,
-            backgroundColor: finalWinnerId ? "var(--bracket-gold-bg)" : m2Active ? "var(--bracket-card-bg)" : "var(--background)",
+            border: `1px solid ${finalWinnerId ? "#78350f" : m2Active ? "#2d3020" : "#252525"}`,
+            backgroundColor: finalWinnerId ? "#1c0f00" : m2Active ? "#0f1400" : "var(--background)",
             borderRadius: 2, display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             boxSizing: "border-box", padding: "2px 6px", gap: 2,
@@ -556,7 +555,7 @@ function ThreeAthleteBracket({
           ].map(({ label, color, reg }) => reg ? (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
               <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              <span style={{ fontSize: 10, color: "var(--foreground)", fontWeight: 600 }}>{getRegName(reg)}</span>
+              <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
               {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
               {label === "1° Lugar" && isAbsolute && reg.prizePix && (
                 <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
@@ -765,8 +764,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           top: slotTopY(slotIdx) + PADDING,
           width: ATHLETE_W,
           height: ATHLETE_H,
-          border: `1px solid ${name ? "var(--bracket-card-border)" : "var(--border)"}`,
-          backgroundColor: name ? "var(--bracket-card-bg)" : "var(--card)",
+          border: `1px solid ${name ? "#2d3748" : "var(--border)"}`,
+          backgroundColor: name ? "#1a1f2e" : "var(--card)",
           borderRadius: 2,
           padding: "3px 7px",
           display: "flex",
@@ -780,16 +779,16 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         {/* Position number label on left */}
         <span style={{
           position: "absolute", left: -POS_LABEL_W, top: "50%",
-          transform: "translateY(-50%)", fontSize: 10, color: "var(--foreground)",
+          transform: "translateY(-50%)", fontSize: 10, color: "#3b82f6",
           fontWeight: 700, userSelect: "none",
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (
-          <p style={{ fontSize: 9, color: "var(--muted)", margin: 0 }}>—</p>
+          <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>—</p>
         )}
       </div>
     )
@@ -810,8 +809,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             top: centerYs[r][i] - RESULT_H / 2 + PADDING,
             width: RESULT_W,
             height: RESULT_H,
-            border: `1px solid ${posNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
-            backgroundColor: posNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
+            border: `1px solid ${posNum !== null ? "#2d3748" : "#2a2a2a"}`,
+            backgroundColor: posNum !== null ? "#1a1f2e" : "var(--background)",
             borderRadius: 2,
             boxSizing: "border-box",
             display: "flex",
@@ -819,7 +818,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             justifyContent: "center",
           }}
         >
-          {posNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{posNum}</span>}
+          {posNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{posNum}</span>}
         </div>
       )
     }
@@ -842,8 +841,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           top: slotTopY(slotIdx) + PADDING,
           width: ATHLETE_W,
           height: ATHLETE_H,
-          border: `1px solid ${name ? "var(--bracket-card-border)" : "var(--border)"}`,
-          backgroundColor: name ? "var(--bracket-card-bg)" : "var(--card)",
+          border: `1px solid ${name ? "#2d3748" : "var(--border)"}`,
+          backgroundColor: name ? "#1a1f2e" : "var(--card)",
           borderRadius: 2,
           padding: "3px 7px",
           display: "flex",
@@ -857,16 +856,16 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
         {/* Position number label on right */}
         <span style={{
           position: "absolute", right: -POS_LABEL_W, top: "50%",
-          transform: "translateY(-50%)", fontSize: 10, color: "var(--foreground)",
+          transform: "translateY(-50%)", fontSize: 10, color: "#3b82f6",
           fontWeight: 700, userSelect: "none",
         }}>{posNum}</span>
         {name ? (
           <>
-            <p style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
+            <p style={{ fontSize: 9, color: clickable ? "#f87171" : "#fff", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{name.toUpperCase()}</p>
             <p style={{ fontSize: 8, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, lineHeight: "1.35" }}>{(team || "—").toUpperCase()}</p>
           </>
         ) : (
-          <p style={{ fontSize: 9, color: "var(--muted)", margin: 0 }}>—</p>
+          <p style={{ fontSize: 9, color: "#2a2a2a", margin: 0 }}>—</p>
         )}
       </div>
     )
@@ -887,8 +886,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             top: centerYs[r][i] - RESULT_H / 2 + PADDING,
             width: RESULT_W,
             height: RESULT_H,
-            border: `1px solid ${posNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
-            backgroundColor: posNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
+            border: `1px solid ${posNum !== null ? "#2d3748" : "#2a2a2a"}`,
+            backgroundColor: posNum !== null ? "#1a1f2e" : "var(--background)",
             borderRadius: 2,
             boxSizing: "border-box",
             display: "flex",
@@ -896,7 +895,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
             justifyContent: "center",
           }}
         >
-          {posNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{posNum}</span>}
+          {posNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{posNum}</span>}
         </div>
       )
     }
@@ -948,13 +947,13 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       top: centerYs[numHalfRounds - 1][0] - RESULT_H / 2 + PADDING,
       width: RESULT_W,
       height: RESULT_H,
-      border: `1px solid ${leftFinalistPosNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
-      backgroundColor: leftFinalistPosNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
+      border: `1px solid ${leftFinalistPosNum !== null ? "#2d3748" : "#2a2a2a"}`,
+      backgroundColor: leftFinalistPosNum !== null ? "#1a1f2e" : "var(--background)",
       borderRadius: 2,
       boxSizing: "border-box",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      {leftFinalistPosNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{leftFinalistPosNum}</span>}
+      {leftFinalistPosNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{leftFinalistPosNum}</span>}
     </div>
   )
 
@@ -966,13 +965,13 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       top: centerYs[numHalfRounds - 1][0] - RESULT_H / 2 + PADDING,
       width: RESULT_W,
       height: RESULT_H,
-      border: `1px solid ${rightFinalistPosNum !== null ? "var(--bracket-card-border)" : "var(--border)"}`,
-      backgroundColor: rightFinalistPosNum !== null ? "var(--bracket-card-bg)" : "var(--background)",
+      border: `1px solid ${rightFinalistPosNum !== null ? "#2d3748" : "#2a2a2a"}`,
+      backgroundColor: rightFinalistPosNum !== null ? "#1a1f2e" : "var(--background)",
       borderRadius: 2,
       boxSizing: "border-box",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      {rightFinalistPosNum !== null && <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 700 }}>{rightFinalistPosNum}</span>}
+      {rightFinalistPosNum !== null && <span style={{ fontSize: 9, color: "#3b82f6", fontWeight: 700 }}>{rightFinalistPosNum}</span>}
     </div>
   )
 
@@ -981,34 +980,34 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       position: "absolute", left: centerX,
       top: finalCenterY - finalBoxH - 3,
       width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${firstPlaceReg ? "var(--bracket-gold-border)" : "var(--border)"}`,
-      backgroundColor: firstPlaceReg ? "var(--bracket-gold-bg)" : "var(--card)",
+      border: `1px solid ${firstPlaceReg ? "#78350f" : "#3a3a00"}`,
+      backgroundColor: firstPlaceReg ? "#1c0f00" : "#1c1c00",
       borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
     }}>
       <span style={{ fontSize: 7, color: "#fbbf24", fontWeight: 700, lineHeight: 1.2 }}>1° Lugar</span>
-      {firstPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(firstPlaceReg)}</span>}
+      {firstPlaceReg && <span style={{ fontSize: 7, color: "#ffffff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(firstPlaceReg)}</span>}
     </div>,
     <div key="final-2" style={{
       position: "absolute", left: centerX,
       top: finalCenterY + 3,
       width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${secondPlaceReg ? "var(--bracket-silver-border)" : "var(--border)"}`,
-      backgroundColor: secondPlaceReg ? "var(--bracket-silver-bg)" : "var(--card)",
+      border: `1px solid ${secondPlaceReg ? "#1e3a5f" : "var(--border)"}`,
+      backgroundColor: secondPlaceReg ? "#0d1a2e" : "var(--card)",
       borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
     }}>
       <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
-      {secondPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
+      {secondPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
     </div>,
     <div key="final-3" style={{
       position: "absolute", left: centerX,
       top: finalCenterY + finalBoxH + 9,
       width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${thirdPlaceReg ? "var(--bracket-bronze-border)" : "var(--border)"}`,
-      backgroundColor: thirdPlaceReg ? "var(--bracket-bronze-bg)" : "var(--card)",
+      border: `1px solid ${thirdPlaceReg ? "#5c3a1e" : "#2a2000"}`,
+      backgroundColor: thirdPlaceReg ? "#1a0e00" : "#100e00",
       borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
     }}>
       <span style={{ fontSize: 7, color: "#cd7c2f", fontWeight: 600, lineHeight: 1.2 }}>3° Lugar</span>
-      {thirdPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
+      {thirdPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
     </div>
   )
 
@@ -1061,7 +1060,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
           {placements.map(({ label, color, reg }) => reg && (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
               <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              <span style={{ fontSize: 10, color: "var(--foreground)", fontWeight: 600 }}>{getRegName(reg)}</span>
+              <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
               {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
               {label === "1° Lugar" && isAbsolute && reg.prizePix && (
                 <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
