@@ -1,25 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const prismaAny = prisma as any
-
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
-  const { eventId: urlEventId } = await params
-
-  // Prioriza o evento com tatames ativos (heartbeat nos últimos 5 minutos)
-  const activeOp = await prismaAny.tatameOperation.findFirst({
-    where: {
-      endedAt: null,
-      lastHeartbeat: { gte: new Date(Date.now() - 5 * 60 * 1000) },
-    },
-    include: { tatame: { select: { eventId: true } } },
-    orderBy: { lastHeartbeat: "desc" },
-  })
-  const eventId = activeOp?.tatame?.eventId ?? urlEventId
+  const { eventId } = await params
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },

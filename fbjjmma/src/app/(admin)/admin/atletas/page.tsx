@@ -1,8 +1,10 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Plus, Search, Pencil, Trash2, User, Users, Star } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, User } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -48,13 +50,13 @@ const BELT_LABELS: Record<string, string> = {
   PRETA: "Preta",
 }
 
-const BELT_CLS: Record<string, string> = {
-  BRANCA: "admin-badge admin-badge-gray",
-  AMARELA_LARANJA_VERDE: "admin-badge admin-badge-amber",
-  AZUL: "admin-badge admin-badge-blue",
-  ROXA: "admin-badge admin-badge-purple",
-  MARROM: "admin-badge admin-badge-amber",
-  PRETA: "admin-badge admin-badge-gray",
+const BELT_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  BRANCA: { bg: "#f3f4f620", text: "#d1d5db", border: "#6b728050" },
+  AMARELA_LARANJA_VERDE: { bg: "#fbbf2420", text: "#fbbf24", border: "#fbbf2440" },
+  AZUL: { bg: "#3b82f620", text: "#60a5fa", border: "#3b82f640" },
+  ROXA: { bg: "#a855f720", text: "#c084fc", border: "#a855f740" },
+  MARROM: { bg: "#92400e30", text: "#d97706", border: "#92400e50" },
+  PRETA: { bg: "var(--card)80", text: "#e5e7eb", border: "#444444" },
 }
 
 function maskCPF(cpf: string): string {
@@ -152,54 +154,57 @@ export default function AtletasPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="admin-page-title">Atletas</p>
-          <p className="admin-page-subtitle">Gerencie os atletas da federação</p>
+          <h1 className="text-2xl font-bold text-white">Atletas</h1>
+          <p className="text-[#6b7280] text-sm mt-1">
+            Gerencie os atletas da federação
+          </p>
         </div>
         <Link href="/admin/atletas/novo">
-          <button className="admin-btn admin-btn-primary">
-            <Plus className="h-3.5 w-3.5" />
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
             Novo Atleta
-          </button>
+          </Button>
         </Link>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total de Atletas", value: stats.total, icon: Users, color: "#dc2626" },
-          { label: "Atletas Ativos", value: stats.ativos, icon: User, color: "#16a34a" },
-          { label: "Afiliados", value: stats.afiliados, icon: Star, color: "#2563eb" },
-        ].map((s) => {
-          const Icon = s.icon
-          return (
-            <div key={s.label} className="admin-stat-card" style={{ borderLeftColor: s.color }}>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "var(--card-alt)" }}>
-                <Icon className="h-5 w-5" style={{ color: s.color }} />
-              </div>
-              <div>
-                <p className="text-2xl font-black tabular-nums" style={{ color: "var(--foreground)" }}>{s.value}</p>
-                <p className="text-xs font-medium" style={{ color: "var(--muted)" }}>{s.label}</p>
-              </div>
-            </div>
-          )
-        })}
+          { label: "Total", value: stats.total, color: "var(--foreground)" },
+          { label: "Ativos", value: stats.ativos, color: "#16a34a" },
+          { label: "Afiliados", value: stats.afiliados, color: "#2563eb" },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-lg border p-4"
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          >
+            <p className="text-xs text-[#6b7280] uppercase tracking-wider mb-1">
+              {s.label}
+            </p>
+            <p className="text-2xl font-bold" style={{ color: s.color }}>
+              {s.value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}
-      <div className="admin-card">
+      <div
+        className="rounded-lg border p-4"
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <Input
-            className="admin-input"
             placeholder="Nome do atleta"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           <Select value={sexo} onValueChange={setSexo}>
-            <SelectTrigger className="admin-select">
+            <SelectTrigger>
               <SelectValue placeholder="Sexo" />
             </SelectTrigger>
             <SelectContent>
@@ -209,7 +214,7 @@ export default function AtletasPage() {
             </SelectContent>
           </Select>
           <Select value={faixa} onValueChange={setFaixa}>
-            <SelectTrigger className="admin-select">
+            <SelectTrigger>
               <SelectValue placeholder="Faixa" />
             </SelectTrigger>
             <SelectContent>
@@ -223,7 +228,7 @@ export default function AtletasPage() {
             </SelectContent>
           </Select>
           <Select value={equipeId} onValueChange={setEquipeId}>
-            <SelectTrigger className="admin-select">
+            <SelectTrigger>
               <SelectValue placeholder="Equipe" />
             </SelectTrigger>
             <SelectContent>
@@ -235,109 +240,145 @@ export default function AtletasPage() {
               ))}
             </SelectContent>
           </Select>
-          <button onClick={handleSearch} className="admin-btn admin-btn-primary w-full justify-center">
-            <Search className="h-3.5 w-3.5" />
+          <Button onClick={handleSearch} className="w-full">
+            <Search className="h-4 w-4 mr-2" />
             Pesquisar
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="admin-card overflow-hidden">
+      <div
+        className="rounded-lg border overflow-hidden"
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+      >
         <div className="overflow-x-auto">
-          <table className="admin-table">
+          <table className="w-full text-sm">
             <thead>
-              <tr>
-                <th className="w-10">#</th>
-                <th className="w-12">Foto</th>
-                <th>Nome</th>
-                <th className="hidden md:table-cell">CPF</th>
-                <th className="hidden sm:table-cell">Sexo</th>
-                <th className="hidden lg:table-cell">Faixa</th>
-                <th className="hidden lg:table-cell">Equipe</th>
-                <th className="hidden md:table-cell">Filiado</th>
-                <th className="text-right">Ações</th>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-10">
+                  #
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider w-12">
+                  Foto
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                  Nome
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden md:table-cell">
+                  CPF
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden sm:table-cell">
+                  Sexo
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden lg:table-cell">
+                  Faixa
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden lg:table-cell">
+                  Equipe
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wider hidden md:table-cell">
+                  Filiado
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-10 text-center" style={{ color: "var(--muted)" }}>
+                  <td colSpan={9} className="px-4 py-10 text-center text-[#6b7280]">
                     Carregando...
                   </td>
                 </tr>
               ) : athletes.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-10 text-center" style={{ color: "var(--muted)" }}>
+                  <td colSpan={9} className="px-4 py-10 text-center text-[#6b7280]">
                     Nenhum atleta encontrado.
                   </td>
                 </tr>
               ) : (
-                athletes.map((athlete, index) => (
-                  <tr key={athlete.id}>
-                    <td style={{ color: "var(--muted)" }}>
-                      {(page - 1) * limit + index + 1}
-                    </td>
-                    <td>
-                      {athlete.photo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={athlete.photo}
-                          alt={athlete.user.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: "var(--border)" }}
+                athletes.map((athlete, index) => {
+                  const beltStyle = BELT_STYLES[athlete.belt] || BELT_STYLES.BRANCA
+                  return (
+                    <tr
+                      key={athlete.id}
+                      style={{ borderBottom: "1px solid var(--card-alt)" }}
+                      className="hover:bg-[var(--card-alt)] transition-colors"
+                    >
+                      <td className="px-4 py-3 text-[#6b7280]">
+                        {(page - 1) * limit + index + 1}
+                      </td>
+                      <td className="px-4 py-3">
+                        {athlete.photo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={athlete.photo}
+                            alt={athlete.user.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: "var(--border)" }}
+                          >
+                            <User className="h-4 w-4 text-[#6b7280]" />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-white font-medium">{athlete.user.name}</p>
+                        {!athlete.user.isActive && (
+                          <span className="text-xs text-[#dc2626]">Inativo</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-[#9ca3af] hidden md:table-cell font-mono text-xs">
+                        {maskCPF(athlete.user.cpf)}
+                      </td>
+                      <td className="px-4 py-3 text-[#9ca3af] hidden sm:table-cell">
+                        {athlete.sex === "MASCULINO" ? "Masculino" : "Feminino"}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full border"
+                          style={{
+                            backgroundColor: beltStyle.bg,
+                            color: beltStyle.text,
+                            borderColor: beltStyle.border,
+                          }}
                         >
-                          <User className="h-4 w-4" style={{ color: "var(--muted)" }} />
+                          {BELT_LABELS[athlete.belt] || athlete.belt}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[#9ca3af] hidden lg:table-cell">
+                        {athlete.team?.name || "—"}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <Badge variant={athlete.isAffiliated ? "success" : "secondary"}>
+                          {athlete.isAffiliated ? "Sim" : "Não"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/admin/atletas/${athlete.id}/editar`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:text-[#dc2626]"
+                            onClick={() => handleDelete(athlete.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
-                      )}
-                    </td>
-                    <td>
-                      <p className="font-semibold" style={{ color: "var(--foreground)" }}>{athlete.user.name}</p>
-                      {!athlete.user.isActive && (
-                        <span className="text-xs text-[#dc2626]">Inativo</span>
-                      )}
-                    </td>
-                    <td className="hidden md:table-cell font-mono" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
-                      {maskCPF(athlete.user.cpf)}
-                    </td>
-                    <td className="hidden sm:table-cell" style={{ color: "var(--muted)" }}>
-                      {athlete.sex === "MASCULINO" ? "Masculino" : "Feminino"}
-                    </td>
-                    <td className="hidden lg:table-cell">
-                      <span className={BELT_CLS[athlete.belt] || "admin-badge admin-badge-gray"}>
-                        {BELT_LABELS[athlete.belt] || athlete.belt}
-                      </span>
-                    </td>
-                    <td className="hidden lg:table-cell" style={{ color: "var(--muted)" }}>
-                      {athlete.team?.name || "—"}
-                    </td>
-                    <td className="hidden md:table-cell">
-                      <span className={athlete.isAffiliated ? "admin-badge admin-badge-green" : "admin-badge admin-badge-gray"}>
-                        {athlete.isAffiliated ? "Sim" : "Não"}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex items-center justify-end gap-1">
-                        <Link href={`/admin/atletas/${athlete.id}/editar`}>
-                          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center" title="Editar">
-                            <Pencil size={14} color="#3b82f6" />
-                          </button>
-                        </Link>
-                        <button
-                          className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center"
-                          onClick={() => handleDelete(athlete.id)}
-                          title="Excluir"
-                        >
-                          <Trash2 size={14} color="#dc2626" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
@@ -349,24 +390,32 @@ export default function AtletasPage() {
             className="flex items-center justify-between px-4 py-3 border-t"
             style={{ borderColor: "var(--border)" }}
           >
-            <p className="text-xs" style={{ color: "var(--muted)" }}>
+            <p className="text-sm text-[#6b7280]">
               Mostrando {(page - 1) * limit + 1}–{Math.min(page * limit, total)} de {total}
             </p>
             <div className="flex gap-2">
-              <button
-                className="admin-btn admin-btn-ghost"
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page <= 1}
-                onClick={() => { setPage(page - 1); loadAthletes(page - 1) }}
+                onClick={() => {
+                  setPage(page - 1)
+                  loadAthletes(page - 1)
+                }}
               >
                 Anterior
-              </button>
-              <button
-                className="admin-btn admin-btn-ghost"
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page >= totalPages}
-                onClick={() => { setPage(page + 1); loadAthletes(page + 1) }}
+                onClick={() => {
+                  setPage(page + 1)
+                  loadAthletes(page + 1)
+                }}
               >
                 Próximo
-              </button>
+              </Button>
             </div>
           </div>
         )}
