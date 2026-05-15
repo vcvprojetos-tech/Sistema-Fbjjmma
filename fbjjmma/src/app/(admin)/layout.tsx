@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   CalendarDays,
@@ -13,7 +13,7 @@ import {
   LogOut,
   ChevronRight,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { ThemeLogo } from "@/components/ThemeLogo"
@@ -40,9 +40,18 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    if (status === "loading") return
+    const role = session?.user?.role
+    if (!role || (role !== "PRESIDENTE" && role !== "COORDENADOR_GERAL")) {
+      router.replace("/login")
+    }
+  }, [session, status, router])
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href

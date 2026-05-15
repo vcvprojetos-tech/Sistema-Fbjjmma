@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
 
-export async function middleware(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const { nextUrl } = req
 
   const isAdminRoute = nextUrl.pathname === "/admin" || nextUrl.pathname.startsWith("/admin/")
@@ -12,22 +11,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = await getToken({
-    req,
-    secret: process.env.AUTH_SECRET,
-  })
+  const hasSession =
+    req.cookies.has("authjs.session-token") ||
+    req.cookies.has("__Secure-authjs.session-token")
 
-  if (!token) {
+  if (!hasSession) {
     const loginUrl = new URL("/login", nextUrl.origin)
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
-  }
-
-  const role = token.role as string | undefined
-  const canAccessAdmin = role === "PRESIDENTE" || role === "COORDENADOR_GERAL"
-
-  if (!canAccessAdmin) {
-    return NextResponse.redirect(new URL("/login", nextUrl.origin))
   }
 
   return NextResponse.next()
