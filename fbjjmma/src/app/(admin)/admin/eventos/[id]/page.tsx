@@ -364,6 +364,7 @@ export default function EventoDetailPage() {
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
+  const [tatamesChaveTab, setTatamesChaveTab] = useState<"pendentes" | "finalizadas" | "premiadas">("pendentes")
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedBrackets, setSelectedBrackets] = useState<Set<string>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
@@ -1992,11 +1993,10 @@ export default function EventoDetailPage() {
               <p className="text-[#6b7280] text-sm py-4">Carregando chaves...</p>
             ) : brackets.length === 0 ? (
               <p className="text-[#6b7280] text-sm py-4">Nenhuma chave gerada. Vá até a aba CHAVES e clique em "Gerar Chaves".</p>
-            ) : tatamesFilteredBrackets.length === 0 ? (
-              <p className="text-[#6b7280] text-sm py-4">Nenhuma chave encontrada com os filtros aplicados.</p>
             ) : (() => {
               const pendentes = tatamesFilteredBrackets.filter(b => b.status !== "FINALIZADA" && b.status !== "PREMIADA")
-              const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
+              const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA")
+              const premiadas = tatamesFilteredBrackets.filter(b => b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
                 PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
@@ -2125,52 +2125,70 @@ export default function EventoDetailPage() {
                 return rows
               }
 
-              // IDs de todas as pendentes selecionáveis
-              const allPendentesIds = pendentes.flatMap(b =>
+              const tabList = tatamesChaveTab === "pendentes" ? pendentes
+                : tatamesChaveTab === "finalizadas" ? finalizadas
+                : premiadas
+              const isSelectable = tatamesChaveTab === "pendentes"
+
+              const allTabIds = tabList.flatMap(b =>
                 b.bracketGroupId && !b.isGrandFinal ? [] : [b.id]
               ).concat(
-                pendentes.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
-                  const group = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
+                tabList.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
+                  const group = tabList.filter(x => x.bracketGroupId === b.bracketGroupId)
                   const gf = brackets.find(x => x.bracketGroupId === b.bracketGroupId && x.isGrandFinal)
                   return [...group, ...(gf ? [gf] : [])].map(x => x.id)
                 })
               )
-              const allPendentesSelected = allPendentesIds.length > 0 && allPendentesIds.every(bid => selectedBrackets.has(bid))
+              const allTabSelected = allTabIds.length > 0 && allTabIds.every(bid => selectedBrackets.has(bid))
+
+              const tabColor = tatamesChaveTab === "pendentes" ? "#b45309"
+                : tatamesChaveTab === "finalizadas" ? "#166534"
+                : "#5b21b6"
 
               return (
-                <div className="space-y-4">
-                  {pendentes.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: "#b45309", color: "#ffffff" }}>Pendentes</span>
-                        <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>({pendentes.length})</span>
-                        {selectionMode && (
-                          <button
-                            className="text-xs text-[#60a5fa] hover:text-white transition-colors ml-1"
-                            onClick={() => setSelectedBrackets(prev => {
-                              const next = new Set(prev)
-                              allPendentesIds.forEach(bid => allPendentesSelected ? next.delete(bid) : next.add(bid))
-                              return next
-                            })}
-                          >
-                            {allPendentesSelected ? "Desmarcar todas" : "Selecionar todas"}
-                          </button>
-                        )}
-                      </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {renderGroupedList(pendentes, true)}
-                      </div>
-                    </div>
-                  )}
-                  {finalizadas.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: "#166534", color: "#ffffff" }}>Finalizadas</span>
-                        <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>({finalizadas.length})</span>
-                      </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {renderGroupedList(finalizadas, false)}
-                      </div>
+                <div className="space-y-0">
+                  {/* Abas */}
+                  <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
+                    {([
+                      { key: "pendentes", label: "Pendentes", count: pendentes.length, color: "#b45309" },
+                      { key: "finalizadas", label: "Finalizadas", count: finalizadas.length, color: "#166534" },
+                      { key: "premiadas", label: "Premiadas", count: premiadas.length, color: "#5b21b6" },
+                    ] as const).map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => setTatamesChaveTab(t.key)}
+                        className="px-4 py-2.5 text-xs font-bold transition-colors whitespace-nowrap"
+                        style={{
+                          color: tatamesChaveTab === t.key ? t.color : "var(--muted)",
+                          borderBottom: tatamesChaveTab === t.key ? `2px solid ${t.color}` : "2px solid transparent",
+                          backgroundColor: "transparent",
+                        }}
+                      >
+                        {t.label} ({t.count})
+                      </button>
+                    ))}
+                    {/* Selecionar todas (só na aba pendentes com modo seleção ativo) */}
+                    {selectionMode && isSelectable && tabList.length > 0 && (
+                      <button
+                        className="ml-auto px-4 py-2.5 text-xs text-[#60a5fa] hover:text-white transition-colors"
+                        onClick={() => setSelectedBrackets(prev => {
+                          const next = new Set(prev)
+                          allTabIds.forEach(bid => allTabSelected ? next.delete(bid) : next.add(bid))
+                          return next
+                        })}
+                      >
+                        {allTabSelected ? "Desmarcar todas" : "Selecionar todas"}
+                      </button>
+                    )}
+                  </div>
+                  {/* Conteúdo */}
+                  {tatamesFilteredBrackets.length === 0 ? (
+                    <p className="text-[#6b7280] text-sm py-4">Nenhuma chave encontrada com os filtros aplicados.</p>
+                  ) : tabList.length === 0 ? (
+                    <p className="text-[#6b7280] text-sm py-4">Nenhuma chave {tatamesChaveTab}.</p>
+                  ) : (
+                    <div className="rounded-b-lg border border-t-0 overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      {renderGroupedList(tabList, isSelectable)}
                     </div>
                   )}
                 </div>
