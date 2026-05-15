@@ -44,7 +44,7 @@ export async function POST(
           position2Id: null,
         },
       })
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
       if (bracket.tatameId) notifyTatame(bracket.tatameId)
       return NextResponse.json({ message: "Chave iniciada." })
     }
@@ -73,7 +73,7 @@ export async function POST(
           position2Id: null,
         },
       })
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
       if (bracket.tatameId) notifyTatame(bracket.tatameId)
       return NextResponse.json({ message: "Chave iniciada." })
     }
