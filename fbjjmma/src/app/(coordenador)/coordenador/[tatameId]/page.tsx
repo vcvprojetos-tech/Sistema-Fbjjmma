@@ -1316,8 +1316,8 @@ export default function TatamePage() {
                     </div>
                   )}
 
-                  {/* Partidas solo: 1 atleta aguardando pesagem — exibidas após as lutas normais */}
-                  {soloMatches.map(match => {
+                  {/* Partidas solo: 1 atleta aguardando pesagem — exibidas somente após iniciar */}
+                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && soloMatches.map(match => {
                     const p1 = match.position1
                     const p1Name = getAthleteName(p1)
                     const p1Present = `${match.id}-p1` in optimisticCheckins ? optimisticCheckins[`${match.id}-p1`] : match.p1CheckedIn
