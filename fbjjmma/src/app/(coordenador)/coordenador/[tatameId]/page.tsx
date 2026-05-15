@@ -1922,16 +1922,26 @@ export default function TatamePage() {
           finalizada:{ badgeBg: "#b45309", textColor: "#fbbf24" },
           aguardando:{ badgeBg: "#374151", textColor: "#9ca3af" },
         }
-        const weightOptions = Array.from(
+        const baseWeights = Array.from(
           new Map(
             (consultaResults ?? [])
               .filter(r =>
+                !r.isAbsolute &&
                 (!consultaSex || r.weightCategory.sex === consultaSex) &&
                 (!consultaAge || r.weightCategory.ageGroup === consultaAge)
               )
               .map(r => [r.weightCategory.name, r.weightCategory])
           ).values()
         ).sort((a, b) => a.maxWeight - b.maxWeight)
+        const hasAbsoluto = (consultaResults ?? []).some(r =>
+          r.isAbsolute &&
+          (!consultaSex || r.weightCategory.sex === consultaSex) &&
+          (!consultaAge || r.weightCategory.ageGroup === consultaAge)
+        )
+        const weightOptions = [
+          ...baseWeights,
+          ...(hasAbsoluto ? [{ name: "Absoluto" }] : []),
+        ]
 
         const snap = consultaSnapshot
         const filteredConsulta = snap
@@ -1939,7 +1949,11 @@ export default function TatamePage() {
               if (snap.sex && r.weightCategory.sex !== snap.sex) return false
               if (snap.age && r.weightCategory.ageGroup !== snap.age) return false
               if (snap.belt && r.belt !== snap.belt) return false
-              if (snap.weight && r.weightCategory.name !== snap.weight) return false
+              if (snap.weight === "Absoluto") {
+                if (!r.isAbsolute) return false
+              } else if (snap.weight) {
+                if (r.weightCategory.name !== snap.weight) return false
+              }
               if (snap.q.trim() && !r.athletes.some(a => a.toLowerCase().includes(snap.q.trim().toLowerCase()))) return false
               return true
             })
