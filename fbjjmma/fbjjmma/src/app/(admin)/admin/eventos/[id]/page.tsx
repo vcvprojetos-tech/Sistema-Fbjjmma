@@ -1976,10 +1976,22 @@ export default function EventoDetailPage() {
                       className="rounded-lg border p-4 space-y-3"
                       style={{ borderColor: cardBorder, backgroundColor: cardBg }}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold" style={{ color: titleColor }}>{tatame.name}</span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          {(() => {
+                            const dashIdx = tatame.name.lastIndexOf(" - ")
+                            const tataLabel = dashIdx >= 0 ? tatame.name.slice(dashIdx + 3) : tatame.name
+                            const prefix = dashIdx >= 0 ? tatame.name.slice(0, dashIdx) : null
+                            return (
+                              <>
+                                {prefix && <span className="text-[10px] block truncate" style={{ color: "#6b7280" }}>{prefix}</span>}
+                                <span className="font-semibold block" style={{ color: titleColor }}>{tataLabel}</span>
+                              </>
+                            )
+                          })()}
+                        </div>
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                           style={{
                             backgroundColor: emEspera ? "#ca8a04" : "#16a34a",
                             color: "#ffffff",

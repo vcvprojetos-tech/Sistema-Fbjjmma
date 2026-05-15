@@ -1903,8 +1903,18 @@ export default function EventoDetailPage() {
                     >
                       {/* Header: nome + badge + lixeira */}
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0">
-                          <span className="font-semibold text-sm block truncate" style={{ color: isDark ? "#ffffff" : "#111827" }}>{tatame.name}</span>
+                        <div className="min-w-0 flex-1">
+                          {(() => {
+                            const dashIdx = tatame.name.lastIndexOf(" - ")
+                            const tataLabel = dashIdx >= 0 ? tatame.name.slice(dashIdx + 3) : tatame.name
+                            const prefix = dashIdx >= 0 ? tatame.name.slice(0, dashIdx) : null
+                            return (
+                              <>
+                                {prefix && <span className="text-[10px] block truncate" style={{ color: isDark ? "#9ca3af" : "#6b7280" }}>{prefix}</span>}
+                                <span className="font-bold text-sm block" style={{ color: isDark ? "#ffffff" : "#111827" }}>{tataLabel}</span>
+                              </>
+                            )
+                          })()}
                           <span
                             className="text-[10px] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5"
                             style={{
