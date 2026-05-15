@@ -86,6 +86,7 @@ interface Event {
   isVisible: boolean
   banner: string | null
   schedule: string | null
+  pesoDoc: string | null
   about: string | null
   paymentInfo: string | null
   prize: string | null
@@ -361,6 +362,7 @@ export default function EventoDetailPage() {
   const [novoTatameNome, setNovoTatameNome] = useState("")
   const [novoTatameSaving, setNovoTatameSaving] = useState(false)
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
+  const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedBrackets, setSelectedBrackets] = useState<Set<string>>(new Set())
@@ -844,50 +846,55 @@ export default function EventoDetailPage() {
         physicalIntegrity: event.physicalIntegrity || "",
         banner: event.banner || "",
         schedule: event.schedule || "",
+        pesoDoc: event.pesoDoc || "",
       }
     : undefined
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="space-y-1">
-        {/* Logo + federação */}
-        <div className="flex items-center gap-2 mb-1">
-          <img src="/logo-color.png" alt="FBJJMMA" className="w-6 h-6 object-contain" />
-          <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#dc2626" }}>FBJJMMA</span>
+      <div className="flex items-center gap-3">
+        <Link href="/admin/eventos">
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold truncate" style={{ color: "var(--foreground)" }}>
+            {eventLoading ? "Carregando..." : event?.name || "Evento"}
+          </h1>
+          <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
         </div>
-        {/* Título + botões de acesso rápido */}
-        <div className="flex items-center gap-3">
-          <Link href="/admin/eventos">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold truncate" style={{ color: "var(--foreground)" }}>
-              {eventLoading ? "Carregando..." : event?.name || "Evento"}
-            </h1>
-            <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
-          </div>
-          {/* Botões de acesso rápido */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Link href="/admin/tabelas-peso" target="_blank">
-              <Button variant="outline" size="sm">
-                Tabela de Peso
-              </Button>
-            </Link>
-            {event?.schedule ? (
-              <a href={event.schedule} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm">
-                  Cronograma
-                </Button>
-              </a>
-            ) : (
-              <Button variant="outline" size="sm" disabled title="Nenhum cronograma cadastrado">
-                Cronograma
-              </Button>
-            )}
-          </div>
+        {/* Botões de consulta rápida */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => event?.schedule && setDocModal({ title: "📅 Cronograma do Evento", url: event.schedule })}
+            disabled={!event?.schedule}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
+            style={{
+              backgroundColor: "var(--card-alt)",
+              color: event?.schedule ? "var(--foreground)" : "var(--muted)",
+              borderColor: "var(--border-alt)",
+              opacity: event?.schedule ? 1 : 0.45,
+              cursor: event?.schedule ? "pointer" : "not-allowed",
+            }}
+          >
+            📅 Cronograma
+          </button>
+          <button
+            onClick={() => event?.pesoDoc && setDocModal({ title: "⚖️ Tabela de Peso", url: event.pesoDoc })}
+            disabled={!event?.pesoDoc}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
+            style={{
+              backgroundColor: "var(--card-alt)",
+              color: event?.pesoDoc ? "var(--foreground)" : "var(--muted)",
+              borderColor: "var(--border-alt)",
+              opacity: event?.pesoDoc ? 1 : 0.45,
+              cursor: event?.pesoDoc ? "pointer" : "not-allowed",
+            }}
+          >
+            ⚖️ Tabela de Peso
+          </button>
         </div>
       </div>
 
@@ -2317,6 +2324,35 @@ export default function EventoDetailPage() {
             setGerenciarId(null)
           }}
         />
+      )}
+
+      {/* Modal de consulta — cronograma e tabela de peso */}
+      {docModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          onClick={() => setDocModal(null)}
+        >
+          <div
+            className="relative rounded-xl overflow-hidden shadow-2xl"
+            style={{ maxWidth: "min(90vw, 800px)", maxHeight: "90vh" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
+              <span className="text-white font-semibold text-sm">{docModal.title}</span>
+              <button
+                onClick={() => setDocModal(null)}
+                className="text-[#9ca3af] hover:text-white text-lg leading-none ml-4"
+              >✕</button>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={docModal.url}
+              alt={docModal.title}
+              style={{ display: "block", maxWidth: "min(90vw, 800px)", maxHeight: "80vh", width: "auto", height: "auto" }}
+            />
+          </div>
+        </div>
       )}
     </div>
   )

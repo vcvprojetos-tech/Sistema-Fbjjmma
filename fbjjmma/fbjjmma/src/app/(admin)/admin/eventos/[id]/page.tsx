@@ -381,6 +381,7 @@ export default function EventoDetailPage() {
   const [novoTatameNome, setNovoTatameNome] = useState("")
   const [novoTatameSaving, setNovoTatameSaving] = useState(false)
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
+  const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedBrackets, setSelectedBrackets] = useState<Set<string>>(new Set())
@@ -900,69 +901,68 @@ export default function EventoDetailPage() {
         physicalIntegrity: event.physicalIntegrity || "",
         banner: event.banner || "",
         schedule: event.schedule || "",
+        pesoDoc: event.pesoDoc || "",
       }
     : undefined
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="space-y-1">
-        {/* Logo + federação */}
-        <div className="flex items-center gap-2 mb-1">
-          <img src="/logo-color.png" alt="FBJJMMA" className="w-6 h-6 object-contain" />
-          <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#dc2626" }}>FBJJMMA</span>
+      <div className="flex items-center gap-3">
+        <Link href="/admin/eventos">
+          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        </Link>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="admin-page-title">
+              {eventLoading ? "Carregando..." : event?.name || "Evento"}
+            </p>
+            {event?.status === "ENCERRADO" && (
+              <span className="admin-badge admin-badge-red">ENCERRADO</span>
+            )}
+          </div>
+          <p className="admin-page-subtitle">Gerenciamento do evento</p>
         </div>
-        {/* Título + botões */}
-        <div className="flex items-center gap-3">
-          <Link href="/admin/eventos">
-            <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          </Link>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <p className="admin-page-title">
-                {eventLoading ? "Carregando..." : event?.name || "Evento"}
-              </p>
-              {event?.status === "ENCERRADO" && (
-                <span className="admin-badge admin-badge-red">ENCERRADO</span>
-              )}
-            </div>
-            <p className="admin-page-subtitle">Gerenciamento do evento</p>
-          </div>
-          {/* Botões de acesso rápido + ação de evento */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Link href="/admin/tabelas-peso" target="_blank">
-              <button className="admin-btn admin-btn-ghost text-xs">Tabela de Peso</button>
-            </Link>
-            {event?.schedule ? (
-              <a href={event.schedule} target="_blank" rel="noopener noreferrer">
-                <button className="admin-btn admin-btn-ghost text-xs">Cronograma</button>
-              </a>
+        {/* Botões de consulta rápida + ação de evento */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => event?.schedule && setDocModal({ title: "📅 Cronograma do Evento", url: event.schedule })}
+            disabled={!event?.schedule}
+            className="admin-btn admin-btn-ghost text-xs"
+            style={{ opacity: event?.schedule ? 1 : 0.45, cursor: event?.schedule ? "pointer" : "not-allowed" }}
+          >
+            📅 Cronograma
+          </button>
+          <button
+            onClick={() => event?.pesoDoc && setDocModal({ title: "⚖️ Tabela de Peso", url: event.pesoDoc })}
+            disabled={!event?.pesoDoc}
+            className="admin-btn admin-btn-ghost text-xs"
+            style={{ opacity: event?.pesoDoc ? 1 : 0.45, cursor: event?.pesoDoc ? "pointer" : "not-allowed" }}
+          >
+            ⚖️ Tabela de Peso
+          </button>
+          {event && (
+            event.status === "ENCERRADO" ? (
+              <button
+                onClick={reabrirEvento}
+                disabled={finalizarLoading}
+                className="admin-btn admin-btn-ghost text-xs"
+              >
+                {finalizarLoading ? "..." : "Reabrir Evento"}
+              </button>
             ) : (
-              <button className="admin-btn admin-btn-ghost text-xs" disabled style={{ opacity: 0.4 }}>Cronograma</button>
-            )}
-            {event && (
-              event.status === "ENCERRADO" ? (
-                <button
-                  onClick={reabrirEvento}
-                  disabled={finalizarLoading}
-                  className="admin-btn admin-btn-ghost text-xs"
-                >
-                  {finalizarLoading ? "..." : "Reabrir Evento"}
-                </button>
-              ) : (
-                <button
-                  onClick={finalizarEvento}
-                  disabled={finalizarLoading}
-                  className="admin-btn text-xs font-bold"
-                  style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
-                >
-                  {finalizarLoading ? "..." : "Finalizar Evento"}
-                </button>
-              )
-            )}
-          </div>
+              <button
+                onClick={finalizarEvento}
+                disabled={finalizarLoading}
+                className="admin-btn text-xs font-bold"
+                style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
+              >
+                {finalizarLoading ? "..." : "Finalizar Evento"}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -2509,6 +2509,35 @@ export default function EventoDetailPage() {
             setGerenciarId(null)
           }}
         />
+      )}
+
+      {/* Modal de consulta — cronograma e tabela de peso */}
+      {docModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          onClick={() => setDocModal(null)}
+        >
+          <div
+            className="relative rounded-xl overflow-hidden shadow-2xl"
+            style={{ maxWidth: "min(90vw, 800px)", maxHeight: "90vh" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
+              <span className="text-white font-semibold text-sm">{docModal.title}</span>
+              <button
+                onClick={() => setDocModal(null)}
+                className="text-[#9ca3af] hover:text-white text-lg leading-none ml-4"
+              >✕</button>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={docModal.url}
+              alt={docModal.title}
+              style={{ display: "block", maxWidth: "min(90vw, 800px)", maxHeight: "80vh", width: "auto", height: "auto" }}
+            />
+          </div>
+        </div>
       )}
     </div>
   )
