@@ -50,19 +50,23 @@ export default function EventosPage() {
   const [search, setSearch] = useState("")
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [apiError, setApiError] = useState(false)
 
   async function loadEvents() {
     setLoading(true)
+    setApiError(false)
     const params = new URLSearchParams()
     if (tab === "lixeira") params.set("trash", "1")
     if (search) params.set("search", search)
 
     try {
       const res = await fetch(`/api/admin/eventos?${params}`)
+      if (!res.ok) { setApiError(true); return }
       const data = await res.json()
       if (Array.isArray(data)) setEvents(data)
+      else setApiError(true)
     } catch {
-      console.error("Erro ao carregar eventos")
+      setApiError(true)
     } finally {
       setLoading(false)
     }
@@ -100,7 +104,7 @@ export default function EventosPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Eventos</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Eventos</h1>
           <p className="text-[#6b7280] text-sm mt-1">
             Gerencie os eventos da federação
           </p>
@@ -178,6 +182,15 @@ export default function EventosPage() {
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-[#6b7280]">
                     Carregando...
+                  </td>
+                </tr>
+              ) : apiError ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center">
+                    <div style={{ color: "#ef4444", fontWeight: 600, marginBottom: 4 }}>Erro ao carregar eventos</div>
+                    <button onClick={loadEvents} style={{ color: "#3b82f6", fontSize: 13, textDecoration: "underline", background: "none", border: "none", cursor: "pointer" }}>
+                      Tentar novamente
+                    </button>
                   </td>
                 </tr>
               ) : events.length === 0 ? (
