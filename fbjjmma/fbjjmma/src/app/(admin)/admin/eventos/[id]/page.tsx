@@ -906,43 +906,64 @@ export default function EventoDetailPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/admin/eventos">
-          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <p className="admin-page-title">
-              {eventLoading ? "Carregando..." : event?.name || "Evento"}
-            </p>
-            {event?.status === "ENCERRADO" && (
-              <span className="admin-badge admin-badge-red">ENCERRADO</span>
+      <div className="space-y-1">
+        {/* Logo + federação */}
+        <div className="flex items-center gap-2 mb-1">
+          <img src="/logo-color.png" alt="FBJJMMA" className="w-6 h-6 object-contain" />
+          <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#dc2626" }}>FBJJMMA</span>
+        </div>
+        {/* Título + botões */}
+        <div className="flex items-center gap-3">
+          <Link href="/admin/eventos">
+            <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="admin-page-title">
+                {eventLoading ? "Carregando..." : event?.name || "Evento"}
+              </p>
+              {event?.status === "ENCERRADO" && (
+                <span className="admin-badge admin-badge-red">ENCERRADO</span>
+              )}
+            </div>
+            <p className="admin-page-subtitle">Gerenciamento do evento</p>
+          </div>
+          {/* Botões de acesso rápido + ação de evento */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link href="/admin/tabelas-peso" target="_blank">
+              <button className="admin-btn admin-btn-ghost text-xs">Tabela de Peso</button>
+            </Link>
+            {event?.schedule ? (
+              <a href={event.schedule} target="_blank" rel="noopener noreferrer">
+                <button className="admin-btn admin-btn-ghost text-xs">Cronograma</button>
+              </a>
+            ) : (
+              <button className="admin-btn admin-btn-ghost text-xs" disabled style={{ opacity: 0.4 }}>Cronograma</button>
+            )}
+            {event && (
+              event.status === "ENCERRADO" ? (
+                <button
+                  onClick={reabrirEvento}
+                  disabled={finalizarLoading}
+                  className="admin-btn admin-btn-ghost text-xs"
+                >
+                  {finalizarLoading ? "..." : "Reabrir Evento"}
+                </button>
+              ) : (
+                <button
+                  onClick={finalizarEvento}
+                  disabled={finalizarLoading}
+                  className="admin-btn text-xs font-bold"
+                  style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
+                >
+                  {finalizarLoading ? "..." : "Finalizar Evento"}
+                </button>
+              )
             )}
           </div>
-          <p className="admin-page-subtitle">Gerenciamento do evento</p>
         </div>
-        {event && (
-          event.status === "ENCERRADO" ? (
-            <button
-              onClick={reabrirEvento}
-              disabled={finalizarLoading}
-              className="admin-btn admin-btn-ghost text-xs"
-            >
-              {finalizarLoading ? "..." : "Reabrir Evento"}
-            </button>
-          ) : (
-            <button
-              onClick={finalizarEvento}
-              disabled={finalizarLoading}
-              className="admin-btn text-xs font-bold"
-              style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
-            >
-              {finalizarLoading ? "..." : "Finalizar Evento"}
-            </button>
-          )
-        )}
       </div>
 
       {/* Tabs */}

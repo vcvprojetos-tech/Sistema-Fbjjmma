@@ -171,18 +171,21 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
         {/* Top bar */}
         <header
-          className="flex items-center justify-end px-4 lg:px-6 h-14 border-b flex-shrink-0"
+          className="flex items-center justify-between px-4 lg:px-6 h-14 border-b flex-shrink-0"
           style={{ backgroundColor: "var(--background)", borderColor: "var(--border)" }}
         >
+          {/* Esquerda: nome + cargo */}
+          <div className="hidden sm:block">
+            <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+              {session?.user?.name || "Usuário"}
+            </p>
+            <p className="text-xs" style={{ color: "var(--muted)" }}>
+              {ROLE_LABELS[session?.user?.role || ""] || session?.user?.role}
+            </p>
+          </div>
+          <div className="sm:hidden" />
+          {/* Direita: tema + sair */}
           <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                {session?.user?.name || "Usuário"}
-              </p>
-              <p className="text-xs" style={{ color: "var(--muted)" }}>
-                {ROLE_LABELS[session?.user?.role || ""] || session?.user?.role}
-              </p>
-            </div>
             <ThemeToggle />
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}

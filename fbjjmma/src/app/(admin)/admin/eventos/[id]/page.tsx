@@ -850,17 +850,44 @@ export default function EventoDetailPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/admin/eventos">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-            {eventLoading ? "Carregando..." : event?.name || "Evento"}
-          </h1>
-          <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
+      <div className="space-y-1">
+        {/* Logo + federação */}
+        <div className="flex items-center gap-2 mb-1">
+          <img src="/logo-color.png" alt="FBJJMMA" className="w-6 h-6 object-contain" />
+          <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#dc2626" }}>FBJJMMA</span>
+        </div>
+        {/* Título + botões de acesso rápido */}
+        <div className="flex items-center gap-3">
+          <Link href="/admin/eventos">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold truncate" style={{ color: "var(--foreground)" }}>
+              {eventLoading ? "Carregando..." : event?.name || "Evento"}
+            </h1>
+            <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
+          </div>
+          {/* Botões de acesso rápido */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link href="/admin/tabelas-peso" target="_blank">
+              <Button variant="outline" size="sm">
+                Tabela de Peso
+              </Button>
+            </Link>
+            {event?.schedule ? (
+              <a href={event.schedule} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm">
+                  Cronograma
+                </Button>
+              </a>
+            ) : (
+              <Button variant="outline" size="sm" disabled title="Nenhum cronograma cadastrado">
+                Cronograma
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
