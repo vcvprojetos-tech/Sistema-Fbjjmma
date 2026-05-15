@@ -2221,8 +2221,8 @@ export default function EventoDetailPage() {
             </a>
           </div>
 
-          </div>{/* fim max-w-3xl */}
-        </div>{/* fim fundo cinza */}
+          </div>
+        </div>
       )}
 
             {/* Modal de visualização de chave */}

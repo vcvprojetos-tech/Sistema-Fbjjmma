@@ -2419,8 +2419,8 @@ export default function EventoDetailPage() {
             </div>
           </div>
 
-          </div>{/* fim space-y-4 */}
-        </div>{/* fim fundo cinza */}
+          </div>
+        </div>
       )}
 
             {/* Modal de visualização de chave */}
