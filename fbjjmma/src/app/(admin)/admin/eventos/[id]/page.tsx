@@ -1853,7 +1853,7 @@ export default function EventoDetailPage() {
             {tatames.length === 0 ? (
               <p className="text-sm text-[#6b7280] py-4">Nenhum coordenador conectado. Os tatames aparecem aqui quando os coordenadores acessam a tela de controle.</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
                   const emEspera = !operador
