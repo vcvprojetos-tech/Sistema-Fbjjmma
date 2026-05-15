@@ -1,22 +1,33 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { getToken } from "next-auth/jwt"
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { nextUrl } = req
 
-  const isAdminRoute = nextUrl.pathname.startsWith("/admin")
+  const isAdminRoute = nextUrl.pathname === "/admin" || nextUrl.pathname.startsWith("/admin/")
   const isApiAdminRoute = nextUrl.pathname.startsWith("/api/admin")
 
-  const sessionToken =
-    req.cookies.get("authjs.session-token")?.value ||
-    req.cookies.get("__Secure-authjs.session-token")?.value
+  if (!isAdminRoute && !isApiAdminRoute) {
+    return NextResponse.next()
+  }
 
-  const isLoggedIn = !!sessionToken
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET,
+  })
 
-  if ((isAdminRoute || isApiAdminRoute) && !isLoggedIn) {
+  if (!token) {
     const loginUrl = new URL("/login", nextUrl.origin)
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
+  }
+
+  const role = token.role as string | undefined
+  const canAccessAdmin = role === "PRESIDENTE" || role === "COORDENADOR_GERAL"
+
+  if (!canAccessAdmin) {
+    return NextResponse.redirect(new URL("/login", nextUrl.origin))
   }
 
   return NextResponse.next()
