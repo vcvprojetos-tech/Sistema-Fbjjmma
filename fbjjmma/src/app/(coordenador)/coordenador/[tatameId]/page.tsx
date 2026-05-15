@@ -597,8 +597,6 @@ export default function TatamePage() {
       .filter(m => !m.endedAt && m.position1Id !== null && m.position2Id === null)
       .map(m => ({
         ...m,
-        // Fallback: se position1 vier null da API, busca em b.positions pelo id
-        position1: m.position1 ?? b.positions.find(p => p.id === m.position1Id) ?? null,
         _bracketId: b.id,
         _isMidBracket: b.positions.length > 1,
         // Atleta já confirmou presença em round anterior (venceu uma partida real)
@@ -1318,8 +1316,8 @@ export default function TatamePage() {
                     </div>
                   )}
 
-                  {/* Partidas solo: 1 atleta aguardando pesagem — exibidas somente após iniciar */}
-                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && soloMatches.map(match => {
+                  {/* Partidas solo: 1 atleta aguardando pesagem — exibidas após as lutas normais */}
+                  {soloMatches.map(match => {
                     const p1 = match.position1
                     const p1Name = getAthleteName(p1)
                     const p1Present = `${match.id}-p1` in optimisticCheckins ? optimisticCheckins[`${match.id}-p1`] : match.p1CheckedIn

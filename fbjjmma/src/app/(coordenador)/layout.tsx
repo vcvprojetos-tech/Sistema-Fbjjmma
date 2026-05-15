@@ -25,7 +25,7 @@ export default function CoordenadorLayout({ children }: { children: React.ReactN
         </div>
         <div className="flex items-center gap-2">
           {session?.user && (
-            <span className="text-sm hidden sm:inline truncate max-w-[160px]" style={{ color: "var(--muted-foreground)" }}>
+            <span className="text-sm hidden sm:inline" style={{ color: "var(--muted-foreground)" }}>
               {session.user.name}
             </span>
           )}
