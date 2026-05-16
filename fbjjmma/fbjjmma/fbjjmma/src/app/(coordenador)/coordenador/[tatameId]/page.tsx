@@ -69,6 +69,7 @@ interface BracketData {
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
+  inPanel?: boolean
   weightCategory: { id?: string; name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: BracketPositionData[]
   matches: MatchData[]
@@ -401,7 +402,8 @@ export default function TatamePage() {
           ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
           : null)
     : null
-  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch
+  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
+  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch && !podiumLastMatch.isWO
     ? podiumBracket.positions.find(p =>
         p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
@@ -415,7 +417,13 @@ export default function TatamePage() {
       if (podiumBracket.positions.length === 3) {
         const firstId = podiumLastMatch.winnerId
         const secondId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
-        return podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+        const thirdCandidate = podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+        // Se o candidato ao 3° foi eliminado por W.O., não recebe colocação
+        const eliminatedByWO = thirdCandidate ? podiumBracket.matches.some(m =>
+          m.isWO && m.endedAt && m.winnerId !== thirdCandidate.id &&
+          (m.position1Id === thirdCandidate.id || m.position2Id === thirdCandidate.id)
+        ) : false
+        return eliminatedByWO ? null : thirdCandidate
       }
       if (podiumMaxRound < 2) return null
       // Tenta a semifinal do campeão; se foi W.O. (BYE), tenta a do vice-campeão
@@ -638,23 +646,30 @@ export default function TatamePage() {
                   <div className="rounded-xl border p-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
-                      <span
-                        className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
-                        style={{
-                          backgroundColor:
-                            bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
-                            bracket.status === "FINALIZADA" ? "#14532d60" :
-                            bracket.status === "PREMIADA" ? "#4a1d9660" : "#1a1a1a",
-                          color:
-                            bracket.status === "EM_ANDAMENTO" ? "#fbbf24" :
-                            bracket.status === "FINALIZADA" ? "#4ade80" :
-                            bracket.status === "PREMIADA" ? "#a78bfa" : "#6b7280",
-                        }}
-                      >
-                        {bracket.status === "EM_ANDAMENTO" ? "Em Andamento" :
-                         bracket.status === "FINALIZADA" ? "Finalizada" :
-                         bracket.status === "PREMIADA" ? "Premiada" : "Aguardando"}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {bracket.status === "EM_ANDAMENTO" && !bracket.inPanel && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: "#450a0a", color: "#f87171" }}>
+                            Fora do Painel
+                          </span>
+                        )}
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                          style={{
+                            backgroundColor:
+                              bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
+                              bracket.status === "FINALIZADA" ? "#14532d60" :
+                              bracket.status === "PREMIADA" ? "#4a1d9660" : "#1a1a1a",
+                            color:
+                              bracket.status === "EM_ANDAMENTO" ? "#fbbf24" :
+                              bracket.status === "FINALIZADA" ? "#4ade80" :
+                              bracket.status === "PREMIADA" ? "#a78bfa" : "#6b7280",
+                          }}
+                        >
+                          {bracket.status === "EM_ANDAMENTO" ? "Em Andamento" :
+                           bracket.status === "FINALIZADA" ? "Finalizada" :
+                           bracket.status === "PREMIADA" ? "Premiada" : "Aguardando"}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-white font-bold text-xs leading-tight whitespace-nowrap overflow-hidden">{catLabel(bracket)}</p>
                     {!bracket.isAbsolute && (
