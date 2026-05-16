@@ -12,6 +12,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "FBJJMMA - Federação Baiana de Jiu-Jitsu e MMA",
   description: "Sistema de gestão da Federação Baiana de Jiu-Jitsu e MMA",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/logo-color.png",
+  },
   openGraph: {
     siteName: "FBJJMMA",
     title: "FBJJMMA - Federação Baiana de Jiu-Jitsu e MMA",

@@ -37,8 +37,9 @@ export async function PATCH(
     const existing = (match.callTimes as { call: number; at: string; pos?: string | null }[] | null) ?? []
 
     // Filtra chamadas da mesma posição (atleta ausente)
+    // Chamadas com pos=null (ex: 1ª chamada automática ao iniciar) valem para qualquer posição
     const pos: string | null = body.position ?? null
-    const posCalls = pos ? existing.filter(c => c.pos === pos) : existing.filter(c => !c.pos)
+    const posCalls = pos ? existing.filter(c => c.pos === pos || c.pos == null) : existing.filter(c => !c.pos)
 
     // Verifica se essa chamada já foi registrada para esta posição
     if (posCalls.some(c => c.call === callNumber)) {

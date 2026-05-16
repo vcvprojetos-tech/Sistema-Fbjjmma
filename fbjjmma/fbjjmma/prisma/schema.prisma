@@ -214,6 +214,7 @@ model Event {
   isVisible            Boolean     @default(false)
   banner               String?
   schedule             String?
+  pesoDoc              String?
   about                String?
   paymentInfo          String?
   prize                String?
@@ -368,6 +369,7 @@ model Bracket {
   // Após ambas finalizarem, uma "grande final" (isGrandFinal=true) é criada automaticamente.
   bracketGroupId   String?
   isGrandFinal     Boolean        @default(false)
+  startedAt        DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

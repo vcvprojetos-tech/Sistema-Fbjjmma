@@ -246,7 +246,7 @@ export default function ChaveControlePage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg text-sm" style={{ backgroundColor: "#7f1d1d30", color: "#f87171" }}>
+        <div className="flex items-center gap-2 p-3 rounded-lg text-sm" style={{ backgroundColor: "#dc2626", color: "#fca5a5" }}>
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -275,7 +275,7 @@ export default function ChaveControlePage() {
               <h2 className="text-white font-semibold">
                 {currentMatches.length} luta(s) disponível(is)
               </h2>
-              <span className="text-xs text-[#fbbf24] px-2 py-1 rounded-full" style={{ backgroundColor: "#78350f40" }}>
+              <span className="text-xs text-white px-2 py-1 rounded-full" style={{ backgroundColor: "#92400e" }}>
                 EM ANDAMENTO
               </span>
             </div>
@@ -296,7 +296,7 @@ export default function ChaveControlePage() {
               <div
                 key={match.id}
                 className="rounded-xl border overflow-hidden"
-                style={{ borderColor: isDone ? "#14532d40" : "#333", backgroundColor: "var(--card)" }}
+                style={{ borderColor: isDone ? "#166534" : "#333", backgroundColor: "var(--card)" }}
               >
                 <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
                   <span className="text-xs text-[#6b7280]">R{match.round} · Partida {match.matchNumber}</span>

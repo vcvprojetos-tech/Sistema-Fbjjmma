@@ -18,26 +18,116 @@
   --destructive: #dc2626;
   --accent: #1a1a1a;
   --accent-foreground: #ffffff;
+  /* superfícies do coordenador de tatame */
+  --surface-match: #111111;
+  --surface-input: #222222;
+  --surface-button: #1f2937;
+  --selected-warm: #1a0d00;
+  --selected-cool: #0d0d1a;
+  --page-surface: #0a0a0a;
+  --sidebar-surface: #1a1a1a;
+  /* Header do coordenador — contadores e rótulos */
+  --hdr-active: #fbbf24;
+  --hdr-done: #4ade80;
+  --hdr-pending: #9ca3af;
+  --hdr-op: #4ade80;
+  /* Título Confirmação de Presença */
+  --confirm-title: #60a5fa;
+  /* Botões de chamada */
+  --call-2-bg: #78350f30;
+  --call-2-color: #fbbf24;
+  --call-3-bg: #7f1d1d30;
+  --call-3-color: #f87171;
+  /* Botões Cronograma e Tabela de Peso */
+  --btn-sched-bg: #1d4ed820;
+  --btn-sched-fg: #60a5fa;
+  --btn-sched-br: #1d4ed840;
+  --btn-peso-bg: #78350f20;
+  --btn-peso-fg: #fbbf24;
+  --btn-peso-br: #78350f40;
+  /* BracketView — cards de atletas */
+  --bracket-card-bg: #1a1f2e;
+  --bracket-card-border: #2d3748;
+  --bracket-card-text: #ffffff;
+  --bracket-dimmed-bg: #151008;
+  --bracket-dimmed-border: #3d3020;
+  --bracket-dimmed-text: #a07830;
+  /* BracketView — caixas de resultado final */
+  --bracket-gold-bg: #1c0f00;
+  --bracket-gold-border: #78350f;
+  --bracket-silver-bg: #0d1a2e;
+  --bracket-silver-border: #1e3a5f;
+  --bracket-bronze-bg: #1a0e00;
+  --bracket-bronze-border: #5c3a1e;
+  --bracket-final-name: #ffffff;
+  /* Pódio — labels de colocação */
+  --podium-silver: #94a3b8;
+  --podium-bronze: #d97706;
 }
 
-/* ── Modo claro ────────────────────────────────────────────────────────────── */
+/* ── Modo claro (paleta GitHub) ────────────────────────────────────────────── */
 .light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #ffffff;
+  --foreground: #1f2328;
   --card: #ffffff;
-  --card-alt: #f1f5f9;
-  --card-foreground: #0f172a;
+  --card-alt: #f6f8fa;
+  --card-foreground: #1f2328;
   --primary: #dc2626;
   --primary-foreground: #ffffff;
-  --muted: #64748b;
-  --muted-foreground: #475569;
-  --border: #e2e8f0;
-  --border-alt: #cbd5e1;
-  --input: #f8fafc;
+  --muted: #656d76;
+  --muted-foreground: #656d76;
+  --border: #d0d7de;
+  --border-alt: #afb8c1;
+  --input: #ffffff;
   --ring: #dc2626;
   --destructive: #dc2626;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --accent: #f6f8fa;
+  --accent-foreground: #1f2328;
+  /* superfícies do coordenador de tatame — modo claro */
+  --surface-match: #f6f8fa;
+  --surface-input: #e2e8f0;
+  --surface-button: #e2e8f0;
+  --selected-warm: #fef3c7;
+  --selected-cool: #dbeafe;
+  --page-surface: #e2e8f0;
+  --sidebar-surface: #e2e8f0;
+  /* Header do coordenador — contadores e rótulos (modo claro) */
+  --hdr-active: #b45309;
+  --hdr-done: #15803d;
+  --hdr-pending: #4b5563;
+  --hdr-op: #374151;
+  /* Título Confirmação de Presença (modo claro) */
+  --confirm-title: #2563eb;
+  /* Botões de chamada (modo claro) */
+  --call-2-bg: #d97706;
+  --call-2-color: #ffffff;
+  --call-3-bg: #dc2626;
+  --call-3-color: #ffffff;
+  /* Botões Cronograma e Tabela de Peso (modo claro) */
+  --btn-sched-bg: #cbd5e1;
+  --btn-sched-fg: #374151;
+  --btn-sched-br: #94a3b8;
+  --btn-peso-bg: #cbd5e1;
+  --btn-peso-fg: #374151;
+  --btn-peso-br: #94a3b8;
+  /* BracketView — cards de atletas (modo claro) */
+  --bracket-card-bg: #eef1f5;
+  --bracket-card-border: #c8d0db;
+  --bracket-card-text: #1f2328;
+  --bracket-dimmed-bg: #f5ead8;
+  --bracket-dimmed-border: #d4a95a;
+  --bracket-dimmed-text: #a07830;
+  /* BracketView — caixas de resultado final (modo claro) */
+  --bracket-gold-bg: #fef9ec;
+  --bracket-gold-border: #d97706;
+  --bracket-silver-bg: #eff6ff;
+  --bracket-silver-border: #3b82f6;
+  --bracket-bronze-bg: #fff7ed;
+  --bracket-bronze-border: #ea580c;
+  --bracket-final-name: #1f2328;
+  /* Pódio — labels de colocação (modo claro) */
+  --podium-silver: #374151;
+  --podium-bronze: #92400e;
 }
 
 @theme inline {
@@ -59,6 +149,7 @@
 * {
   box-sizing: border-box;
   border-color: var(--border);
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -66,6 +157,18 @@ body {
   color: var(--foreground);
   font-family: Inter, Arial, Helvetica, sans-serif;
   min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Touch UX — remove 300ms delay em todos os elementos interativos */
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Scroll suave com momentum no iOS */
+.overflow-y-auto, .overflow-auto, .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Overrides de modo claro para classes Tailwind hardcoded ───────────────── */
@@ -103,6 +206,15 @@ body {
 .light .border-\[\#222222\] {
   border-color: var(--border) !important;
 }
+.light .bg-\[\#111111\] {
+  background-color: var(--card) !important;
+}
+.light .bg-\[\#0a0a0a\] {
+  background-color: var(--card-alt) !important;
+}
+.light .border-\[\#333333\] {
+  border-color: var(--border) !important;
+}
 .light .divide-y > * {
   border-color: var(--border) !important;
 }
@@ -113,6 +225,226 @@ body {
   background-color: var(--card) !important;
   color: var(--foreground) !important;
   border-color: var(--border) !important;
+}
+
+/* ── Status badges do coordenador ─────────────────────────────────────────── */
+.badge-em-andamento { background-color: #78350f60; color: #fbbf24; }
+.light .badge-em-andamento { background-color: #d97706; color: #ffffff; }
+.badge-finalizada { background-color: #14532d60; color: #4ade80; }
+.light .badge-finalizada { background-color: #16a34a; color: #ffffff; }
+.badge-premiada { background-color: #4a1d9660; color: #a78bfa; }
+.light .badge-premiada { background-color: #7c3aed; color: #ffffff; }
+.badge-aguardando { background-color: #1a1a1a; color: #6b7280; }
+.light .badge-aguardando { background-color: #64748b; color: #ffffff; }
+
+/* ── Botões de ação do match card ──────────────────────────────────────────── */
+.btn-desfazer { background-color: #78350f40; color: #fb923c; border: 1px solid #78350f60; }
+.light .btn-desfazer { background-color: #d97706; color: #ffffff; border-color: #d97706; }
+
+.btn-opcoes { color: #f87171; border: 1px solid #7f1d1d40; }
+.btn-opcoes:hover:not(:disabled) { background-color: #7f1d1d20; }
+.light .btn-opcoes { color: #ffffff; background-color: #dc2626; border-color: #dc2626; }
+.light .btn-opcoes:hover:not(:disabled) { background-color: #b91c1c; border-color: #b91c1c; }
+
+.btn-wo-ambos { color: #f97316; border: 1px solid #7c2d1240; background-color: #7c2d1210; }
+.light .btn-wo-ambos { color: #ffffff; background-color: #f97316; border-color: #f97316; }
+
+.btn-wo-solo { color: #f87171; border: 1px solid #7f1d1d40; }
+.btn-wo-solo:hover:not(:disabled) { background-color: #7f1d1d20; }
+.light .btn-wo-solo { color: #ffffff; background-color: #dc2626; border-color: #dc2626; }
+.light .btn-wo-solo:hover:not(:disabled) { background-color: #b91c1c; border-color: #b91c1c; }
+
+/* ── Admin Panel — Design System ─────────────────────────────────────────── */
+
+/* Cabeçalho de página */
+.admin-page-header {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.admin-page-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+.admin-page-subtitle {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.125rem;
+}
+
+/* Cards genéricos */
+.admin-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.admin-card-header {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Cards de estatística */
+.admin-stat-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.125rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-left: 3px solid transparent;
+  transition: border-color 150ms;
+}
+
+/* Sistema de tabelas */
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background-color: var(--card-alt);
+}
+.admin-table td {
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  vertical-align: middle;
+}
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tbody tr { transition: background-color 120ms; }
+.admin-table tbody tr:hover { background-color: var(--card-alt); }
+
+/* Inputs */
+.admin-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background-color: var(--input);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.admin-input:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px #dc262618;
+}
+.light .admin-input { background-color: #ffffff; }
+
+/* Selects */
+.admin-select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background-color: var(--input);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 150ms;
+}
+.admin-select:focus { border-color: #dc2626; }
+.light .admin-select { background-color: #ffffff; }
+
+/* Botões */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: all 150ms;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+.admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.admin-btn-primary { background-color: #dc2626; color: #ffffff; }
+.admin-btn-primary:hover:not(:disabled) { background-color: #b91c1c; }
+.admin-btn-ghost {
+  background-color: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.admin-btn-ghost:hover:not(:disabled) {
+  background-color: var(--card-alt);
+  color: var(--foreground);
+}
+.light .admin-btn-ghost { color: #374151; border-color: #d0d7de; }
+.light .admin-btn-ghost:hover:not(:disabled) { background-color: #f3f4f6; color: #111827; }
+.admin-btn-danger { background-color: #7f1d1d30; color: #f87171; border: 1px solid #7f1d1d40; }
+.admin-btn-danger:hover:not(:disabled) { background-color: #7f1d1d50; }
+.light .admin-btn-danger { background-color: #dc2626; color: #ffffff; border-color: #dc2626; }
+
+/* Badges de status para páginas admin */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-badge-green  { background-color: #166534; color: #ffffff; }
+.admin-badge-red    { background-color: #dc2626; color: #ffffff; }
+.admin-badge-amber  { background-color: #92400e; color: #ffffff; }
+.admin-badge-blue   { background-color: #1e3a8a; color: #ffffff; }
+.admin-badge-purple { background-color: #5b21b6; color: #ffffff; }
+.admin-badge-gray   { background-color: #374151; color: #d1d5db; }
+.light .admin-badge-green  { background-color: #16a34a; color: #ffffff; }
+.light .admin-badge-red    { background-color: #dc2626; color: #ffffff; }
+.light .admin-badge-amber  { background-color: #d97706; color: #ffffff; }
+.light .admin-badge-blue   { background-color: #2563eb; color: #ffffff; }
+.light .admin-badge-purple { background-color: #7c3aed; color: #ffffff; }
+.light .admin-badge-gray   { background-color: #64748b; color: #ffffff; }
+
+/* Label de seção do sidebar */
+.admin-nav-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  padding: 0.875rem 0.875rem 0.25rem;
+}
+
+/* Divisor com label */
+.admin-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0.5rem 0;
+}
+.admin-section-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--border);
 }
 
 /* ── Autofill adapta ao tema ────────────────────────────────────────────────── */
@@ -127,7 +459,7 @@ body {
 .light input:-webkit-autofill,
 .light input:-webkit-autofill:hover,
 .light input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
-  -webkit-text-fill-color: #0f172a !important;
-  caret-color: #0f172a;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #1f2328 !important;
+  caret-color: #1f2328;
 }

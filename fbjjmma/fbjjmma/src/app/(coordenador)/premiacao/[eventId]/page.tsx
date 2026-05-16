@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
+import { useTheme } from "next-themes"
+import { ThemeLogo } from "@/components/ThemeLogo"
 import { RefreshCw, Trophy, Award, CheckCircle2, ChevronRight, Search, X } from "lucide-react"
 import BracketView from "@/components/admin/BracketView"
 
@@ -18,16 +20,17 @@ const BELT_LABELS: Record<string, string> = {
   AZUL: "Azul", ROXA: "Roxa", MARROM: "Marrom", PRETA: "Preta",
 }
 
-const AGE_GROUP_ORDER = [
-  "PRE_MIRIM", "MIRIM", "INFANTIL_A", "INFANTIL_B",
-  "INFANTO_JUVENIL_A", "INFANTO_JUVENIL_B", "JUVENIL",
-  "ADULTO", "MASTER_1", "MASTER_2", "MASTER_3", "MASTER_4", "MASTER_5", "MASTER_6",
-]
 
-const PLACE_CONFIG: Record<number, { label: string; color: string; bg: string; icon: string }> = {
-  1: { label: "1° Lugar", color: "#fbbf24", bg: "#78350f25", icon: "🥇" },
-  2: { label: "2° Lugar", color: "#d1d5db", bg: "#37415125", icon: "🥈" },
-  3: { label: "3° Lugar", color: "#c97941", bg: "#7c2d1225", icon: "🥉" },
+const PLACE_CONFIG: Record<number, { label: string; color: string; bg: string; border: string; icon: string }> = {
+  1: { label: "1° Lugar", color: "#fde68a", bg: "#78350f", border: "#fbbf24", icon: "🥇" },
+  2: { label: "2° Lugar", color: "#e2e8f0", bg: "#1e293b", border: "#94a3b8", icon: "🥈" },
+  3: { label: "3° Lugar", color: "#fdba74", bg: "#431407", border: "#cd7f32", icon: "🥉" },
+}
+
+const PLACE_CONFIG_LIGHT: Record<number, { label: string; color: string; bg: string; border: string; icon: string }> = {
+  1: { label: "1° Lugar", color: "#78350f", bg: "#fde68a", border: "#d97706", icon: "🥇" },
+  2: { label: "2° Lugar", color: "#1e293b", bg: "#cbd5e1", border: "#64748b", icon: "🥈" },
+  3: { label: "3° Lugar", color: "#7c2d12", bg: "#fdba74", border: "#ea580c", icon: "🥉" },
 }
 
 const MEDAL_BY_PLACE: Record<number, string> = { 1: "OURO", 2: "PRATA", 3: "BRONZE" }
@@ -60,6 +63,7 @@ interface Match {
   woType: string | null
   woWeight1: number | null
   woWeight2: number | null
+  endedAt: string | null
 }
 
 interface BracketData {
@@ -70,6 +74,7 @@ interface BracketData {
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
+  updatedAt: string
   weightCategory: { name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: Position[]
   matches: Match[]
@@ -159,8 +164,14 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   } else if (maxRound > 1) {
     if (positions.length === 3) {
       const thirdPos = positions.find((p) => p.id !== firstPos?.id && p.id !== secondPos?.id)
-      if (thirdPos?.registration)
-        placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
+      if (thirdPos?.registration) {
+        const eliminatedByWO = matches.some(m =>
+          m.isWO && m.endedAt && m.winnerId !== thirdPos.id &&
+          (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
+        )
+        if (!eliminatedByWO)
+          placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
+      }
     } else {
       const champSemi = realMatches.find(
         (m) => m.round === maxRound - 1 && m.winnerId === finalMatch.winnerId
@@ -192,6 +203,29 @@ function catLabel(bracket: BracketData): string {
   return base
 }
 
+interface ConsultaResult {
+  id: string
+  bracketNumber: number
+  belt: string
+  isAbsolute: boolean
+  status: string
+  weightCategory: { name: string; ageGroup: string; sex: string; maxWeight: number }
+  athletes: string[]
+  localizacao: string
+  localizacaoTipo: "tatame" | "premiacao" | "aguardando" | "finalizada" | "premiada"
+  tatameName: string | null
+}
+
+function consultaCatLabel(r: ConsultaResult): string {
+  return [
+    r.weightCategory.sex === "MASCULINO" ? "M" : "F",
+    AGE_GROUP_LABELS[r.weightCategory.ageGroup] || r.weightCategory.ageGroup,
+    r.isAbsolute ? null : r.weightCategory.name,
+    BELT_LABELS[r.belt] || r.belt,
+    r.isAbsolute ? "Absoluto" : null,
+  ].filter(Boolean).join(" · ")
+}
+
 function normalize(str: string): string {
   return str
     .toLowerCase()
@@ -210,28 +244,52 @@ function bracketMatchesSearch(bracket: BracketData, query: string): boolean {
   })
 }
 
-function sortBrackets(list: BracketData[]) {
-  return [...list].sort((a, b) => {
-    const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
-    const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
-    if (ageA !== ageB) return ageA - ageB
-    if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
-    return a.weightCategory.maxWeight - b.weightCategory.maxWeight
-  })
+
+function bracketFinalizedAt(b: BracketData): number {
+  const times = b.matches
+    .filter(m => m.endedAt)
+    .map(m => new Date(m.endedAt!).getTime())
+  return times.length > 0 ? Math.max(...times) : 0
 }
 
 export default function PremiacaoPage() {
   const { eventId } = useParams<{ eventId: string }>()
+  const { resolvedTheme } = useTheme()
+  const isLight = resolvedTheme === "light"
   const [eventName, setEventName] = useState("")
   const [brackets, setBrackets] = useState<BracketData[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [awarding, setAwarding] = useState<Set<string>>(new Set())
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [pixModal, setPixModal] = useState<{ bracket: BracketData; placement: Placement } | null>(null)
   const [pixValue, setPixValue] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [sideTab, setSideTab] = useState<"aguardando" | "premiadas">("aguardando")
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => { const id = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(id) }, [])
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showOverlay, setShowOverlay] = useState(true)
+  const [consultaOpen, setConsultaOpen] = useState(false)
+  const [consultaQ, setConsultaQ] = useState("")
+  const [consultaSex, setConsultaSex] = useState("")
+  const [consultaAge, setConsultaAge] = useState("")
+  const [consultaBelt, setConsultaBelt] = useState("")
+  const [consultaWeight, setConsultaWeight] = useState("")
+  const [consultaResults, setConsultaResults] = useState<ConsultaResult[] | null>(null)
+  const [consultaLoading, setConsultaLoading] = useState(false)
+  const [consultaSnapshot, setConsultaSnapshot] = useState<{ sex: string; age: string; belt: string; weight: string; q: string } | null>(null)
+
+  const enterFullscreen = useCallback(() => {
+    document.documentElement.requestFullscreen?.().catch(() => {})
+    setShowOverlay(false)
+  }, [])
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener("fullscreenchange", onChange)
+    return () => document.removeEventListener("fullscreenchange", onChange)
+  }, [])
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -242,7 +300,7 @@ export default function PremiacaoPage() {
       if (data.event) {
         setEventName(data.event.name)
         setBrackets(data.brackets || [])
-        setLastUpdated(new Date())
+
       }
     } catch {
       console.error("Erro ao carregar premiação")
@@ -262,9 +320,35 @@ export default function PremiacaoPage() {
   // Auto-seleciona a primeira pendente quando não há nada selecionado
   useEffect(() => {
     if (selectedId) return
-    const pendentes = sortBrackets(brackets.filter((b) => b.status === "FINALIZADA"))
-    if (pendentes.length > 0) setSelectedId(pendentes[0].id)
+    const primeiras = brackets
+      .filter((b) => b.status === "FINALIZADA")
+      .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
+    if (primeiras.length > 0) setSelectedId(primeiras[0].id)
   }, [brackets, selectedId])
+
+  // Auto-avança para a próxima chave quando a atual é totalmente premiada
+  useEffect(() => {
+    if (!selectedId || sideTab !== "aguardando") return
+    const isStillPending = pendentes.some((b) => b.id === selectedId)
+    if (isStillPending) return
+    if (pendentes.length === 0) return
+    setSelectedId(pendentes[0].id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brackets])
+
+  const fetchConsulta = useCallback(async () => {
+    setConsultaLoading(true)
+    try {
+      const res = await fetch(`/api/coordenador/consulta?eventId=${eventId}`)
+      const data = await res.json()
+      if (Array.isArray(data)) setConsultaResults(data)
+      else setConsultaResults([])
+    } catch {
+      setConsultaResults([])
+    } finally {
+      setConsultaLoading(false)
+    }
+  }, [eventId])
 
   const handlePremiar = useCallback(async (bracket: BracketData, placement: Placement, prizePix?: string) => {
     if (!placement.registration) return
@@ -322,8 +406,8 @@ export default function PremiacaoPage() {
       .map((b) => b.bracketGroupId)
       .filter(Boolean) as string[]
   )
-  const pendentes = sortBrackets(
-    brackets.filter((b) => {
+  const pendentes = brackets
+    .filter((b) => {
       if (b.status !== "FINALIZADA") return false
       // Sub-chave com grande final em andamento: não listar ainda
       if (b.bracketGroupId && !b.isGrandFinal && grandFinalGroups.has(b.bracketGroupId)) return false
@@ -337,8 +421,8 @@ export default function PremiacaoPage() {
       if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return false
       return true
     })
-  )
-  const premiadas = sortBrackets(brackets.filter((b) => {
+    .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
+  const premiadas = brackets.filter((b) => {
     if (b.status === "PREMIADA") return true
     // FINALIZADA com todos os colocados já premiados (status travado): tratar como premiada
     if (b.status === "FINALIZADA") {
@@ -346,7 +430,7 @@ export default function PremiacaoPage() {
       if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return true
     }
     return false
-  }))
+  }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
   const selectedBracket = brackets.find((b) => b.id === selectedId) ?? null
 
   if (loading) {
@@ -384,8 +468,8 @@ export default function PremiacaoPage() {
               onChange={(e) => setPixValue(e.target.value)}
               placeholder="CPF, e-mail, telefone ou chave aleatória"
               autoFocus
-              className="rounded-xl px-4 py-3 text-sm outline-none"
-              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff" }}
+              className="rounded-xl px-4 py-3 outline-none"
+              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff", fontSize: 16 }}
             />
           </div>
           <div className="flex gap-3 mt-1">
@@ -411,11 +495,46 @@ export default function PremiacaoPage() {
         </div>
       </div>
     )}
+    {/* Overlay de entrada em tela cheia */}
+    {showOverlay && (
+      <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <ThemeLogo style={{ width: 260, height: "auto", marginBottom: 24 }} />
+        <div style={{ color: "var(--foreground)", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>Premiação</div>
+        <div style={{ color: "var(--muted)", fontSize: "0.95rem", marginBottom: 32 }}>{eventName}</div>
+        <button
+          onClick={enterFullscreen}
+          style={{ backgroundColor: "var(--card)", border: "2px solid #dc2626", borderRadius: 12, padding: "16px 40px", color: "#dc2626", fontSize: "1.1rem", fontWeight: 700, cursor: "pointer" }}
+        >
+          ⛶ Abrir em Tela Cheia
+        </button>
+        <button
+          onClick={() => setShowOverlay(false)}
+          style={{ marginTop: 16, background: "none", border: "none", color: "var(--muted)", fontSize: "0.85rem", cursor: "pointer" }}
+        >
+          Continuar sem tela cheia
+        </button>
+        <button
+          onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
+          style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
+          {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
+        </button>
+      </div>
+    )}
+
+    {/* Botão de tela cheia (visível após fechar overlay) */}
+    {!showOverlay && (
+      <button
+        onClick={isFullscreen ? () => document.exitFullscreen?.() : enterFullscreen}
+        style={{ position: "fixed", bottom: 12, right: 12, zIndex: 1000, backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", fontSize: "0.7rem", padding: "6px 10px", cursor: "pointer" }}>
+        {isFullscreen ? "⊠ Sair" : "⛶ Tela Cheia"}
+      </button>
+    )}
+
     {/*  page body  */}
-    <div className="flex flex-col h-[calc(100vh-57px)]">
+    <div className="flex flex-col h-[calc(100vh-57px)]" style={{ backgroundColor: "var(--page-surface)" }}>
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 py-3 border-b shrink-0"
+        className="flex items-center justify-between px-5 py-4 border-b shrink-0"
         style={{ borderColor: "var(--border)" }}
       >
         <div className="flex items-center gap-3">
@@ -424,6 +543,13 @@ export default function PremiacaoPage() {
             <h1 className="text-base font-bold leading-tight" style={{ color: "var(--foreground)" }}>Premiação</h1>
             <p className="text-[#6b7280] text-xs">{eventName}</p>
           </div>
+          <button
+            onClick={() => { setConsultaOpen(true); fetchConsulta() }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors hidden sm:flex"
+            style={{ backgroundColor: "var(--btn-sched-bg)", color: "var(--btn-sched-fg)", border: "1px solid var(--btn-sched-br)" }}
+          >
+            🔍 Consulta
+          </button>
         </div>
         <div className="flex items-center gap-3">
           {/* Campo de busca */}
@@ -434,8 +560,8 @@ export default function PremiacaoPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar atleta..."
-              className="pl-8 pr-7 py-1.5 rounded-lg text-xs outline-none w-40"
-              style={{ backgroundColor: "#1a1a1a", border: "1px solid #333", color: "#fff" }}
+              className="pl-8 pr-7 py-2.5 rounded-lg outline-none w-44"
+              style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", fontSize: 16 }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-2 text-[#6b7280] hover:text-white">
@@ -443,17 +569,15 @@ export default function PremiacaoPage() {
               </button>
             )}
           </div>
-          {lastUpdated && (
-            <span className="text-[#4b5563] text-xs hidden sm:inline">
-              {lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-            </span>
-          )}
           <div className="flex gap-3 text-xs">
             <span className="text-[#fbbf24] font-bold">{pendentes.length} aguardando</span>
             <span className="text-[#a78bfa] font-bold">{premiadas.length} premiadas</span>
           </div>
-          <button onClick={() => load(true)} disabled={refreshing} className="text-[#6b7280] hover:text-white transition-colors">
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          <span className="font-mono font-bold text-sm tabular-nums" style={{ color: "var(--foreground)" }}>
+            {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Bahia" })}
+          </span>
+          <button onClick={() => load(true)} disabled={refreshing} className="p-2 text-[#6b7280] hover:text-white transition-colors">
+            <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -467,22 +591,42 @@ export default function PremiacaoPage() {
       ) : (
         <div className="flex flex-1 overflow-hidden">
 
-          {/* Coluna esquerda — Busca ou Aguardando premiação */}
-          <div className="w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: "var(--border)" }}>
-            {searchQuery ? (
-              <>
-                <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-                  <span className="text-xs font-bold text-[#3b82f6] uppercase tracking-wider flex items-center gap-1.5">
-                    <Search className="h-3 w-3" />
-                    Resultados ({brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length})
-                  </span>
-                </div>
-                {brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
+          {/* Coluna esquerda — Abas Aguardando/Premiadas */}
+          <div className="w-64 shrink-0 flex flex-col border-r overflow-hidden" style={{ borderColor: "var(--border)", backgroundColor: "var(--sidebar-surface)" }}>
+            {/* Abas */}
+            <div className="flex shrink-0 border-b" style={{ borderColor: "var(--border)" }}>
+              <button
+                onClick={() => setSideTab("aguardando")}
+                className="flex-1 py-3 text-xs font-bold transition-colors"
+                style={{
+                  color: sideTab === "aguardando" ? "#fbbf24" : "#6b7280",
+                  borderBottom: sideTab === "aguardando" ? "2px solid #fbbf24" : "2px solid transparent",
+                  backgroundColor: "var(--sidebar-surface)",
+                }}
+              >
+                Aguardando ({pendentes.length})
+              </button>
+              <button
+                onClick={() => setSideTab("premiadas")}
+                className="flex-1 py-3 text-xs font-bold transition-colors"
+                style={{
+                  color: sideTab === "premiadas" ? "#a78bfa" : "#6b7280",
+                  borderBottom: sideTab === "premiadas" ? "2px solid #a78bfa" : "2px solid transparent",
+                  backgroundColor: "var(--sidebar-surface)",
+                }}
+              >
+                Premiadas ({premiadas.length})
+              </button>
+            </div>
+            {/* Conteúdo da aba */}
+            <div className="flex-1 overflow-y-auto">
+              {searchQuery ? (
+                brackets.filter(b => bracketMatchesSearch(b, searchQuery)).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
                     <p className="text-[#6b7280] text-xs">Nenhum atleta encontrado.</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-1.5 px-2 py-2">
                     {brackets.filter(b => bracketMatchesSearch(b, searchQuery)).map(b => {
                       const isSelected = b.id === selectedId
                       const isPending = b.status === "FINALIZADA"
@@ -491,20 +635,19 @@ export default function PremiacaoPage() {
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
                           style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: isSelected ? "#0d1525" : "transparent",
+                            border: "1px solid var(--border)",
                             borderLeft: isSelected ? "3px solid #3b82f6" : "3px solid transparent",
+                            backgroundColor: isSelected ? "var(--selected-cool)" : "var(--card)",
                           }}
                         >
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                            {isPending && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#78350f40", color: "#fbbf24" }}>PENDENTE</span>}
-                            {isAwarded && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#4a1d9640", color: "#a78bfa" }}>PREMIADA</span>}
+                            {isPending && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#92400e", color: "#ffffff" }}>PENDENTE</span>}
+                            {isAwarded && <span className="text-[9px] px-1 rounded font-bold" style={{ backgroundColor: "#5b21b6", color: "#ffffff" }}>PREMIADA</span>}
                           </div>
-                          <p className="text-sm font-medium leading-tight truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
-                          {/* Destacar nomes que batem com a busca */}
+                          <p className="font-medium leading-tight break-words" style={{ color: "var(--foreground)", fontSize: "0.72rem" }}>{catLabel(b)}</p>
                           <div className="flex flex-col gap-0.5 mt-1">
                             {b.positions.filter(p => {
                               const name = p.registration?.athlete?.user.name ?? p.registration?.guestName ?? ""
@@ -519,82 +662,109 @@ export default function PremiacaoPage() {
                       )
                     })}
                   </div>
-                )}
-              </>
-            ) : (
-            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-              <span className="text-xs font-bold text-[#fbbf24] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#fbbf24] inline-block animate-pulse" />
-                Aguardando ({pendentes.length})
-              </span>
-            </div>
-            )}
-
-            {!searchQuery && pendentes.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
-                <CheckCircle2 className="h-8 w-8 text-[#4ade80]" />
-                <p className="text-[#4ade80] text-xs font-medium">Todas premiadas!</p>
-              </div>
-            ) : !searchQuery && (
-              <div className="flex flex-col">
-                {(() => {
-                  const rendered: React.ReactNode[] = []
-                  const seenGroups = new Set<string>()
-                  for (const b of pendentes) {
-                    if (b.bracketGroupId) {
-                      if (seenGroups.has(b.bracketGroupId)) continue
-                      seenGroups.add(b.bracketGroupId)
-                      const groupBrackets = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
-                      const allPlacements = groupBrackets.flatMap(x => computePlacements(x, brackets))
-                      const awardedCount = allPlacements.filter(pl => pl.registration?.awarded).length
-                      const isSelected = groupBrackets.some(x => x.id === selectedId)
-                      const label = catLabel(b).replace(" (Sub-chave)", "").replace("🏆 Grande Final — ", "")
-                      rendered.push(
-                        <button
-                          key={b.bracketGroupId}
-                          onClick={() => setSelectedId(groupBrackets[0].id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
-                          style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: isSelected ? "#1a0a00" : "transparent",
-                            borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
-                          }}
-                        >
-                          <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
-                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{label}</p>
-                          {allPlacements.length > 0 && (
-                            <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{allPlacements.length} premiado(s)</p>
-                          )}
-                        </button>
-                      )
-                    } else {
+                )
+              ) : sideTab === "aguardando" ? (
+                pendentes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
+                    <CheckCircle2 className="h-8 w-8" style={{ color: "var(--hdr-done)" }} />
+                    <p className="text-xs font-medium" style={{ color: "var(--hdr-done)" }}>Todas premiadas!</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5 px-2 py-2">
+                    {(() => {
+                      const rendered: React.ReactNode[] = []
+                      const seenGroups = new Set<string>()
+                      for (const b of pendentes) {
+                        if (b.bracketGroupId) {
+                          if (seenGroups.has(b.bracketGroupId)) continue
+                          seenGroups.add(b.bracketGroupId)
+                          const groupBrackets = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
+                          const allPlacements = groupBrackets.flatMap(x => computePlacements(x, brackets))
+                          const awardedCount = allPlacements.filter(pl => pl.registration?.awarded).length
+                          const isSelected = groupBrackets.some(x => x.id === selectedId)
+                          const label = catLabel(b).replace(" (Sub-chave)", "").replace("🏆 Grande Final — ", "")
+                          rendered.push(
+                            <button
+                              key={b.bracketGroupId}
+                              onClick={() => setSelectedId(groupBrackets[0].id)}
+                              className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
+                              style={{
+                                border: "1px solid var(--border)",
+                                borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                                backgroundColor: isSelected ? "var(--selected-warm)" : "var(--card)",
+                              }}
+                            >
+                              <p className="text-xs text-[#f59e0b] font-semibold">GRUPO — {groupBrackets.length} chaves</p>
+                              <p className="font-medium leading-tight mt-0.5 break-words" style={{ color: "var(--foreground)", fontSize: "0.72rem" }}>{label}</p>
+                              {allPlacements.length > 0 && (
+                                <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{allPlacements.length} premiado(s)</p>
+                              )}
+                            </button>
+                          )
+                        } else {
+                          const isSelected = b.id === selectedId
+                          const placements = computePlacements(b, brackets)
+                          const awardedCount = placements.filter((pl) => pl.registration?.awarded).length
+                          rendered.push(
+                            <button
+                              key={b.id}
+                              onClick={() => setSelectedId(b.id)}
+                              className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
+                              style={{
+                                border: "1px solid var(--border)",
+                                borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                                backgroundColor: isSelected ? "var(--selected-warm)" : "var(--card)",
+                              }}
+                            >
+                              <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
+                              <p className="font-medium leading-tight mt-0.5 break-words" style={{ color: "var(--foreground)", fontSize: "0.72rem" }}>{catLabel(b)}</p>
+                              {placements.length > 0 && (
+                                <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
+                              )}
+                            </button>
+                          )
+                        }
+                      }
+                      return rendered
+                    })()}
+                  </div>
+                )
+              ) : (
+                premiadas.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
+                    <p className="text-[#4b5563] text-xs">Nenhuma chave premiada ainda.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5 px-2 py-2">
+                    {premiadas.map((b) => {
                       const isSelected = b.id === selectedId
                       const placements = computePlacements(b, brackets)
-                      const awardedCount = placements.filter((pl) => pl.registration?.awarded).length
-                      rendered.push(
+                      return (
                         <button
                           key={b.id}
                           onClick={() => setSelectedId(b.id)}
-                          className="w-full text-left px-3 py-3 border-b transition-colors"
+                          className="w-full text-left px-3 py-3.5 rounded-lg transition-colors"
                           style={{
-                            borderColor: "var(--border)",
-                            backgroundColor: isSelected ? "#1a0a00" : "transparent",
-                            borderLeft: isSelected ? "3px solid #fbbf24" : "3px solid transparent",
+                            border: "1px solid var(--border)",
+                            borderLeft: isSelected ? "3px solid #a78bfa" : "3px solid transparent",
+                            backgroundColor: isSelected ? "var(--selected-cool)" : "var(--card)",
                           }}
                         >
                           <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                          <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "var(--foreground)" }}>{catLabel(b)}</p>
+                          <p className="font-medium leading-tight mt-0.5 break-words" style={{ color: "#a78bfa", fontSize: "0.72rem" }}>{catLabel(b)}</p>
                           {placements.length > 0 && (
-                            <p className="text-xs text-[#6b7280] mt-1">{awardedCount}/{placements.length} premiado(s)</p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <CheckCircle2 className="h-3 w-3" style={{ color: "var(--hdr-done)" }} />
+                              <p className="text-xs" style={{ color: "var(--hdr-done)" }}>{placements.length} premiado(s)</p>
+                            </div>
                           )}
                         </button>
                       )
-                    }
-                  }
-                  return rendered
-                })()}
-              </div>
-            )}
+                    })}
+                  </div>
+                )
+              )}
+            </div>
           </div>
 
           {/* Centro — Detalhe da chave selecionada */}
@@ -608,31 +778,24 @@ export default function PremiacaoPage() {
               <div className="flex flex-1 overflow-hidden">
 
                 {/* Colocações — coluna fixa esquerda */}
-                <div className="w-80 shrink-0 overflow-y-auto p-5 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
+                <div className="w-80 shrink-0 overflow-y-auto p-4 space-y-4 border-r" style={{ borderColor: "var(--border)" }}>
                   {/* Cabeçalho */}
                   <div
-                    className="rounded-xl border p-4"
-                    style={{
-                      backgroundColor: selectedBracket.status === "PREMIADA" ? "#0d0d1a" : "#111",
-                      borderColor: selectedBracket.status === "PREMIADA" ? "#4a1d9650" : "#222",
-                    }}
+                    className="rounded-xl border p-3"
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[#6b7280] text-xs">Chave #{selectedBracket.bracketNumber}</p>
-                        <p className="text-white font-bold text-lg leading-tight mt-0.5">{catLabel(selectedBracket)}</p>
-                        {!selectedBracket.isAbsolute && (
-                          <p className="text-[#4b5563] text-sm mt-0.5">
-                            até {selectedBracket.weightCategory.maxWeight === 999 ? "∞" : `${selectedBracket.weightCategory.maxWeight}kg`}
-                          </p>
-                        )}
-                      </div>
-                      {selectedBracket.status === "PREMIADA" && (
-                        <span className="text-xs px-2 py-1 rounded-full font-semibold shrink-0" style={{ backgroundColor: "#4a1d9640", color: "#a78bfa" }}>
-                          Premiada
-                        </span>
-                      )}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className="text-[#6b7280] text-xs">Chave #{selectedBracket.bracketNumber}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${selectedBracket.status === "PREMIADA" ? "badge-premiada" : "badge-finalizada"}`}>
+                        {selectedBracket.status === "PREMIADA" ? "Premiada" : "Finalizada"}
+                      </span>
                     </div>
+                    <p className="font-bold text-xs leading-tight truncate" style={{ color: "var(--foreground)" }}>{catLabel(selectedBracket)}</p>
+                    {!selectedBracket.isAbsolute && (
+                      <p className="text-[#4b5563] text-xs mt-0.5">
+                        até {selectedBracket.weightCategory.maxWeight === 999 ? "∞" : `${selectedBracket.weightCategory.maxWeight}kg`}
+                      </p>
+                    )}
                   </div>
 
                   {/* Colocações */}
@@ -651,7 +814,7 @@ export default function PremiacaoPage() {
                     return (
                       <div className="space-y-3">
                         {placements.map((pl) => {
-                          const cfg = PLACE_CONFIG[pl.place]
+                          const cfg = (isLight ? PLACE_CONFIG_LIGHT : PLACE_CONFIG)[pl.place]
                           const awarded = pl.registration?.awarded ?? false
                           const isAwardingNow = awarding.has(pl.registration?.id ?? "")
                           const regName = pl.registration?.athlete?.user.name ?? pl.registration?.guestName ?? "—"
@@ -659,37 +822,39 @@ export default function PremiacaoPage() {
                           return (
                             <div
                               key={pl.positionId}
-                              className="flex items-center gap-4 rounded-xl px-4 py-4"
-                              style={{ backgroundColor: cfg.bg, border: `1px solid ${cfg.color}25` }}
+                              className="rounded-xl overflow-hidden border"
+                              style={{ borderColor: cfg.border, backgroundColor: cfg.bg }}
                             >
-                              <span className="text-3xl shrink-0">{cfg.icon}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-base font-bold leading-snug" style={{ color: awarded ? "#4ade80" : "#f9fafb" }}>{regName}</p>
-                                {teamName && <p className="text-sm text-[#6b7280] leading-snug">{teamName}</p>}
-                                <p className="text-xs font-semibold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
-                              </div>
-                              {awarded ? (
-                                <div className="flex flex-col items-center gap-1 text-[#4ade80] shrink-0">
-                                  <CheckCircle2 className="h-6 w-6" />
-                                  <span className="text-xs font-bold">Premiado</span>
+                              <div className="px-4 py-4 flex items-center gap-3">
+                                <span className="text-2xl shrink-0">{cfg.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold truncate" style={{ color: awarded ? "var(--hdr-done)" : "var(--card-foreground)" }}>{regName}</p>
+                                  {teamName && <p className="text-xs text-[#6b7280] truncate">{teamName}</p>}
+                                  <p className="text-xs font-semibold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
                                 </div>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    if (pl.place === 1 && pl.sourceBracket.isAbsolute) {
-                                      setPixModal({ bracket: pl.sourceBracket, placement: pl })
-                                      setPixValue(pl.registration?.prizePix ?? "")
-                                    } else {
-                                      handlePremiar(pl.sourceBracket, pl)
-                                    }
-                                  }}
-                                  disabled={isAwardingNow || !pl.registration}
-                                  className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
-                                  style={{ backgroundColor: "#dc2626", color: "var(--foreground)" }}
-                                >
-                                  {isAwardingNow ? "..." : "Premiar"}
-                                </button>
-                              )}
+                                {awarded ? (
+                                  <div className="flex flex-col items-center gap-0.5 shrink-0" style={{ color: "var(--hdr-done)" }}>
+                                    <CheckCircle2 className="h-6 w-6" />
+                                    <span className="text-xs font-bold">Premiado</span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      if (pl.place === 1 && pl.sourceBracket.isAbsolute) {
+                                        setPixModal({ bracket: pl.sourceBracket, placement: pl })
+                                        setPixValue(pl.registration?.prizePix ?? "")
+                                      } else {
+                                        handlePremiar(pl.sourceBracket, pl)
+                                      }
+                                    }}
+                                    disabled={isAwardingNow || !pl.registration}
+                                    className="px-3 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                                    style={{ backgroundColor: "#dc2626", color: "#fff" }}
+                                  >
+                                    {isAwardingNow ? "..." : "Premiar"}
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           )
                         })}
@@ -752,53 +917,183 @@ export default function PremiacaoPage() {
             )}
           </div>
 
-          {/* Coluna direita — Premiadas */}
-          <div className="w-56 shrink-0 flex flex-col border-l overflow-y-auto" style={{ borderColor: "var(--border)" }}>
-            <div className="px-3 py-2 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-              <span className="text-xs font-bold text-[#a78bfa] uppercase tracking-wider flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] inline-block" />
-                Premiadas ({premiadas.length})
-              </span>
-            </div>
-
-            {premiadas.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 text-center gap-2">
-                <p className="text-[#4b5563] text-xs">Nenhuma chave premiada ainda.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {premiadas.map((b) => {
-                  const isSelected = b.id === selectedId
-                  const placements = computePlacements(b, brackets)
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => setSelectedId(b.id)}
-                      className="w-full text-left px-3 py-3 border-b transition-colors"
-                      style={{
-                        borderColor: "var(--border)",
-                        backgroundColor: isSelected ? "#0d0d1a" : "transparent",
-                        borderLeft: isSelected ? "3px solid #a78bfa" : "3px solid transparent",
-                      }}
-                    >
-                      <p className="text-xs text-[#6b7280]">Chave #{b.bracketNumber}</p>
-                      <p className="text-sm font-medium leading-tight mt-0.5 truncate pr-2" style={{ color: "#a78bfa" }}>{catLabel(b)}</p>
-                      {placements.length > 0 && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <CheckCircle2 className="h-3 w-3 text-[#4ade80]" />
-                          <p className="text-xs text-[#4ade80]">{placements.length} premiado(s)</p>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
 
         </div>
       )}
     </div>
+
+      {/* Modal de Consulta de Chaves */}
+      {consultaOpen && (() => {
+        const closeConsulta = () => {
+          setConsultaOpen(false)
+          setConsultaSex("")
+          setConsultaAge("")
+          setConsultaBelt("")
+          setConsultaWeight("")
+          setConsultaQ("")
+          setConsultaSnapshot(null)
+        }
+        const locColors: Record<string, { badgeBg: string; textColor: string }> = {
+          tatame:    { badgeBg: "#15803d", textColor: "#4ade80" },
+          premiacao: { badgeBg: "#1d4ed8", textColor: "#60a5fa" },
+          premiada:  { badgeBg: "#7c3aed", textColor: "#c084fc" },
+          finalizada:{ badgeBg: "#b45309", textColor: "#fbbf24" },
+          aguardando:{ badgeBg: "#374151", textColor: "#9ca3af" },
+        }
+        const weightOptions = Array.from(
+          new Map(
+            (consultaResults ?? [])
+              .filter(r =>
+                (!consultaSex || r.weightCategory.sex === consultaSex) &&
+                (!consultaAge || r.weightCategory.ageGroup === consultaAge)
+              )
+              .map(r => [r.weightCategory.name, r.weightCategory])
+          ).values()
+        ).sort((a, b) => a.maxWeight - b.maxWeight)
+
+        const snap = consultaSnapshot
+        const filteredConsulta = snap
+          ? (consultaResults ?? []).filter(r => {
+              if (snap.sex && r.weightCategory.sex !== snap.sex) return false
+              if (snap.age && r.weightCategory.ageGroup !== snap.age) return false
+              if (snap.belt && r.belt !== snap.belt) return false
+              if (snap.weight && r.weightCategory.name !== snap.weight) return false
+              if (snap.q.trim() && !r.athletes.some(a => a.toLowerCase().includes(snap.q.trim().toLowerCase()))) return false
+              return true
+            })
+          : []
+
+        return (
+          <>
+            <div
+              className="fixed inset-0 z-50"
+              style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
+              onClick={closeConsulta}
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ pointerEvents: "none" }}>
+              <div
+                className="w-full max-w-lg rounded-2xl flex flex-col"
+                style={{ backgroundColor: "var(--card-alt)", maxHeight: "85vh", pointerEvents: "auto" }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
+                  <p className="text-white font-bold text-base">🔍 Consulta de Chaves</p>
+                  <button onClick={closeConsulta} className="text-[#6b7280] hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <div className="px-4 pt-3 pb-2 space-y-2 shrink-0">
+                  <div className="flex gap-2">
+                    <select
+                      value={consultaSex}
+                      onChange={e => { setConsultaSex(e.target.value); setConsultaWeight("") }}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                    >
+                      <option value="">Sexo</option>
+                      <option value="MASCULINO">Masculino</option>
+                      <option value="FEMININO">Feminino</option>
+                    </select>
+                    <select
+                      value={consultaAge}
+                      onChange={e => { setConsultaAge(e.target.value); setConsultaWeight("") }}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                    >
+                      <option value="">Categorias</option>
+                      {Object.entries(AGE_GROUP_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={consultaBelt}
+                      onChange={e => setConsultaBelt(e.target.value)}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                    >
+                      <option value="">Faixa</option>
+                      {Object.entries(BELT_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={consultaWeight}
+                      onChange={e => setConsultaWeight(e.target.value)}
+                      className="flex-1 rounded-lg px-2 py-1.5 text-xs text-white border outline-none"
+                      style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                      disabled={consultaLoading || consultaResults === null}
+                    >
+                      <option value="">Peso</option>
+                      {weightOptions.map(w => (
+                        <option key={w.name} value={w.name}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Nome do atleta..."
+                    value={consultaQ}
+                    onChange={e => setConsultaQ(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") setConsultaSnapshot({ sex: consultaSex, age: consultaAge, belt: consultaBelt, weight: consultaWeight, q: consultaQ }) }}
+                    className="w-full rounded-lg px-3 py-2 text-sm text-white border outline-none"
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                  />
+                  <button
+                    onClick={() => setConsultaSnapshot({ sex: consultaSex, age: consultaAge, belt: consultaBelt, weight: consultaWeight, q: consultaQ })}
+                    disabled={consultaLoading || consultaResults === null}
+                    className="w-full py-2.5 rounded-lg text-sm font-bold text-white disabled:opacity-50"
+                    style={{ backgroundColor: "#2563eb" }}
+                  >
+                    {consultaLoading ? "Buscando..." : "Pesquisar"}
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                  {(consultaLoading || consultaResults === null) ? (
+                    <p className="text-[#6b7280] text-sm text-center py-8">Buscando...</p>
+                  ) : snap === null ? (
+                    <p className="text-[#4b5563] text-sm text-center py-8">Configure os filtros e clique em Pesquisar.</p>
+                  ) : filteredConsulta.length === 0 ? (
+                    <p className="text-[#4b5563] text-sm text-center py-8">Nenhuma chave encontrada.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2 mt-1">
+                      {filteredConsulta.map(r => {
+                        const col = locColors[r.localizacaoTipo] ?? locColors.aguardando
+                        return (
+                          <div
+                            key={r.id}
+                            className="rounded-xl p-3"
+                            style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-white leading-tight">{consultaCatLabel(r)}</p>
+                                <p className="text-[#6b7280] text-xs mt-0.5">Chave #{r.bracketNumber}</p>
+                                {r.athletes.length > 0 && (
+                                  <p className="text-[#9ca3af] text-xs mt-1 leading-relaxed">{r.athletes.join(" · ")}</p>
+                                )}
+                              </div>
+                              <span
+                                className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
+                                style={{ color: "#ffffff", backgroundColor: col.badgeBg }}
+                              >
+                                {r.localizacaoTipo === "tatame" ? (r.tatameName ?? "Tatame") :
+                                 r.localizacaoTipo === "premiacao" ? "Premiação" :
+                                 r.localizacaoTipo === "premiada" ? "Premiada" :
+                                 r.localizacaoTipo === "finalizada" ? "Finalizada" : "Aguardando"}
+                              </span>
+                            </div>
+                            <p className="text-xs mt-1.5 leading-snug" style={{ color: col.textColor }}>{r.localizacao}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )
+      })()}
     </>
   )
 }

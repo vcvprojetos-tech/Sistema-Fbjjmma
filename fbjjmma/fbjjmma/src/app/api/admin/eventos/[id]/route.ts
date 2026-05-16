@@ -69,8 +69,20 @@ export async function PUT(
         data.schedule = `/uploads/eventos/${filename}`
       }
 
+      // Handle pesoDoc upload
+      const pesoDocFile = formData.get("pesoDoc") as File | null
+      if (pesoDocFile && pesoDocFile.size > 0) {
+        const bytes = await pesoDocFile.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const filename = `${Date.now()}-pesodoc-${pesoDocFile.name.replace(/\s/g, "_")}`
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "eventos")
+        await mkdir(uploadDir, { recursive: true })
+        await writeFile(path.join(uploadDir, filename), buffer)
+        data.pesoDoc = `/uploads/eventos/${filename}`
+      }
+
       for (const [key, value] of formData.entries()) {
-        if (key !== "banner" && key !== "schedule") {
+        if (key !== "banner" && key !== "schedule" && key !== "pesoDoc") {
           data[key] = value
         }
       }
@@ -108,7 +120,10 @@ export async function PUT(
     }
 
     if (data.banner) updateData.banner = data.banner
-    if (data.schedule) updateData.schedule = data.schedule
+    if (data.removeSchedule === "true") updateData.schedule = null
+    else if (data.schedule) updateData.schedule = data.schedule
+    if (data.removePesoDoc === "true") updateData.pesoDoc = null
+    else if (data.pesoDoc) updateData.pesoDoc = data.pesoDoc
 
     const event = await prisma.event.update({
       where: { id },
@@ -123,6 +138,33 @@ export async function PUT(
       { error: "Erro ao atualizar evento." },
       { status: 500 }
     )
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth()
+  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
+
+  const { id } = await params
+
+  try {
+    const { status } = await req.json()
+    const validStatuses = ["RASCUNHO", "INSCRICOES_ABERTAS", "INSCRICOES_ENCERRADAS", "EM_ANDAMENTO", "ENCERRADO"]
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ error: "Status inválido." }, { status: 400 })
+    }
+
+    const event = await prisma.event.update({
+      where: { id },
+      data: { status },
+    })
+    return NextResponse.json(event)
+  } catch (error) {
+    console.error("[EVENTOS PATCH ERROR]", error)
+    return NextResponse.json({ error: "Erro ao atualizar status." }, { status: 500 })
   }
 }
 
