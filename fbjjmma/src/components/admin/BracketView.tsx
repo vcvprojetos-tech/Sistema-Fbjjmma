@@ -898,9 +898,9 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     if (!finalMatch?.winnerId || maxRealRound < 2) return null
     const semiRound = maxRealRound - 1
     const champSemiAny = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
-    // Campeão ganhou por desclassificação ou falha de peso — sem 3° lugar
-    if (champSemiAny?.isWO && (champSemiAny.woType === "PESO" || champSemiAny.woType === "DESCLASSIFICACAO")) return null
-    const champSemi = champSemiAny && !champSemiAny.isWO ? champSemiAny : null
+    // Campeão ganhou a semi por qualquer W.O. — sem 3° lugar
+    if (champSemiAny?.isWO) return null
+    const champSemi = champSemiAny ?? null
     const runnerUpSemi = realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
     const semi = champSemi ?? runnerUpSemi
     if (!semi) return null
