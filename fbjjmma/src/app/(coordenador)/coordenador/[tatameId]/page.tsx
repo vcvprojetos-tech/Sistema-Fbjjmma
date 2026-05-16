@@ -1040,6 +1040,143 @@ export default function TatamePage() {
                     </div>
                   )}
 
+                  {/* Partidas solo: atleta aguardando — só aparecem após INICIAR, antes das lutas normais */}
+                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && soloMatches.map(match => {
+                    const p1 = match.position1
+                    const p1Name = getAthleteName(p1)
+                    const p1Present = `${match.id}-p1` in optimisticCheckins ? optimisticCheckins[`${match.id}-p1`] : match.p1CheckedIn
+                    const isMid = match._isMidBracket
+                    const calls = match.callTimes ?? []
+                    const callErr = callError?.matchId === match.id ? callError : null
+                    return (
+                      <div key={match.id} className="rounded-xl border overflow-hidden"
+                        style={{ borderColor: p1Present ? "#16a34a" : "#d97706", backgroundColor: "var(--card)" }}>
+                        <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <span className="text-xs font-semibold" style={{ color: isMid ? "var(--confirm-title)" : "#fbbf24" }}>
+                            {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
+                          </span>
+                        </div>
+                        <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <button
+                            onClick={() => {
+                              if (isMid) declararVencedor(match._bracketId, match.id, match.position1Id!, false)
+                              else togglePresent(match.id, match._bracketId, "p1", p1Present)
+                            }}
+                            disabled={actionLoading}
+                            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors duration-100"
+                            style={{ backgroundColor: (!isMid && p1Present) ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
+                          >
+                            {(!isMid && p1Present) ? "✓" : (p1?.position ?? "1")}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-xs truncate" style={{ color: "var(--foreground)" }}>{p1Name}</p>
+                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
+                          </div>
+                          <span className="text-xs text-[#6b7280]">TAP</span>
+                        </div>
+                        <div className="flex gap-2 p-3">
+                          {!isMid && (
+                          <button
+                            onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
+                            disabled={actionLoading || !p1Present}
+                            className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
+                            style={{ backgroundColor: "#15803d" }}
+                          >
+                            ✓ Campeão
+                          </button>
+                          )}
+                          {callMenu?.matchId !== match.id && (
+                            <button
+                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
+                              disabled={actionLoading}
+                              className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors btn-wo-solo"
+                            >
+                              W.O.
+                            </button>
+                          )}
+                        </div>
+                        {callMenu?.matchId === match.id && (
+                          <div className="px-3 pb-3 flex flex-col gap-2" style={{ borderTop: "1px solid var(--border)" }}>
+                            <p className="text-xs text-[#f87171] font-semibold pt-2">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
+                            {(() => {
+                              const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
+                              const all3Done = posCalls.some((c: CallTime) => c.call === 3)
+                              return (
+                                <>
+                                  {!all3Done ? (
+                                    <>
+                                      <div className="flex gap-1.5">
+                                        {[1, 2, 3].map(n => {
+                                          const done = posCalls.some((c: CallTime) => c.call === n)
+                                          const isLoadingCall = callLoading === `${match.id}-${n}`
+                                          const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
+                                          return (
+                                            <button
+                                              key={n}
+                                              onClick={async () => { if (!canCall) return; const ok = await registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition); if (ok) setCallMenu(null) }}
+                                              disabled={!canCall || !!callLoading || actionLoading}
+                                              className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
+                                              style={{ backgroundColor: done ? "#15803d" : n === 2 ? "var(--call-2-bg)" : n === 3 ? "var(--call-3-bg)" : "var(--surface-button)", color: done ? "#4ade80" : n === 2 ? "var(--call-2-color)" : n === 3 ? "var(--call-3-color)" : "var(--muted-foreground)" }}
+                                            >
+                                              {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
+                                      {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
+                                      <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => aplicarWOAusencia(match.id, match._bracketId, callMenu.winnerId)}
+                                      disabled={actionLoading}
+                                      className="w-full py-2 rounded-lg text-sm font-bold text-white"
+                                      style={{ backgroundColor: "#dc2626" }}
+                                    >
+                                      {actionLoading ? "..." : "W.O. — Confirmar ausência"}
+                                    </button>
+                                  )}
+                                  {posCalls.length > 0 && (
+                                    <div className="flex flex-col gap-0.5">
+                                      {posCalls.map((ct: CallTime) => (
+                                        <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
+                                          {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              )
+                            })()}
+                            <button
+                              onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
+                              disabled={actionLoading}
+                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                              style={{ backgroundColor: "#78350f" }}
+                            >
+                              Desclassificação por Peso
+                            </button>
+                            <button
+                              onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: "", loserName: p1Name }); setDesclReason(""); setCallMenu(null) }}
+                              disabled={actionLoading}
+                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
+                              style={{ backgroundColor: "#7c3aed" }}
+                            >
+                              Desclassificado
+                            </button>
+                            <button
+                              onClick={() => setCallMenu(null)}
+                              className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
+                              style={{ backgroundColor: "var(--card)" }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
                   {/* EM_ANDAMENTO — todas as partidas prontas (ambos atletas definidos) */}
                   {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && (
                     <div className="space-y-3">
@@ -1315,143 +1452,6 @@ export default function TatamePage() {
                       )}
                     </div>
                   )}
-
-                  {/* Partidas solo: 1 atleta aguardando pesagem — exibidas após as lutas normais */}
-                  {soloMatches.map(match => {
-                    const p1 = match.position1
-                    const p1Name = getAthleteName(p1)
-                    const p1Present = `${match.id}-p1` in optimisticCheckins ? optimisticCheckins[`${match.id}-p1`] : match.p1CheckedIn
-                    const isMid = match._isMidBracket
-                    const calls = match.callTimes ?? []
-                    const callErr = callError?.matchId === match.id ? callError : null
-                    return (
-                      <div key={match.id} className="rounded-xl border overflow-hidden"
-                        style={{ borderColor: p1Present ? "#16a34a" : "#d97706", backgroundColor: "var(--card)" }}>
-                        <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-                          <span className="text-xs font-semibold" style={{ color: isMid ? "var(--confirm-title)" : "#fbbf24" }}>
-                            {isMid ? "Confirmação de Presença" : "Pesagem — Atleta Único"}
-                          </span>
-                        </div>
-                        <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
-                          <button
-                            onClick={() => {
-                              if (isMid) declararVencedor(match._bracketId, match.id, match.position1Id!, false)
-                              else togglePresent(match.id, match._bracketId, "p1", p1Present)
-                            }}
-                            disabled={actionLoading}
-                            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-bold text-base transition-colors duration-100"
-                            style={{ backgroundColor: (!isMid && p1Present) ? "#15803d" : "var(--surface-input)", color: "var(--foreground)" }}
-                          >
-                            {(!isMid && p1Present) ? "✓" : (p1?.position ?? "1")}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-xs truncate" style={{ color: "var(--foreground)" }}>{p1Name}</p>
-                            {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
-                          </div>
-                          <span className="text-xs text-[#6b7280]">TAP</span>
-                        </div>
-                        <div className="flex gap-2 p-3">
-                          {!isMid && (
-                          <button
-                            onClick={() => !actionLoading && declararVencedor(match._bracketId, match.id, match.position1Id!, false)}
-                            disabled={actionLoading || !p1Present}
-                            className="flex-1 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40"
-                            style={{ backgroundColor: "#15803d" }}
-                          >
-                            ✓ Campeão
-                          </button>
-                          )}
-                          {callMenu?.matchId !== match.id && (
-                            <button
-                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
-                              disabled={actionLoading}
-                              className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors btn-wo-solo"
-                            >
-                              W.O.
-                            </button>
-                          )}
-                        </div>
-                        {callMenu?.matchId === match.id && (
-                          <div className="px-3 pb-3 flex flex-col gap-2" style={{ borderTop: "1px solid var(--border)" }}>
-                            <p className="text-xs text-[#f87171] font-semibold pt-2">Chamadas — {callMenu.absenteeName.split(" ")[0]}</p>
-                            {(() => {
-                              const posCalls = calls.filter((c: CallTime) => c.pos === callMenu.absentPosition || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
-                              const all3Done = posCalls.some((c: CallTime) => c.call === 3)
-                              return (
-                                <>
-                                  {!all3Done ? (
-                                    <>
-                                      <div className="flex gap-1.5">
-                                        {[1, 2, 3].map(n => {
-                                          const done = posCalls.some((c: CallTime) => c.call === n)
-                                          const isLoadingCall = callLoading === `${match.id}-${n}`
-                                          const canCall = n === 1 ? !done : (posCalls.some((c: CallTime) => c.call === n - 1) && !done)
-                                          return (
-                                            <button
-                                              key={n}
-                                              onClick={async () => { if (!canCall) return; const ok = await registrarChamada(match.id, match._bracketId, n, callMenu.winnerId, callMenu.absentPosition); if (ok) setCallMenu(null) }}
-                                              disabled={!canCall || !!callLoading || actionLoading}
-                                              className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
-                                              style={{ backgroundColor: done ? "#15803d" : n === 2 ? "var(--call-2-bg)" : n === 3 ? "var(--call-3-bg)" : "var(--surface-button)", color: done ? "#4ade80" : n === 2 ? "var(--call-2-color)" : n === 3 ? "var(--call-3-color)" : "var(--muted-foreground)" }}
-                                            >
-                                              {isLoadingCall ? "..." : done ? `✓ ${n}ª` : `${n}ª Chamada`}
-                                            </button>
-                                          )
-                                        })}
-                                      </div>
-                                      {callErr && <p className="text-[#f87171] text-xs">{callErr.msg}</p>}
-                                      <CallCountdown calls={calls} absentPosition={callMenu.absentPosition} />
-                                    </>
-                                  ) : (
-                                    <button
-                                      onClick={() => aplicarWOAusencia(match.id, match._bracketId, callMenu.winnerId)}
-                                      disabled={actionLoading}
-                                      className="w-full py-2 rounded-lg text-sm font-bold text-white"
-                                      style={{ backgroundColor: "#dc2626" }}
-                                    >
-                                      {actionLoading ? "..." : "W.O. — Confirmar ausência"}
-                                    </button>
-                                  )}
-                                  {posCalls.length > 0 && (
-                                    <div className="flex flex-col gap-0.5">
-                                      {posCalls.map((ct: CallTime) => (
-                                        <span key={ct.call} className="text-[10px]" style={{ color: "#6b7280" }}>
-                                          {ct.call}ª chamada — {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </>
-                              )
-                            })()}
-                            <button
-                              onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
-                              disabled={actionLoading}
-                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                              style={{ backgroundColor: "#78350f" }}
-                            >
-                              Desclassificação por Peso
-                            </button>
-                            <button
-                              onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: "", loserName: p1Name }); setDesclReason(""); setCallMenu(null) }}
-                              disabled={actionLoading}
-                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                              style={{ backgroundColor: "#7c3aed" }}
-                            >
-                              Desclassificado
-                            </button>
-                            <button
-                              onClick={() => setCallMenu(null)}
-                              className="w-full py-2 rounded-lg text-xs text-[#6b7280]"
-                              style={{ backgroundColor: "var(--card)" }}
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
 
                   {/* FINALIZADA / PREMIADA — pódio (só quando a GF finalizou, ou chave simples finalizada) */}
                   {(isGroup
