@@ -744,6 +744,19 @@ export default function EventoDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, loadResultado])
 
+  // Atualiza status de conexão dos tatames a cada 30s enquanto a aba está ativa
+  useEffect(() => {
+    if (tab !== "tatames") return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/admin/eventos/${id}/tatames`)
+        const data = await res.json()
+        if (Array.isArray(data)) setTatames(data)
+      } catch { /* silencioso */ }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [tab, id])
+
   useEffect(() => {
     // Reseta filtros do FiltersBar e os aplicados sempre que muda de aba
     setFilterResetKey(k => k + 1)
