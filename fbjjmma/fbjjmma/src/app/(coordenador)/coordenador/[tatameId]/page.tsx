@@ -1077,7 +1077,21 @@ export default function TatamePage() {
                             <p className="font-semibold text-xs truncate" style={{ color: "var(--foreground)" }}>{p1Name}</p>
                             {getAthleteTeam(p1) && <p className="text-xs text-[#6b7280] truncate">{getAthleteTeam(p1)}</p>}
                           </div>
-                          <span className="text-xs text-[#6b7280]">TAP</span>
+                          {(() => {
+                            const p1Calls = calls.filter((c: CallTime) => c.pos === "p1" || !c.pos).sort((a: CallTime, b: CallTime) => a.call - b.call)
+                            if (!p1Present && p1Calls.length > 0) {
+                              return (
+                                <div className="flex flex-col items-end gap-0 shrink-0">
+                                  {p1Calls.map((ct: CallTime) => (
+                                    <span key={ct.call} className="text-[9px] leading-tight font-semibold" style={{ color: "#f87171" }}>
+                                      {ct.call}ª {new Date(ct.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                  ))}
+                                </div>
+                              )
+                            }
+                            return <span className="text-xs text-[#6b7280] shrink-0">TAP</span>
+                          })()}
                         </div>
                         <div className="flex gap-2 p-3">
                           {!isMid && (
