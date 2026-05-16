@@ -16,7 +16,7 @@ function useContainerScale(totalWidth: number, totalHeight: number) {
         return
       }
       rafId = null
-      setScale(w / totalWidth)
+      setScale(Math.min(1, w / totalWidth))
     }
     update()
     const ro = new ResizeObserver(update)
@@ -473,14 +473,16 @@ function ThreeAthleteBracket({
   ].filter(Boolean).join(" | ")
 
   const loserLabel = m1LoserPos ? String(m1LoserPos.position) : "?"
-  const { ref: containerRef3, scale: scale3 } = useContainerScale(TOTAL_W, TOTAL_H)
+  const { ref: wrapperRef3, scale: scale3 } = useContainerScale(TOTAL_W, TOTAL_H)
+  const cardW3 = Math.round(TOTAL_W * scale3)
 
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
+    <div ref={wrapperRef3} style={{ width: "100%", marginBottom: 16, display: "flex", justifyContent: "center" }}>
+      <div style={{ width: cardW3, border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)" }}>
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{bracketTitle}</p>
       </div>
-      <div ref={containerRef3} style={{ overflow: "hidden", width: "100%", height: Math.round(TOTAL_H * scale3) }}>
+      <div style={{ overflow: "hidden", width: cardW3, height: Math.round(TOTAL_H * scale3) }}>
         <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H, transform: `scale(${scale3})`, transformOrigin: "top left" }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={TOTAL_W} height={TOTAL_H}>
             {/* M1: pos1 & pos3 bracket lines */}
@@ -565,6 +567,7 @@ function ThreeAthleteBracket({
         </div>
       )}
       <WOHistory matches={matches} posIdMap={posIdMap3} />
+      </div>
     </div>
   )
 }
@@ -1040,36 +1043,39 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
 
-  const { ref: containerRef, scale } = useContainerScale(totalWidth, totalHeight)
+  const { ref: wrapperRef, scale } = useContainerScale(totalWidth, totalHeight)
+  const cardW = Math.round(totalWidth * scale)
 
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
-      <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
-      </div>
-      <div ref={containerRef} style={{ overflow: "hidden", width: "100%", height: Math.round(totalHeight * scale) }}>
-        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
-            {lines}
-          </svg>
-          {cards}
+    <div ref={wrapperRef} style={{ width: "100%", marginBottom: 16, display: "flex", justifyContent: "center" }}>
+      <div style={{ width: cardW, border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)" }}>
+        <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
         </div>
-      </div>
-      {(primeiro || segundo) && (
-        <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--card-alt)", backgroundColor: "var(--card)", flexWrap: "wrap" }}>
-          {placements.map(({ label, color, reg }) => reg && (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
-              {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
-              {label === "1° Lugar" && isAbsolute && reg.prizePix && (
-                <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
-              )}
-            </div>
-          ))}
+        <div style={{ overflow: "hidden", width: cardW, height: Math.round(totalHeight * scale) }}>
+          <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+            <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
+              {lines}
+            </svg>
+            {cards}
+          </div>
         </div>
-      )}
-      <WOHistory matches={matches} posIdMap={posIdMap} />
+        {(primeiro || segundo) && (
+          <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--card-alt)", backgroundColor: "var(--card)", flexWrap: "wrap" }}>
+            {placements.map(({ label, color, reg }) => reg && (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
+                <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
+                {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
+                {label === "1° Lugar" && isAbsolute && reg.prizePix && (
+                  <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <WOHistory matches={matches} posIdMap={posIdMap} />
+      </div>
     </div>
   )
 }
