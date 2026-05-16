@@ -227,6 +227,7 @@ export default function TatamePage() {
   const docDragStartRef = useRef<{ x: number; y: number } | null>(null)
   const docDragCurrRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 })
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const controlsPanelRef = useRef<HTMLDivElement>(null)
   const [showOverlay, setShowOverlay] = useState(true)
   const [undoLoading, setUndoLoading] = useState(false)
   const [now, setNow] = useState(() => new Date())
@@ -277,7 +278,10 @@ export default function TatamePage() {
 
   useEffect(() => {
     setIsFullscreen(!!document.fullscreenElement)
-    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
+    const onChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+      if (controlsPanelRef.current) controlsPanelRef.current.scrollTop = 0
+    }
     document.addEventListener("fullscreenchange", onChange)
     return () => document.removeEventListener("fullscreenchange", onChange)
   }, [])
@@ -966,6 +970,7 @@ export default function TatamePage() {
 
                 {/* Controles */}
                 <div
+                  ref={controlsPanelRef}
                   className="flex flex-col w-96 shrink-0 overflow-y-auto p-4 space-y-4 border-l order-2 mr-7"
                   style={{ borderColor: "var(--border)" }}
                 >
@@ -1039,7 +1044,9 @@ export default function TatamePage() {
                   )}
 
                   {/* Partidas solo: atleta aguardando — só aparecem após INICIAR, antes das lutas normais */}
-                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && soloMatches.map(match => {
+                  {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && soloMatches.length > 0 && (
+                  <div className="space-y-3">
+                  {soloMatches.map(match => {
                     const p1 = match.position1
                     const p1Name = getAthleteName(p1)
                     const p1Present = `${match.id}-p1` in optimisticCheckins ? optimisticCheckins[`${match.id}-p1`] : match.p1CheckedIn
@@ -1174,6 +1181,8 @@ export default function TatamePage() {
                       </div>
                     )
                   })}
+                  </div>
+                  )}
 
                   {/* EM_ANDAMENTO — todas as partidas prontas (ambos atletas definidos) */}
                   {groupBrackets.some(b => b.status === "EM_ANDAMENTO") && (
@@ -1426,10 +1435,10 @@ export default function TatamePage() {
                         )
                       })}
 
-                      {/* Partidas aguardando definição de atletas (ex: próxima rodada ainda não confirmada) */}
-                      {allGroupMatches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length > 0 && (
+                      {/* Partidas aguardando definição de atletas — exclui solos (p1 definido, p2 nulo) */}
+                      {allGroupMatches.filter(m => !m.winnerId && !m.position1Id && !m.position2Id).length > 0 && (
                         <p className="text-xs text-[#4b5563] text-center py-1">
-                          + {bracket.matches.filter(m => !m.winnerId && (!m.position1Id || !m.position2Id)).length} luta(s) aguardando definição de atletas
+                          + {allGroupMatches.filter(m => !m.winnerId && !m.position1Id && !m.position2Id).length} luta(s) aguardando definição de atletas
                         </p>
                       )}
 
