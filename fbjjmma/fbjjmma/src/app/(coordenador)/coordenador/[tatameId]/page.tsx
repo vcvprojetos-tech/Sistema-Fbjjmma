@@ -656,6 +656,8 @@ export default function TatamePage() {
       const champSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
       // Se a semi do campeão foi qualquer W.O. — sem 3° lugar
       if (champSemi?.isWO) return null
+      // Se o campeão não teve partida 2x2 na semi, verificar W.O. solo na mesma rodada
+      if (!champSemi && podiumBracket.matches.some(m => m.round === podiumMaxRound - 1 && m.isWO)) return null
       const runnerUpId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
       const runnerUpSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === runnerUpId)
       const semi = champSemi ?? (!runnerUpSemi?.isWO ? runnerUpSemi : null)

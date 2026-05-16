@@ -900,6 +900,8 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     const champSemiAny = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
     // Campeão ganhou a semi por qualquer W.O. — sem 3° lugar
     if (champSemiAny?.isWO) return null
+    // Sem partida 2x2 na semi: verificar W.O. solo na mesma rodada (adversário eliminado antes da partida)
+    if (!champSemiAny && matches.some(m => m.round === semiRound && m.isWO)) return null
     const champSemi = champSemiAny ?? null
     const runnerUpSemi = realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
     const semi = champSemi ?? runnerUpSemi
