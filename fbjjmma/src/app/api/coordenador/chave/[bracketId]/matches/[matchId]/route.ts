@@ -136,6 +136,18 @@ export async function PUT(
           },
         })
 
+        // Lê presença confirmada do atleta em espera ANTES de fechar a partida solo
+        const thirdSoloMatch = await prisma.match.findFirst({
+          where: {
+            bracketId,
+            round: 1,
+            matchNumber: { not: match.matchNumber },
+            position2Id: null,
+          },
+        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const thirdCheckedIn = (thirdSoloMatch as any)?.p1CheckedIn ?? false
+
         // Fecha a partida solo de check-in do atleta em espera (R1 matchNumber 2)
         // para que não apareça mais como luta pendente na tela do coordenador
         await prisma.match.updateMany({
@@ -202,6 +214,7 @@ export async function PUT(
               position1Id: loserId ?? null,
               position2Id: thirdPosition!.id,
               p1CheckedIn: !!loserId,
+              p2CheckedIn: thirdCheckedIn,
             },
           })
         }
