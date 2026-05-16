@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { ThemeLogo } from "@/components/ThemeLogo"
 
 const AGE_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -344,7 +343,8 @@ export default function PainelPage() {
       {showOverlay && (
         <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#f0f4f8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <ThemeLogo style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-color.png" alt="FBJJMMA" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
           <div style={{ color: "#1e293b", fontSize: "1.5rem", fontWeight: 900, marginBottom: 12 }}>
             Painel de Chamadas{painelNum ? ` — Painel ${painelNum}` : ""}
           </div>
@@ -376,7 +376,8 @@ export default function PainelPage() {
         <div style={{ height: TOPBAR_H, marginBottom: TOPBAR_MB, backgroundColor: "#ffffff", borderBottom: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "space-between", padding: `0 ${OUTER_PAD_H}px` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <ThemeLogo style={{ width: 34, height: 34, objectFit: "contain" }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-color.png" alt="FBJJMMA" style={{ width: 40, height: 40, objectFit: "contain" }} />
             <div>
               <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 18 }}>{event.name}</div>
               <div style={{ color: "#64748b", fontSize: 12 }}>Painel de Chamadas — Área de Pesagem</div>
