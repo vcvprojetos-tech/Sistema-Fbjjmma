@@ -54,6 +54,7 @@ interface MatchInfo {
 }
 interface BracketInfo {
   id: string; bracketNumber: number; belt: string; isAbsolute: boolean; status: string
+  startedAt: string | null
   weightCategory: { name: string; ageGroup: string; sex: string }
   matches: MatchInfo[]
 }
@@ -123,7 +124,8 @@ function filterGroupsToFit(groups: BracketGroup[], maxH: number): BracketGroup[]
 
 function bracketHasAppeared(b: BracketInfo, visibleBrackets: Set<string>): boolean {
   if (visibleBrackets.has(b.id)) return true
-  return b.matches.some(m => ((m.callTimes ?? []) as CallTime[]).some(c => c.call === 1))
+  // Só considera "apareceu no painel" se tiver o marcador pos:null (registrado pelo painel, não pelo coordenador)
+  return b.matches.some(m => ((m.callTimes ?? []) as CallTime[]).some(c => c.call === 1 && c.pos === null))
 }
 
 function getGroupsForTatame(tatame: TatameInfo, visibleBrackets: Set<string>): BracketGroup[] {
@@ -138,6 +140,12 @@ function getGroupsForTatame(tatame: TatameInfo, visibleBrackets: Set<string>): B
     const aApp = bracketHasAppeared(a, visibleBrackets) ? 0 : 1
     const bApp = bracketHasAppeared(b, visibleBrackets) ? 0 : 1
     if (aApp !== bApp) return aApp - bApp
+    // Chaves aguardando: FIFO por startedAt; chaves já exibidas: ordem pelo número
+    if (aApp === 1 && bApp === 1) {
+      const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0
+      const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0
+      return aTime - bTime
+    }
     return a.bracketNumber - b.bracketNumber
   })
 
@@ -309,7 +317,8 @@ export default function PainelPage() {
         visibleBracketsRef.current.add(bracket.id)
         for (const match of bracket.matches) {
           const allCalls = (match.callTimes ?? []) as CallTime[]
-          if (allCalls.some(c => c.call === 1)) continue
+          // Só pula se o painel já registrou o marcador (pos:null) — chamadas do coordenador não contam
+          if (allCalls.some(c => c.call === 1 && c.pos === null)) continue
           if (triggeredRef.current.has(match.id)) continue
           triggeredRef.current.add(match.id)
           fetch(`/api/painel/${eventId}/chamada`, {
