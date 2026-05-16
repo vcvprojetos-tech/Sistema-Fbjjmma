@@ -33,6 +33,9 @@ export async function POST(
 
     await prisma.match.deleteMany({ where: { bracketId } })
 
+    const now = new Date()
+    const primeiraChamada = [{ call: 1, at: now.toISOString(), pos: null }]
+
     if (positions.length === 1) {
       // Cria partida solo para pesagem — coordenador declara campeão ou W.O. manualmente
       await prisma.match.create({
@@ -42,6 +45,7 @@ export async function POST(
           matchNumber: 1,
           position1Id: positions[0].id,
           position2Id: null,
+          callTimes: primeiraChamada,
         },
       })
       await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
@@ -61,6 +65,7 @@ export async function POST(
           matchNumber: 1,
           position1Id: positions[0].id, // pos 1
           position2Id: positions[2].id, // pos 3
+          callTimes: primeiraChamada,
         },
       })
       // Partida solo para pos 2 (atleta que aguarda) — permite check-in e aparece no painel
@@ -71,6 +76,7 @@ export async function POST(
           matchNumber: 2,
           position1Id: positions[1].id, // pos 2 aguarda
           position2Id: null,
+          callTimes: primeiraChamada,
         },
       })
       await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
@@ -103,7 +109,7 @@ export async function POST(
           matchNumber: matchNumber++,
           position1Id: pos1?.id ?? null,
           position2Id: pos2?.id ?? null,
-          // Posição BYE cria partida solo pendente — coordenador confirma pesagem antes de avançar
+          callTimes: primeiraChamada,
         },
       })
     }
