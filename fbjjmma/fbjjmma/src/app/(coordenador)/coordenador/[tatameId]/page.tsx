@@ -1110,7 +1110,7 @@ export default function TatamePage() {
                               disabled={actionLoading}
                               className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors btn-wo-solo"
                             >
-                              W.O.
+                              Opções
                             </button>
                           )}
                         </div>
@@ -1170,16 +1170,16 @@ export default function TatamePage() {
                             <button
                               onClick={() => { setWoModal({ matchId: match.id, winnerId: "", bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
                               disabled={actionLoading}
-                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                              style={{ backgroundColor: "#78350f" }}
+                              className="w-full py-2 rounded-lg text-xs font-semibold"
+                              style={{ backgroundColor: "#78350f", color: "white" }}
                             >
                               Desclassificação por Peso
                             </button>
                             <button
                               onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: "", loserName: p1Name }); setDesclReason(""); setCallMenu(null) }}
                               disabled={actionLoading}
-                              className="w-full py-2 rounded-lg text-xs font-semibold text-white"
-                              style={{ backgroundColor: "#7c3aed" }}
+                              className="w-full py-2 rounded-lg text-xs font-semibold"
+                              style={{ backgroundColor: "#7c3aed", color: "white" }}
                             >
                               Desclassificado
                             </button>
