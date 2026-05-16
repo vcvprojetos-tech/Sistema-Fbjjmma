@@ -25,7 +25,7 @@ export async function GET(
   const tatame = await prisma.tatame.findUnique({
     where: { id: tatameId },
     include: {
-      event: { select: { id: true, name: true, status: true } },
+      event: { select: { id: true, name: true, status: true, schedule: true, pesoDoc: true } },
       brackets: {
         include: {
           weightCategory: true,
