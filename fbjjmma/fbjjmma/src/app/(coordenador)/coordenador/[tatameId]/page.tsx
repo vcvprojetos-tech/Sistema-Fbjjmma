@@ -653,11 +653,12 @@ export default function TatamePage() {
         return eliminatedByWO ? null : thirdCandidate
       }
       if (podiumMaxRound < 2) return null
-      // Tenta a semifinal do campeão; se foi W.O. (BYE), tenta a do vice-campeão
       const champSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
+      // Se a semi do campeão foi qualquer W.O. — sem 3° lugar
+      if (champSemi?.isWO) return null
       const runnerUpId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
       const runnerUpSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === runnerUpId)
-      const semi = (!champSemi?.isWO ? champSemi : null) ?? (!runnerUpSemi?.isWO ? runnerUpSemi : null)
+      const semi = champSemi ?? (!runnerUpSemi?.isWO ? runnerUpSemi : null)
       if (!semi) return null
       const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
       return loserId ? podiumBracket.positions.find(p => p.id === loserId) ?? null : null

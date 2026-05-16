@@ -975,7 +975,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
       {secondPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
     </div>,
-    <div key="final-3" style={{
+    ...((!allMatchesDone || thirdPlaceReg) ? [<div key="final-3" style={{
       position: "absolute", left: centerX,
       top: finalCenterY + finalBoxH + 9,
       width: CENTER_W, height: finalBoxH,
@@ -985,7 +985,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     }}>
       <span style={{ fontSize: 7, color: "#cd7c2f", fontWeight: 600, lineHeight: 1.2 }}>3° Lugar</span>
       {thirdPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
-    </div>
+    </div>] : [])
   )
 
   // ── Placements ─────────────────────────────────────────────────────────────
