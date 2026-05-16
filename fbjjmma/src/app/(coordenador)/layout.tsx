@@ -1,12 +1,33 @@
 "use client"
 
-import { useSession, signOut } from "next-auth/react"
+import { useSession } from "next-auth/react"
+import { useRouter, usePathname } from "next/navigation"
 import { LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { ThemeLogo } from "@/components/ThemeLogo"
 
 export default function CoordenadorLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  async function handleSair() {
+    // Extrai tatameId da URL se estiver em /coordenador/[tatameId]
+    const match = pathname.match(/\/coordenador\/([^/]+)/)
+    const tatameId = match?.[1]
+    if (tatameId) {
+      const pin = sessionStorage.getItem(`tatame_pin_${tatameId}`) ?? ""
+      if (pin) {
+        // Encerra a operação do tatame antes de sair
+        await fetch(`/api/coordenador/tatame/${tatameId}`, {
+          method: "PATCH",
+          headers: { "x-tatame-pin": pin },
+        }).catch(() => {})
+        sessionStorage.removeItem(`tatame_pin_${tatameId}`)
+      }
+    }
+    router.push("/coordenador")
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--background)" }}>
@@ -30,15 +51,13 @@ export default function CoordenadorLayout({ children }: { children: React.ReactN
             </span>
           )}
           <ThemeToggle />
-          {session?.user && (
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="transition-colors hover:text-[#dc2626]"
-              style={{ color: "var(--muted)" }}
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            onClick={handleSair}
+            className="transition-colors hover:text-[#dc2626]"
+            style={{ color: "var(--muted)" }}
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </header>
       <main className="flex-1">{children}</main>
