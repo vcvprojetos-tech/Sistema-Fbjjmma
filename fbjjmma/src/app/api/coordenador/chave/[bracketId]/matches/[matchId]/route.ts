@@ -63,6 +63,43 @@ export async function PUT(
           data: { winnerId: match.position1Id, isWO: false, endedAt: new Date() },
         })
       }
+      // Chave de 3 atletas: se este solo é do atleta em espera no R1, cria R2/R3 se R1 já terminou
+      const totalPositionsForSolo = await prisma.bracketPosition.count({ where: { bracketId } })
+      if (totalPositionsForSolo === 3 && match.round === 1) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const matchAny3 = prisma.match as any
+        const r1Match = await prisma.match.findFirst({
+          where: { bracketId, round: 1, position2Id: { not: null }, endedAt: { not: null } },
+        })
+        if (r1Match) {
+          const r1LoserId = r1Match.winnerId === r1Match.position1Id ? r1Match.position2Id : r1Match.position1Id
+          if (isWO) {
+            // Atleta em espera eliminado: vencedor do R1 é campeão
+            if (match.position1Id) {
+              await prisma.bracketPosition.update({ where: { id: match.position1Id }, data: { isEliminated: true } })
+            }
+            await matchAny3.create({
+              data: { bracketId, round: 3, matchNumber: 1, position1Id: r1Match.winnerId!, position2Id: null,
+                      winnerId: r1Match.winnerId!, p1CheckedIn: true, endedAt: new Date() },
+            })
+            await finalizeBracket(bracketId)
+          } else if (r1Match.isWO && r1Match.winnerId) {
+            // R1 foi W.O. com perdedor já eliminado: final é vencedor R1 vs atleta em espera
+            await matchAny3.create({
+              data: { bracketId, round: 3, matchNumber: 1, position1Id: r1Match.winnerId,
+                      position2Id: match.position1Id, p1CheckedIn: true, p2CheckedIn: true },
+            })
+          } else {
+            // R1 normal: repescagem — perdedor R1 vs atleta em espera
+            await matchAny3.create({
+              data: { bracketId, round: 2, matchNumber: 1, position1Id: r1LoserId ?? null,
+                      position2Id: match.position1Id, p1CheckedIn: true, p2CheckedIn: true },
+            })
+          }
+        }
+        if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+        return NextResponse.json({ message: isWO ? "Atleta desclassificado." : "Campeão declarado." })
+      }
       // Propaga: pode haver rodadas seguintes (ex: solo criado por W.O. duplo no meio da chave)
       const finished = await propagateBracket(bracketId)
       if (finished) {
@@ -128,7 +165,6 @@ export async function PUT(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const matchAny = prisma.match as any
       if (match.round === 1) {
-        // Loser gets a second chance — do NOT mark as eliminated
         const thirdPosition = await prisma.bracketPosition.findFirst({
           where: {
             bracketId,
@@ -136,7 +172,7 @@ export async function PUT(
           },
         })
 
-        // Lê presença confirmada do atleta em espera ANTES de fechar a partida solo
+        // Verifica se o atleta em espera já teve o solo resolvido antes de R1 terminar
         const thirdSoloMatch = await prisma.match.findFirst({
           where: {
             bracketId,
@@ -145,78 +181,47 @@ export async function PUT(
             position2Id: null,
           },
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const thirdCheckedIn = (thirdSoloMatch as any)?.p1CheckedIn ?? false
 
-        // Fecha a partida solo de check-in do atleta em espera (R1 matchNumber 2)
-        // para que não apareça mais como luta pendente na tela do coordenador
-        await prisma.match.updateMany({
-          where: {
-            bracketId,
-            round: 1,
-            matchNumber: { not: match.matchNumber },
-            position2Id: null,
-            winnerId: null,
-            endedAt: null,
-          },
-          data: {
-            winnerId: thirdPosition!.id,
-            endedAt: new Date(),
-          },
-        })
+        const soloAlreadyEnded = !!(thirdSoloMatch?.endedAt)
+        const thirdAlreadyWO = soloAlreadyEnded && !!thirdSoloMatch?.isWO && !thirdSoloMatch?.winnerId
+        const thirdCheckedIn = soloAlreadyEnded && !thirdAlreadyWO
 
-        // Verifica se o atleta em espera já foi W.O.'d na partida solo de check-in
-        const thirdAlreadyWO = await prisma.match.findFirst({
-          where: {
-            bracketId,
-            position1Id: thirdPosition!.id,
-            position2Id: null,
-            isWO: true,
-            endedAt: { not: null },
-          },
-        })
-
-        if (isWO && loserId) {
-          // W.O. no R1 (ex: desclassificação por peso ou ausência): o perdedor está fora.
-          if (thirdAlreadyWO) {
-            // Atleta em espera também já foi W.O.'d: vencedor do R1 é campeão — cria R3 solo já finalizado
-            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+        if (soloAlreadyEnded) {
+          // Solo já resolvido antes do R1 terminar — cria R2/R3 imediatamente
+          if (isWO && loserId) {
+            if (thirdAlreadyWO) {
+              await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+              await matchAny.create({
+                data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null,
+                        winnerId: winnerId, p1CheckedIn: true, endedAt: new Date() },
+              })
+              await finalizeBracket(bracketId)
+            } else {
+              await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+              await matchAny.create({
+                data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: thirdPosition!.id,
+                        p1CheckedIn: true, p2CheckedIn: thirdCheckedIn },
+              })
+            }
+          } else if (thirdAlreadyWO) {
+            if (loserId) await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
             await matchAny.create({
               data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null,
                       winnerId: winnerId, p1CheckedIn: true, endedAt: new Date() },
             })
             await finalizeBracket(bracketId)
           } else {
-            // Atleta em espera está disponível: vai direto para a final contra o vencedor do R1
-            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
             await matchAny.create({
-              data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: thirdPosition!.id, p1CheckedIn: true },
+              data: { bracketId, round: 2, matchNumber: 1, position1Id: loserId ?? null,
+                      position2Id: thirdPosition!.id, p1CheckedIn: !!loserId, p2CheckedIn: thirdCheckedIn },
             })
           }
-        } else if (thirdAlreadyWO) {
-          // Resultado normal no R1, mas atleta em espera já foi W.O.'d:
-          // perdedor do R1 é eliminado, vencedor é campeão — cria R3 solo já finalizado
-          if (loserId) {
+        } else {
+          // Solo do atleta em espera ainda não tratado: aguarda coordenador confirmar/WO
+          // O handler isSoloMatch criará R2/R3 quando o atleta em espera for tratado
+          if (isWO && loserId) {
             await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
           }
-          await matchAny.create({
-            data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null,
-                    winnerId: winnerId, p1CheckedIn: true, endedAt: new Date() },
-          })
-          await finalizeBracket(bracketId)
-        } else {
-          // Resultado normal: perdedor do R1 tem segunda chance contra o atleta em espera
-          await matchAny.create({
-            data: {
-              bracketId,
-              round: 2,
-              matchNumber: 1,
-              position1Id: loserId ?? null,
-              position2Id: thirdPosition!.id,
-              p1CheckedIn: !!loserId,
-              p2CheckedIn: thirdCheckedIn,
-            },
-          })
         }
       } else if (match.round === 2) {
         // Loser of round 2 = 3rd place
