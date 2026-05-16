@@ -376,10 +376,8 @@ export default function PainelPage() {
         <div style={{ height: TOPBAR_H, marginBottom: TOPBAR_MB, backgroundColor: "#ffffff", borderBottom: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "space-between", padding: `0 ${OUTER_PAD_H}px` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <div style={{ width: 34, height: 34, flexShrink: 0, position: "relative", overflow: "visible" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-color.png" alt="FBJJMMA" style={{ width: 119, height: 119, objectFit: "contain", position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }} />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-color.png" alt="FBJJMMA" style={{ width: 34, height: 34, objectFit: "contain", transform: "scale(3.5)", transformOrigin: "center" }} />
             <div>
               <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 18 }}>{event.name}</div>
               <div style={{ color: "#64748b", fontSize: 12 }}>Painel de Chamadas — Área de Pesagem</div>
