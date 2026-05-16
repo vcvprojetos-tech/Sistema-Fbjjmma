@@ -14,20 +14,7 @@ export function ThemeLogo({ className, style }: ThemeLogoProps) {
 
   useEffect(() => setMounted(true), [])
 
-  const isDark = !mounted || resolvedTheme === "dark"
-  const src = isDark ? "/logo2.png" : "/logo-color.png"
+  const src = !mounted || resolvedTheme === "dark" ? "/logo2.png" : "/logo-color.png"
 
-  return (
-    <img
-      src={src}
-      alt="FBJJMMA"
-      className={className}
-      style={{
-        objectFit: "contain",
-        transform: isDark ? "none" : "scale(3.5)",
-        transformOrigin: "center",
-        ...style,
-      }}
-    />
-  )
+  return <img src={src} alt="FBJJMMA" className={className} style={{ objectFit: "contain", ...style }} />
 }
