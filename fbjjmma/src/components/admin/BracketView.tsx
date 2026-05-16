@@ -1,33 +1,6 @@
 ﻿"use client"
 
-import React, { useMemo, useRef, useState, useEffect } from "react"
-
-function useContainerScale(totalWidth: number, totalHeight: number) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    let rafId: number | null = null
-    const update = () => {
-      const w = el.clientWidth
-      if (w <= 0) {
-        rafId = requestAnimationFrame(update)
-        return
-      }
-      rafId = null
-      setScale(Math.min(1, w / totalWidth))
-    }
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => {
-      if (rafId !== null) cancelAnimationFrame(rafId)
-      ro.disconnect()
-    }
-  }, [totalWidth, totalHeight])
-  return { ref, scale }
-}
+import React, { useMemo } from "react"
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
 const ATHLETE_H = 44
@@ -474,15 +447,14 @@ function ThreeAthleteBracket({
   ].filter(Boolean).join(" | ")
 
   const loserLabel = m1LoserPos ? String(m1LoserPos.position) : "?"
-  const { ref: containerRef3, scale: scale3 } = useContainerScale(TOTAL_W, TOTAL_H)
-
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
+    <div style={{ marginBottom: 16, overflowX: "auto" }}>
+      <div style={{ width: TOTAL_W, margin: "0 auto", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)" }}>
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{bracketTitle}</p>
       </div>
-      <div ref={containerRef3} style={{ overflow: "hidden", width: "100%", height: Math.round(TOTAL_H * scale3) }}>
-        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H, transform: `scale(${scale3})`, transformOrigin: "top left" }}>
+      <div style={{ overflow: "hidden", width: TOTAL_W, height: TOTAL_H }}>
+        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={TOTAL_W} height={TOTAL_H}>
             {/* M1: pos1 & pos3 bracket lines */}
             <line x1={BLX} y1={pos1CY} x2={BLX} y2={pos3CY} stroke={LINE_COLOR} strokeWidth={1} />
@@ -566,6 +538,7 @@ function ThreeAthleteBracket({
         </div>
       )}
       <WOHistory matches={matches} posIdMap={posIdMap3} />
+      </div>
     </div>
   )
 }
@@ -924,7 +897,10 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const thirdPlaceReg = (() => {
     if (!finalMatch?.winnerId || maxRealRound < 2) return null
     const semiRound = maxRealRound - 1
-    const champSemi = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId && !m.isWO)
+    const champSemiAny = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
+    // Campeão ganhou por desclassificação ou falha de peso — sem 3° lugar
+    if (champSemiAny?.isWO && (champSemiAny.woType === "PESO" || champSemiAny.woType === "DESCLASSIFICACAO")) return null
+    const champSemi = champSemiAny && !champSemiAny.isWO ? champSemiAny : null
     const runnerUpSemi = realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
     const semi = champSemi ?? runnerUpSemi
     if (!semi) return null
@@ -1041,36 +1017,36 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
 
-  const { ref: containerRef, scale } = useContainerScale(totalWidth, totalHeight)
-
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
-      <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
-      </div>
-      <div ref={containerRef} style={{ overflow: "hidden", width: "100%", height: Math.round(totalHeight * scale) }}>
-        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
-            {lines}
-          </svg>
-          {cards}
+    <div style={{ marginBottom: 16, overflowX: "auto" }}>
+      <div style={{ width: totalWidth, margin: "0 auto", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)" }}>
+        <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
         </div>
-      </div>
-      {(primeiro || segundo) && (
-        <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--card-alt)", backgroundColor: "var(--card)", flexWrap: "wrap" }}>
-          {placements.map(({ label, color, reg }) => reg && (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              <span style={{ fontSize: 10, color: "var(--foreground)", fontWeight: 600 }}>{getRegName(reg)}</span>
-              {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
-              {label === "1° Lugar" && isAbsolute && reg.prizePix && (
-                <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
-              )}
-            </div>
-          ))}
+        <div style={{ overflow: "hidden", width: totalWidth, height: totalHeight }}>
+          <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80 }}>
+            <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
+              {lines}
+            </svg>
+            {cards}
+          </div>
         </div>
-      )}
-      <WOHistory matches={matches} posIdMap={posIdMap} />
+        {(primeiro || segundo) && (
+          <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--card-alt)", backgroundColor: "var(--card)", flexWrap: "wrap" }}>
+            {placements.map(({ label, color, reg }) => reg && (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
+                <span style={{ fontSize: 10, color: "var(--foreground)", fontWeight: 600 }}>{getRegName(reg)}</span>
+                {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
+                {label === "1° Lugar" && isAbsolute && reg.prizePix && (
+                  <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <WOHistory matches={matches} posIdMap={posIdMap} />
+      </div>
     </div>
   )
 }
