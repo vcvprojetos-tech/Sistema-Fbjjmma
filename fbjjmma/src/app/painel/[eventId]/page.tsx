@@ -133,15 +133,16 @@ function getGroupsForTatame(tatame: TatameInfo, visibleBrackets: Set<string>): B
 
   const sorted = [...tatame.brackets].sort((a, b) => {
     const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
-    const aOrd = statusOrder(a.status)
-    const bOrd = statusOrder(b.status)
-    if (aOrd !== bOrd) return aOrd - bOrd
-    // Dentro de EM_ANDAMENTO: chaves já exibidas no painel vêm antes das recém-iniciadas
+    // 1º: chaves que já apareceram no painel ficam fixas (nunca são deslocadas por novas)
     const aApp = bracketHasAppeared(a, visibleBrackets) ? 0 : 1
     const bApp = bracketHasAppeared(b, visibleBrackets) ? 0 : 1
     if (aApp !== bApp) return aApp - bApp
-    // Chaves aguardando: FIFO por startedAt; chaves já exibidas: ordem pelo número
-    if (aApp === 1 && bApp === 1) {
+    // 2º: dentro do mesmo grupo (apareceu/não-apareceu), EM_ANDAMENTO tem prioridade
+    const aOrd = statusOrder(a.status)
+    const bOrd = statusOrder(b.status)
+    if (aOrd !== bOrd) return aOrd - bOrd
+    // 3º: novas chaves (não aparecidas) entram por FIFO; aparecidas por número
+    if (aApp === 1) {
       const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0
       const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0
       return aTime - bTime
