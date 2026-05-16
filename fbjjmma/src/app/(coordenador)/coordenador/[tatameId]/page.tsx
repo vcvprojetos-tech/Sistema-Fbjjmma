@@ -995,7 +995,7 @@ export default function TatamePage() {
                             ↩ Desfazer
                           </button>
                         )}
-                        {bracket.status === "EM_ANDAMENTO" && !bracket.inPanel && (
+                        {bracket.status === "EM_ANDAMENTO" && !bracket.matches.some(m => (m.callTimes ?? []).some((c: CallTime) => c.call === 1 && c.pos === null)) && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ backgroundColor: "#450a0a", color: "#f87171", border: "1px solid #7f1d1d" }}>
                             Fora do Painel
                           </span>
