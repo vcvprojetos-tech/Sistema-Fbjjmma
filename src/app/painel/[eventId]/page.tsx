@@ -186,6 +186,7 @@ export default function PainelPage() {
   const [scaleX, setScaleX] = useState(1)
   const [scaleY, setScaleY] = useState(1)
   const triggeredRef = useRef<Set<string>>(new Set())
+  const prevVisibleRef = useRef<Map<string, Set<string>>>(new Map())
 
   useEffect(() => {
     const recalc = () => {
@@ -238,52 +239,40 @@ export default function PainelPage() {
       : data.tatames.slice(splitAt)
 
     for (const tatame of myTatames) {
+      const prev = prevVisibleRef.current.get(tatame.id) ?? new Set<string>()
       const visibleIds: string[] = []
       let slotsUsed = 0
+
       for (const b of sortedEM(tatame)) {
         const unchecked = countUnchecked(b)
         if (unchecked === 0) continue
         if (slotsUsed + unchecked > NAMES_PER_COL) break
         visibleIds.push(b.id)
         slotsUsed += unchecked
+
+        // Só registra 1ª chamada se a chave estava visível no ciclo anterior (evita flash de 1 ciclo)
+        if (prev.has(b.id)) {
+          for (const m of b.matches) {
+            const allCalls = (m.callTimes ?? []) as CallTime[]
+            if (allCalls.some(c => c.call === 1)) continue
+            if (triggeredRef.current.has(m.id)) continue
+            triggeredRef.current.add(m.id)
+            fetch(`/api/painel/${eventId}/chamada`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ matchId: m.id, bracketId: b.id }),
+            }).catch(() => {})
+          }
+        }
       }
+
+      prevVisibleRef.current.set(tatame.id, new Set(visibleIds))
+
       fetch(`/api/painel/${eventId}/visible`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tatameId: tatame.id, bracketIds: visibleIds }),
       }).catch(() => {})
-    }
-  }, [data, eventId, painelNum])
-
-  useEffect(() => {
-    if (!data) return
-    const total = data.tatames.length
-    const splitAt = total <= 4 ? total : Math.ceil(total / 2)
-    const myTatames = !painelNum
-      ? data.tatames
-      : painelNum === "1"
-      ? data.tatames.slice(0, splitAt)
-      : data.tatames.slice(splitAt)
-
-    for (const tatame of myTatames) {
-      let slotsUsed = 0
-      for (const b of sortedEM(tatame)) {
-        const unchecked = countUnchecked(b)
-        if (unchecked === 0) continue
-        if (slotsUsed + unchecked > NAMES_PER_COL) break
-        slotsUsed += unchecked
-        for (const m of b.matches) {
-          const allCalls = (m.callTimes ?? []) as CallTime[]
-          if (allCalls.some(c => c.call === 1)) continue
-          if (triggeredRef.current.has(m.id)) continue
-          triggeredRef.current.add(m.id)
-          fetch(`/api/painel/${eventId}/chamada`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ matchId: m.id, bracketId: b.id }),
-          }).catch(() => {})
-        }
-      }
     }
   }, [data, eventId, painelNum])
 
