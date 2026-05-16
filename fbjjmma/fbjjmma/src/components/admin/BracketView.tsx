@@ -16,7 +16,7 @@ function useContainerScale(totalWidth: number, totalHeight: number) {
         return
       }
       rafId = null
-      setScale(Math.min(1, w / totalWidth))
+      setScale(w / totalWidth)
     }
     update()
     const ro = new ResizeObserver(update)
