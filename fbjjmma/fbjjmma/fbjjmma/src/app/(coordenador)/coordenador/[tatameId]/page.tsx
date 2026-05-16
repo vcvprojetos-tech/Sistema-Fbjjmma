@@ -650,7 +650,7 @@ export default function TatamePage() {
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {bracket.status === "EM_ANDAMENTO" && !bracket.matches.some(m => (m.callTimes ?? []).some((c: CallTime) => c.call === 1)) && (
+                        {bracket.status === "EM_ANDAMENTO" && !bracket.matches.some(m => (m.callTimes ?? []).some((c: CallTime) => c.call === 1 && c.pos === null)) && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: "#450a0a", color: "#f87171" }}>
                             Fora do Painel
                           </span>
