@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 
 const AGE_LABELS: Record<string, string> = {
@@ -53,6 +53,7 @@ interface MatchInfo {
 }
 interface BracketInfo {
   id: string; bracketNumber: number; belt: string; isAbsolute: boolean; status: string
+  startedAt?: string | null
   weightCategory: { name: string; ageGroup: string; sex: string }
   matches: MatchInfo[]
 }
@@ -92,63 +93,66 @@ function getTeam(pos: MatchInfo["position1"]) {
   return pos?.registration?.team?.name ?? ""
 }
 
+function countUnchecked(b: BracketInfo): number {
+  let n = 0
+  for (const m of b.matches) {
+    if (!m.position1) continue
+    if (getName(m.position1) !== "BYE" && !m.p1CheckedIn) n++
+    if (m.position2 && getName(m.position2) !== "BYE" && !m.p2CheckedIn) n++
+  }
+  return n
+}
+
+function sortedEM(tatame: TatameInfo): BracketInfo[] {
+  return [...tatame.brackets]
+    .filter(b => b.status === "EM_ANDAMENTO")
+    .sort((a, b) => {
+      const ta = a.startedAt ? new Date(a.startedAt).getTime() : a.bracketNumber * 1e10
+      const tb = b.startedAt ? new Date(b.startedAt).getTime() : b.bracketNumber * 1e10
+      return ta - tb || a.bracketNumber - b.bracketNumber
+    })
+}
+
 function getAthletes(tatame: TatameInfo): AthleteEntry[] {
   const entries: AthleteEntry[] = []
   const seen = new Set<string>()
+  let slotsUsed = 0
 
-  // EM_ANDAMENTO antes de DESIGNADA, depois por bracketNumber
-  const sorted = [...tatame.brackets].sort((a, b) => {
-    const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
-    return statusOrder(a.status) - statusOrder(b.status) || a.bracketNumber - b.bracketNumber
-  })
-
-  for (const b of sorted) {
+  for (const b of sortedEM(tatame)) {
     const category = catLabel(b)
-    for (const m of b.matches) {
-      if (m.endedAt) continue
-      if (!m.position1) continue
+    const bracketEntries: AthleteEntry[] = []
 
+    for (const m of b.matches) {
+      if (!m.position1) continue
       const p1Name = getName(m.position1)
-      if (p1Name !== "BYE") {
+      if (p1Name !== "BYE" && !m.p1CheckedIn) {
         const key = `${m.id}-p1`
         if (!seen.has(key)) {
-          seen.add(key)
-          const allCalls = m.callTimes ?? []
-          const p1Calls = allCalls.filter(c => c.pos === "p1" || !c.pos)
-          entries.push({
-            key, name: p1Name,
-            team: getTeam(m.position1),
-            category,
-            checkedIn: m.p1CheckedIn,
-            calls: p1Calls.length,
-            isWO: m.isWO && !!m.endedAt,
-          })
+          const calls = (m.callTimes ?? []).filter(c => c.pos === "p1" || !c.pos)
+          bracketEntries.push({ key, name: p1Name, team: getTeam(m.position1), category, checkedIn: false, calls: calls.length, isWO: false })
         }
       }
-
       if (m.position2) {
         const p2Name = getName(m.position2)
-        if (p2Name !== "BYE") {
+        if (p2Name !== "BYE" && !m.p2CheckedIn) {
           const key = `${m.id}-p2`
           if (!seen.has(key)) {
-            seen.add(key)
-            const allCalls = m.callTimes ?? []
-            const p2Calls = allCalls.filter(c => c.pos === "p2")
-            entries.push({
-              key, name: p2Name,
-              team: getTeam(m.position2),
-              category,
-              checkedIn: m.p2CheckedIn,
-              calls: p2Calls.length,
-              isWO: m.isWO && !!m.endedAt,
-            })
+            const calls = (m.callTimes ?? []).filter(c => c.pos === "p2")
+            bracketEntries.push({ key, name: p2Name, team: getTeam(m.position2), category, checkedIn: false, calls: calls.length, isWO: false })
           }
         }
       }
     }
+
+    if (bracketEntries.length === 0) continue // todos conferidos, próxima chave
+    if (slotsUsed + bracketEntries.length > NAMES_PER_COL) break // sem espaço, para a fila
+
+    for (const e of bracketEntries) seen.add(e.key)
+    entries.push(...bracketEntries)
+    slotsUsed += bracketEntries.length
   }
 
-  return entries.filter(e => !e.checkedIn && !e.isWO)
+  return entries
 }
 
 function rowBg(calls: number) {
@@ -181,6 +185,7 @@ export default function PainelPage() {
   const [showOverlay, setShowOverlay] = useState(true)
   const [scaleX, setScaleX] = useState(1)
   const [scaleY, setScaleY] = useState(1)
+  const triggeredRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     const recalc = () => {
@@ -234,26 +239,51 @@ export default function PainelPage() {
 
     for (const tatame of myTatames) {
       const visibleIds: string[] = []
-      for (const b of tatame.brackets) {
-        if (b.status !== "EM_ANDAMENTO") continue
-        const hasUnchecked = b.matches.some(m => {
-          if (m.endedAt) return false
-          if (!m.position1) return false
-          const p1Name = getName(m.position1)
-          if (p1Name !== "BYE" && !m.p1CheckedIn) return true
-          if (m.position2) {
-            const p2Name = getName(m.position2)
-            if (p2Name !== "BYE" && !m.p2CheckedIn) return true
-          }
-          return false
-        })
-        if (hasUnchecked) visibleIds.push(b.id)
+      let slotsUsed = 0
+      for (const b of sortedEM(tatame)) {
+        const unchecked = countUnchecked(b)
+        if (unchecked === 0) continue
+        if (slotsUsed + unchecked > NAMES_PER_COL) break
+        visibleIds.push(b.id)
+        slotsUsed += unchecked
       }
       fetch(`/api/painel/${eventId}/visible`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tatameId: tatame.id, bracketIds: visibleIds }),
       }).catch(() => {})
+    }
+  }, [data, eventId, painelNum])
+
+  useEffect(() => {
+    if (!data) return
+    const total = data.tatames.length
+    const splitAt = total <= 4 ? total : Math.ceil(total / 2)
+    const myTatames = !painelNum
+      ? data.tatames
+      : painelNum === "1"
+      ? data.tatames.slice(0, splitAt)
+      : data.tatames.slice(splitAt)
+
+    for (const tatame of myTatames) {
+      let slotsUsed = 0
+      for (const b of sortedEM(tatame)) {
+        const unchecked = countUnchecked(b)
+        if (unchecked === 0) continue
+        if (slotsUsed + unchecked > NAMES_PER_COL) break
+        slotsUsed += unchecked
+        for (const m of b.matches) {
+          const allCalls = (m.callTimes ?? []) as CallTime[]
+          if (allCalls.some(c => c.call === 1)) continue
+          if (triggeredRef.current.has(m.id)) continue
+          triggeredRef.current.add(m.id)
+          fetch(`/api/painel/${eventId}/chamada`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ matchId: m.id, bracketId: b.id }),
+          }).catch(() => {})
+        }
+      }
     }
   }, [data, eventId, painelNum])
 
