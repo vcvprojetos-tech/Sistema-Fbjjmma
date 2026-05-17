@@ -691,8 +691,15 @@ export default function TatamePage() {
           ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
           : null)
     : null
-  // 2° lugar: perdedor da final (só suprime se não há campeão ou se a final foi solo)
+  // 2° lugar: perdedor da final.
+  // Suprimido se: não há campeão, a final foi solo (position2Id=null), a final foi W.O.,
+  // ou podiumLastMatch não é a partida final de facto (round máximo considerando todas as partidas).
+  const allBracketMatchesMaxRound = (podiumBracket?.matches ?? []).length > 0
+    ? Math.max(...(podiumBracket?.matches ?? []).map(m => m.round))
+    : 0
   const runnerUp = champion && podiumLastMatch && podiumLastMatch.winnerId && podiumLastMatch.position2Id
+    && podiumLastMatch.round === allBracketMatchesMaxRound
+    && !podiumLastMatch.isWO
     ? podiumBracket!.positions.find(p =>
         p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
