@@ -628,9 +628,9 @@ export default function TatamePage() {
           ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
           : null)
     : null
-  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
-  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch && !podiumLastMatch.isWO
-    ? podiumBracket.positions.find(p =>
+  // 2° lugar: perdedor da final (só suprime se não há campeão ou se a final foi solo)
+  const runnerUp = champion && podiumLastMatch && podiumLastMatch.winnerId && podiumLastMatch.position2Id
+    ? podiumBracket!.positions.find(p =>
         p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
     : null
