@@ -907,16 +907,20 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
   // Final center: 1° Lugar / 2° Lugar boxes — only show when ALL matches are complete
   const finalBoxH = 24
   const allMatchesDone = matches.length > 0 && matches.every(m => m.winnerId || (m.isWO && m.endedAt))
-  // Partida final = a de maior rodada com dois atletas reais (exclui W.O. fantasma com position2Id null)
+  // Partida final = a de maior rodada com dois atletas reais (exclui partidas solo com position2Id null)
   const realMatches = matches.filter(m => m.position1Id !== null && m.position2Id !== null)
+  // Partida solo: chave com único atleta (position2Id = null, winnerId definido)
+  const soloMatchWon = realMatches.length === 0
+    ? matches.find(m => m.position1Id && !m.position2Id && m.winnerId)
+    : null
   const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
   const finalMatch = allMatchesDone
     ? realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1)
     : undefined
-  const finalWinnerId = finalMatch?.winnerId ?? null
+  const finalWinnerId = finalMatch?.winnerId ?? soloMatchWon?.winnerId ?? null
   const firstPlaceReg = finalWinnerId
     ? posIdMap.get(finalWinnerId)?.registration ?? null
-    : null
+    : (positions.length === 1 ? positions[0].registration : null)
   const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO)
     ? (finalWinnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id)
     : null
@@ -1031,6 +1035,12 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
 
     const loserId = finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
     if (loserId) segundo = posMap2.get(loserId)?.registration ?? null
+  } else if (soloMatchWon?.winnerId) {
+    // Chave solo: único atleta confirmou presença e é o campeão
+    primeiro = posMap2.get(soloMatchWon.winnerId)?.registration ?? null
+  } else if (positions.length === 1 && positions[0].registration) {
+    // Chave solo sem partida registrada: o único atleta é o campeão por padrão
+    primeiro = positions[0].registration
   }
 
   const placements = [
