@@ -132,11 +132,17 @@ function bracketHasAppeared(b: BracketInfo, visibleBrackets: Set<string>): boole
 function getGroupsForTatame(tatame: TatameInfo, visibleBrackets: Set<string>): BracketGroup[] {
   const groups: BracketGroup[] = []
 
+  // Combina o tracking local (ref) com o estado persistido no servidor (panelBracketIds).
+  // Isso garante que mesmo no primeiro render (antes dos effects rodarem), chaves já admitidas
+  // pelo painel — salvas no DB — sejam tratadas como "aparecidas" e não sejam deslocadas.
+  const appeared = new Set<string>(visibleBrackets)
+  for (const id of tatame.panelBracketIds) appeared.add(id)
+
   const sorted = [...tatame.brackets].sort((a, b) => {
     const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
     // 1º: chaves que já apareceram no painel ficam fixas (nunca são deslocadas por novas)
-    const aApp = bracketHasAppeared(a, visibleBrackets) ? 0 : 1
-    const bApp = bracketHasAppeared(b, visibleBrackets) ? 0 : 1
+    const aApp = bracketHasAppeared(a, appeared) ? 0 : 1
+    const bApp = bracketHasAppeared(b, appeared) ? 0 : 1
     if (aApp !== bApp) return aApp - bApp
     // 2º: dentro do mesmo grupo (apareceu/não-apareceu), EM_ANDAMENTO tem prioridade
     const aOrd = statusOrder(a.status)
