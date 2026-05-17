@@ -173,11 +173,12 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
           placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
       }
     } else {
+      const semiRound = maxRound - 1
       const champSemi = realMatches.find(
-        (m) => m.round === maxRound - 1 && m.winnerId === finalMatch.winnerId
+        (m) => m.round === semiRound && m.winnerId === finalMatch.winnerId
       )
-      // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
-      if (champSemi && !champSemi.isWO) {
+      const semiHadWO = champSemi?.isWO || (!champSemi && matches.some(m => m.round === semiRound && m.isWO))
+      if (champSemi && !semiHadWO) {
         const loserId =
           champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
         const loserPos = positions.find((p) => p.id === loserId)
@@ -498,7 +499,9 @@ export default function PremiacaoPage() {
     {/* Overlay de entrada em tela cheia */}
     {showOverlay && (
       <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <ThemeLogo style={{ width: 260, height: "auto", marginBottom: 24 }} />
+        <div style={{ width: 80, height: 80, overflow: "hidden", marginBottom: 24 }}>
+          <ThemeLogo className="w-full h-full" />
+        </div>
         <div style={{ color: "var(--foreground)", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>Premiação</div>
         <div style={{ color: "var(--muted)", fontSize: "0.95rem", marginBottom: 32 }}>{eventName}</div>
         <button

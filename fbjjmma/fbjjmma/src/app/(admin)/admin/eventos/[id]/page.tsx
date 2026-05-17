@@ -67,6 +67,7 @@ type Tab =
 interface Event {
   id: string
   name: string
+  status: string
   typeId: string
   state: string
   city: string
@@ -85,6 +86,7 @@ interface Event {
   isVisible: boolean
   banner: string | null
   schedule: string | null
+  pesoDoc: string | null
   about: string | null
   paymentInfo: string | null
   prize: string | null
@@ -318,6 +320,27 @@ export default function EventoDetailPage() {
   const [event, setEvent] = useState<Event | null>(null)
   const [eventLoading, setEventLoading] = useState(true)
 
+  async function removeDoc(field: "schedule" | "pesoDoc") {
+    if (!event) return
+    const fd = new FormData()
+    fd.append(field === "schedule" ? "removeSchedule" : "removePesoDoc", "true")
+    fd.append("name", event.name); fd.append("typeId", event.typeId)
+    fd.append("state", event.state); fd.append("city", event.city)
+    fd.append("location", event.location); fd.append("date", event.date)
+    fd.append("registrationDeadline", event.registrationDeadline)
+    fd.append("correctionDeadline", event.correctionDeadline)
+    fd.append("paymentDeadline", event.paymentDeadline)
+    fd.append("checkinRelease", event.checkinRelease)
+    fd.append("bracketRelease", event.bracketRelease)
+    fd.append("weightTableId", event.weightTableId)
+    fd.append("value", String(event.value))
+    fd.append("hasAbsolute", String(event.hasAbsolute))
+    fd.append("registrationOpen", String(event.registrationOpen))
+    fd.append("isVisible", String(event.isVisible))
+    const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+    if (res.ok) { const updated = await res.json(); setEvent(updated) }
+  }
+
   // Valores tab
   const [valoresData, setValoresData] = useState<CategoryValue[]>([])
   const [valoresLoading, setValoresLoading] = useState(false)
@@ -358,7 +381,9 @@ export default function EventoDetailPage() {
   const [novoTatameNome, setNovoTatameNome] = useState("")
   const [novoTatameSaving, setNovoTatameSaving] = useState(false)
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
+  const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
+  const [tatamesChaveTab, setTatamesChaveTab] = useState<"pendentes" | "finalizadas" | "premiadas">("pendentes")
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedBrackets, setSelectedBrackets] = useState<Set<string>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
@@ -368,6 +393,42 @@ export default function EventoDetailPage() {
   const [resultadoLoading, setResultadoLoading] = useState(false)
   const [resultadoEdits, setResultadoEdits] = useState<Record<string, Partial<Registration>>>({})
   const [resultadoSaving, setResultadoSaving] = useState(false)
+
+  // Finalizar evento
+  const [finalizarLoading, setFinalizarLoading] = useState(false)
+
+  const finalizarEvento = useCallback(async () => {
+    if (!confirm("Finalizar este evento? Coordenadores não poderão mais criar tatames para ele.")) return
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ENCERRADO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
+
+  const reabrirEvento = useCallback(async () => {
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "EM_ANDAMENTO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
 
   // Modal inscrição
   const [inscreverOpen, setInscreverOpen] = useState(false)
@@ -683,6 +744,19 @@ export default function EventoDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, loadResultado])
 
+  // Atualiza status de conexão dos tatames a cada 30s enquanto a aba está ativa
+  useEffect(() => {
+    if (tab !== "tatames") return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/admin/eventos/${id}/tatames`)
+        const data = await res.json()
+        if (Array.isArray(data)) setTatames(data)
+      } catch { /* silencioso */ }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [tab, id])
+
   useEffect(() => {
     // Reseta filtros do FiltersBar e os aplicados sempre que muda de aba
     setFilterResetKey(k => k + 1)
@@ -796,9 +870,9 @@ export default function EventoDetailPage() {
   }
 
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-    PENDENTE: { bg: "#92400e30", text: "#fbbf24" },
-    APROVADO: { bg: "#14532d30", text: "#4ade80" },
-    CANCELADO: { bg: "#7f1d1d30", text: "#f87171" },
+    PENDENTE: { bg: "#92400e", text: "#ffffff" },
+    APROVADO: { bg: "#166534", text: "#ffffff" },
+    CANCELADO: { bg: "#dc2626", text: "#ffffff" },
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -841,23 +915,68 @@ export default function EventoDetailPage() {
         physicalIntegrity: event.physicalIntegrity || "",
         banner: event.banner || "",
         schedule: event.schedule || "",
+        pesoDoc: event.pesoDoc || "",
       }
     : undefined
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Link href="/admin/eventos">
-          <Button variant="ghost" size="icon">
+          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
+          </button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-            {eventLoading ? "Carregando..." : event?.name || "Evento"}
-          </h1>
-          <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="admin-page-title">
+              {eventLoading ? "Carregando..." : event?.name || "Evento"}
+            </p>
+            {event?.status === "ENCERRADO" && (
+              <span className="admin-badge admin-badge-red">ENCERRADO</span>
+            )}
+          </div>
+          <p className="admin-page-subtitle">Gerenciamento do evento</p>
+        </div>
+        {/* Botões de consulta rápida + ação de evento */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => event?.schedule && setDocModal({ title: "📅 Cronograma do Evento", url: event.schedule })}
+            disabled={!event?.schedule}
+            className="admin-btn admin-btn-ghost text-xs"
+            style={{ opacity: event?.schedule ? 1 : 0.45, cursor: event?.schedule ? "pointer" : "not-allowed" }}
+          >
+            📅 Cronograma
+          </button>
+          <button
+            onClick={() => event?.pesoDoc && setDocModal({ title: "⚖️ Tabela de Peso", url: event.pesoDoc })}
+            disabled={!event?.pesoDoc}
+            className="admin-btn admin-btn-ghost text-xs"
+            style={{ opacity: event?.pesoDoc ? 1 : 0.45, cursor: event?.pesoDoc ? "pointer" : "not-allowed" }}
+          >
+            ⚖️ Tabela de Peso
+          </button>
+          {event && (
+            event.status === "ENCERRADO" ? (
+              <button
+                onClick={reabrirEvento}
+                disabled={finalizarLoading}
+                className="admin-btn admin-btn-ghost text-xs"
+              >
+                {finalizarLoading ? "..." : "Reabrir Evento"}
+              </button>
+            ) : (
+              <button
+                onClick={finalizarEvento}
+                disabled={finalizarLoading}
+                className="admin-btn text-xs font-bold"
+                style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
+              >
+                {finalizarLoading ? "..." : "Finalizar Evento"}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -1213,13 +1332,13 @@ export default function EventoDetailPage() {
                             <p className="text-xs text-[#6b7280]">Total na planilha</p>
                             <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>{importResult.total}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#14532d30" }}>
-                            <p className="text-xs text-[#4ade80]">Importados</p>
-                            <p className="text-xl font-bold text-[#4ade80]">{importResult.importados}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#166534" }}>
+                            <p className="text-xs text-[#86efac]">Importados</p>
+                            <p className="text-xl font-bold text-[#86efac]">{importResult.importados}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#7f1d1d30" }}>
-                            <p className="text-xs text-[#f87171]">Erros</p>
-                            <p className="text-xl font-bold text-[#f87171]">{importResult.erros.length}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#dc2626" }}>
+                            <p className="text-xs text-[#fca5a5]">Erros</p>
+                            <p className="text-xl font-bold text-[#fca5a5]">{importResult.erros.length}</p>
                           </div>
                         </div>
                         {importResult.erros.length > 0 && (
@@ -1510,11 +1629,11 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE: { bg: "#7f1d1d30", text: "#dc2626" },
-                  DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
-                  EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                  FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
-                  PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
+                  PENDENTE: { bg: "#dc2626", text: "#ffffff" },
+                  DESIGNADA: { bg: "#1e3a8a", text: "#ffffff" },
+                  EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
+                  FINALIZADA: { bg: "#166534", text: "#ffffff" },
+                  PREMIADA: { bg: "#5b21b6", text: "#ffffff" },
                 }
                 const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
@@ -1548,8 +1667,8 @@ export default function EventoDetailPage() {
                     const totalAthletes = group.reduce((s, b) => s + b.positions.length, 0)
                     const groupTatameId = group[0].tatameId || ""
                     rendered.push(
-                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
-                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "#1a1000" }}>
+                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#d97706" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--card-alt)" }}>
                           <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
                           <button
                             className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
@@ -1850,49 +1969,72 @@ export default function EventoDetailPage() {
             {tatames.length === 0 ? (
               <p className="text-sm text-[#6b7280] py-4">Nenhum coordenador conectado. Os tatames aparecem aqui quando os coordenadores acessam a tela de controle.</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
                   const emEspera = !operador
+                  // Cores adaptadas ao fundo do card
+                  const cardBg     = emEspera ? "#fef9c3" : "#dcfce7"
+                  const cardBorder = emEspera ? "#eab308" : "#16a34a"
+                  const titleColor = emEspera ? "#713f12" : "#14532d"
+                  const baseText   = emEspera ? "#78350f" : "#166534"
+                  const aguardandoColor  = "#1d4ed8"
+                  const emAndamentoColor = emEspera ? "#92400e" : "#ca8a04"
+                  const finalizadasColor = emEspera ? "#166534" : "#14532d"
+                  const operandoColor    = emEspera ? "#166534" : "#14532d"
+                  const reconexaoColor   = emEspera ? "#92400e" : "#ca8a04"
                   return (
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-4 space-y-3"
-                      style={{
-                        borderColor: emEspera ? "#78350f40" : "#16a34a40",
-                        backgroundColor: emEspera ? "#1c1200" : "#0d1f0d",
-                      }}
+                      style={{ borderColor: cardBorder, backgroundColor: cardBg }}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">{tatame.name}</span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          {(() => {
+                            const dashIdx = tatame.name.lastIndexOf(" - ")
+                            const tataLabel = dashIdx >= 0 ? tatame.name.slice(dashIdx + 3) : tatame.name
+                            const prefix = dashIdx >= 0 ? tatame.name.slice(0, dashIdx) : null
+                            return (
+                              <>
+                                {prefix && <span className="text-[10px] block truncate" style={{ color: "#6b7280" }}>{prefix}</span>}
+                                <span className="font-semibold block" style={{ color: titleColor }}>{tataLabel}</span>
+                              </>
+                            )
+                          })()}
+                        </div>
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                           style={{
-                            backgroundColor: emEspera ? "#78350f40" : "#14532d40",
-                            color: emEspera ? "#fbbf24" : "#4ade80",
+                            backgroundColor: emEspera ? "#ca8a04" : "#16a34a",
+                            color: "#ffffff",
                           }}
                         >
                           {emEspera ? "AGUARDANDO" : "ATIVO"}
                         </span>
                       </div>
-                      <div className="text-xs text-[#6b7280] space-y-1">
+                      <div className="text-xs space-y-1" style={{ color: baseText }}>
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
-                        <p style={{ color: "#60a5fa" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
-                        <p style={{ color: "#fbbf24" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
-                        <p style={{ color: "#4ade80" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
+                        <p style={{ color: aguardandoColor }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
+                        <p style={{ color: emAndamentoColor }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
+                        <p style={{ color: finalizadasColor }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
                         {operador ? (
-                          <p className="text-[#4ade80]">
+                          <p style={{ color: operandoColor }}>
                             Operando: {operador.user.name} desde{" "}
                             {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         ) : (
-                          <p className="text-[#fbbf24]">Aguardando reconexão...</p>
+                          <p style={{ color: reconexaoColor }}>Aguardando reconexão...</p>
                         )}
                       </div>
                       <div className="flex justify-end">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-[#dc2626]" onClick={() => excluirTatame(tatame.id)}>
+                        <button
+                          className="h-8 w-8 p-0 flex items-center justify-center rounded hover:text-[#dc2626] transition-colors"
+                          style={{ color: baseText, backgroundColor: "transparent", border: "none" }}
+                          onClick={() => excluirTatame(tatame.id)}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   )
@@ -1911,11 +2053,11 @@ export default function EventoDetailPage() {
             </div>
             {/* Barra de ações em lote */}
             {selectionMode && selectedBrackets.size > 0 && (
-              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#60a5fa40", backgroundColor: "#0d1a2e" }}>
-                <span className="text-xs text-[#60a5fa] font-semibold">{selectedBrackets.size} selecionada(s)</span>
+              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <span className="text-xs font-semibold" style={{ color: "#3b82f6" }}>{selectedBrackets.size} selecionada(s)</span>
                 <select
                   className="text-xs rounded border px-2 py-1"
-                  style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
+                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)" }}
                   defaultValue=""
                   onChange={(e) => { if (e.target.value !== "") { bulkAtribuir(e.target.value === "__none__" ? null : e.target.value); e.target.value = "" } }}
                   disabled={bulkLoading}
@@ -1924,10 +2066,10 @@ export default function EventoDetailPage() {
                   <option value="__none__">Sem tatame</option>
                   {tatames.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
-                <Button size="sm" variant="outline" onClick={bulkReiniciar} disabled={bulkLoading} className="text-[#fbbf24] border-[#fbbf2440] hover:bg-[#fbbf2410]">
+                <Button size="sm" onClick={bulkReiniciar} disabled={bulkLoading} style={{ backgroundColor: "#d97706", color: "#ffffff", border: "none" }}>
                   <RotateCcw className="h-3 w-3 mr-1" /> Reiniciar
                 </Button>
-                <Button size="sm" variant="outline" onClick={bulkExcluir} disabled={bulkLoading} className="text-[#f87171] border-[#f8717140] hover:bg-[#f8717110]">
+                <Button size="sm" onClick={bulkExcluir} disabled={bulkLoading} style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none" }}>
                   <Trash2 className="h-3 w-3 mr-1" /> Excluir
                 </Button>
               </div>
@@ -1951,18 +2093,17 @@ export default function EventoDetailPage() {
               <p className="text-[#6b7280] text-sm py-4">Carregando chaves...</p>
             ) : brackets.length === 0 ? (
               <p className="text-[#6b7280] text-sm py-4">Nenhuma chave gerada. Vá até a aba CHAVES e clique em "Gerar Chaves".</p>
-            ) : tatamesFilteredBrackets.length === 0 ? (
-              <p className="text-[#6b7280] text-sm py-4">Nenhuma chave encontrada com os filtros aplicados.</p>
             ) : (() => {
               const pendentes = tatamesFilteredBrackets.filter(b => b.status !== "FINALIZADA" && b.status !== "PREMIADA")
-              const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
+              const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA")
+              const premiadas = tatamesFilteredBrackets.filter(b => b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#7f1d1d30",  text: "#dc2626" },
-                DESIGNADA:    { bg: "#1e3a5f40", text: "#60a5fa" },
-                EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
-                FINALIZADA:   { bg: "#14532d40", text: "#4ade80" },
-                PREMIADA:     { bg: "#4a1d9640", text: "#a78bfa" },
+                PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
+                DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
+                EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
+                FINALIZADA:   { bg: "#166534", text: "#ffffff" },
+                PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
               }
 
               const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [
@@ -2026,7 +2167,7 @@ export default function EventoDetailPage() {
                   } else if (!bracket.bracketGroupId) {
                     const catLabel = `${getBracketLabel(bracket)} | Chave: ${bracket.bracketNumber}`
                     const isSoloWO = bracket.positions.length === 1 && bracket.matches.some(m => m.position1Id !== null && m.position2Id === null && m.isWO)
-                    const sc = isSoloWO ? { bg: "#78350f40", text: "#f97316" } : (statusColors[bracket.status] || statusColors.PENDENTE)
+                    const sc = isSoloWO ? { bg: "#92400e", text: "#ffffff" } : (statusColors[bracket.status] || statusColors.PENDENTE)
                     const statusLabel = isSoloWO ? "W.O." : bracket.status
                     rows.push(
                       <div
@@ -2084,52 +2225,65 @@ export default function EventoDetailPage() {
                 return rows
               }
 
-              // IDs de todas as pendentes selecionáveis
-              const allPendentesIds = pendentes.flatMap(b =>
+              const tabList = tatamesChaveTab === "pendentes" ? pendentes
+                : tatamesChaveTab === "finalizadas" ? finalizadas
+                : premiadas
+              const isSelectable = tatamesChaveTab === "pendentes"
+
+              const allTabIds = tabList.flatMap(b =>
                 b.bracketGroupId && !b.isGrandFinal ? [] : [b.id]
               ).concat(
-                pendentes.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
-                  const group = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
+                tabList.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
+                  const group = tabList.filter(x => x.bracketGroupId === b.bracketGroupId)
                   const gf = brackets.find(x => x.bracketGroupId === b.bracketGroupId && x.isGrandFinal)
                   return [...group, ...(gf ? [gf] : [])].map(x => x.id)
                 })
               )
-              const allPendentesSelected = allPendentesIds.length > 0 && allPendentesIds.every(bid => selectedBrackets.has(bid))
+              const allTabSelected = allTabIds.length > 0 && allTabIds.every(bid => selectedBrackets.has(bid))
 
               return (
-                <div className="space-y-4">
-                  {pendentes.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Pendentes</span>
-                        <span className="text-xs text-[#6b7280]">({pendentes.length})</span>
-                        {selectionMode && (
-                          <button
-                            className="text-xs text-[#60a5fa] hover:text-white transition-colors ml-1"
-                            onClick={() => setSelectedBrackets(prev => {
-                              const next = new Set(prev)
-                              allPendentesIds.forEach(bid => allPendentesSelected ? next.delete(bid) : next.add(bid))
-                              return next
-                            })}
-                          >
-                            {allPendentesSelected ? "Desmarcar todas" : "Selecionar todas"}
-                          </button>
-                        )}
-                      </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {renderGroupedList(pendentes, true)}
-                      </div>
-                    </div>
-                  )}
-                  {finalizadas.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>Finalizadas</span>
-                        <span className="text-xs text-[#6b7280]">({finalizadas.length})</span>
-                      </div>
-                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {renderGroupedList(finalizadas, false)}
-                      </div>
+                <div className="space-y-0">
+                  {/* Abas */}
+                  <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
+                    {([
+                      { key: "pendentes", label: "Pendentes", count: pendentes.length, color: "#b45309" },
+                      { key: "finalizadas", label: "Finalizadas", count: finalizadas.length, color: "#166534" },
+                      { key: "premiadas", label: "Premiadas", count: premiadas.length, color: "#5b21b6" },
+                    ] as const).map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => setTatamesChaveTab(t.key)}
+                        className="px-4 py-2.5 text-xs font-bold transition-colors whitespace-nowrap"
+                        style={{
+                          color: tatamesChaveTab === t.key ? t.color : "var(--muted)",
+                          borderBottom: tatamesChaveTab === t.key ? `2px solid ${t.color}` : "2px solid transparent",
+                          backgroundColor: "transparent",
+                        }}
+                      >
+                        {t.label} ({t.count})
+                      </button>
+                    ))}
+                    {selectionMode && isSelectable && tabList.length > 0 && (
+                      <button
+                        className="ml-auto px-4 py-2.5 text-xs text-[#60a5fa] hover:text-white transition-colors"
+                        onClick={() => setSelectedBrackets(prev => {
+                          const next = new Set(prev)
+                          allTabIds.forEach(bid => allTabSelected ? next.delete(bid) : next.add(bid))
+                          return next
+                        })}
+                      >
+                        {allTabSelected ? "Desmarcar todas" : "Selecionar todas"}
+                      </button>
+                    )}
+                  </div>
+                  {/* Conteúdo */}
+                  {tatamesFilteredBrackets.length === 0 ? (
+                    <p className="text-[#6b7280] text-sm py-4">Nenhuma chave encontrada com os filtros aplicados.</p>
+                  ) : tabList.length === 0 ? (
+                    <p className="text-[#6b7280] text-sm py-4">Nenhuma chave {tatamesChaveTab}.</p>
+                  ) : (
+                    <div className="rounded-b-lg border border-t-0 overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      {renderGroupedList(tabList, isSelectable)}
                     </div>
                   )}
                 </div>
@@ -2141,98 +2295,190 @@ export default function EventoDetailPage() {
 
       {/* TAB: OPERAÇÕES */}
       {tab === "operacoes" && (
-        <div className="space-y-6">
+        <div style={{ margin: "-1.5rem -1.5rem -1.5rem", padding: "1.5rem", backgroundColor: "var(--card-alt)", minHeight: 400 }}>
+          <div className="space-y-4 max-w-3xl">
 
           {/* Painel de Chamadas */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>📺 Painel de Chamadas</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <a href={`/painel/${id}?painel=1`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#dc2626" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#dc2626", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Abrir Painel 1 (1ª metade)
               </a>
               <a href={`/painel/${id}?painel=2`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
-                style={{ backgroundColor: "#b91c1c" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#dc2626", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Abrir Painel 2 (2ª metade)
               </a>
               <a href={`/painel/${id}`} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
-                style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#374151", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Painel Completo
               </a>
             </div>
           </div>
 
           {/* Painel de Premiação */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Painel de Premiação</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>🏆 Painel de Premiação</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <a href={`/painel-premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ backgroundColor: "#92400e" }}>
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#5b21b6", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
                 Abrir Painel de Premiação
               </a>
             </div>
           </div>
 
           {/* Backup das Chaves Finalizadas */}
-          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-semibold text-sm">Backup das Chaves Finalizadas</p>
-                <p className="text-[#6b7280] text-xs mt-0.5">
-                  Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
-                </p>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                  style={{ backgroundColor: "#0f766e" }}>
-                  <Download className="w-4 h-4" />
-                  Ver / Imprimir Chaves
-                </a>
-                <a href={`/api/admin/eventos/${id}/backup`} download
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
-                  JSON
-                </a>
-              </div>
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>💾 Backup das Chaves Finalizadas</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "0.5rem 1rem", backgroundColor: "#0f766e", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                <Download className="w-4 h-4" />
+                Ver / Imprimir Chaves
+              </a>
+              <a href={`/api/admin/eventos/${id}/backup`} download
+                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#374151", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                Exportar JSON
+              </a>
             </div>
           </div>
 
-          {/* Link Coordenador de Premiação */}
-          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
-            <div className="flex items-center gap-2">
-              <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
-            </div>
-            <p className="text-xs text-[#6b7280]">Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--card)" }}>
-              <span className="text-xs text-[#9ca3af] flex-1 truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}</span>
+          {/* Coordenador de Premiação */}
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid #5b21b6" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>🎖️ Coordenador de Premiação</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 8, border: "1px solid var(--border-alt)", backgroundColor: "var(--card-alt)", padding: "0.5rem 0.75rem", marginBottom: "0.75rem" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace" }}>
+                {typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}
+              </span>
               <button
-                className="text-xs text-[#a78bfa] hover:text-white font-semibold shrink-0 transition-colors"
+                style={{ fontSize: "0.75rem", color: "#ffffff", backgroundColor: "#5b21b6", border: "none", borderRadius: 6, padding: "0.25rem 0.625rem", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
                 onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/premiacao/${id}`)}
               >
                 Copiar
               </button>
             </div>
             <a href={`/premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-              className="inline-block text-xs text-[#a78bfa] underline hover:text-white">
+              style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#5b21b6", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
               Abrir página de premiação →
             </a>
           </div>
 
+          {/* Documentos para Coordenadores */}
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>📄 Documentos para Coordenadores</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Cronograma */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>📅 Cronograma do Evento</p>
+                {event?.schedule ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.schedule} target="_blank" rel="noopener noreferrer"
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover o cronograma?")) removeDoc("schedule") }}
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
+                      title="Remover">✕</button>
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
+                    {event?.schedule ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("schedule", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
+                </label>
+              </div>
+              {/* Tabela de Peso */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>⚖️ Tabela de Peso</p>
+                {event?.pesoDoc ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.pesoDoc} target="_blank" rel="noopener noreferrer"
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover a tabela de peso?")) removeDoc("pesoDoc") }}
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
+                      title="Remover">✕</button>
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
+                    {event?.pesoDoc ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("pesoDoc", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          </div>
         </div>
       )}
 
@@ -2301,6 +2547,35 @@ export default function EventoDetailPage() {
             setGerenciarId(null)
           }}
         />
+      )}
+
+      {/* Modal de consulta — cronograma e tabela de peso */}
+      {docModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          onClick={() => setDocModal(null)}
+        >
+          <div
+            className="relative rounded-xl overflow-hidden shadow-2xl"
+            style={{ maxWidth: "min(90vw, 800px)", maxHeight: "90vh" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
+              <span className="text-white font-semibold text-sm">{docModal.title}</span>
+              <button
+                onClick={() => setDocModal(null)}
+                className="text-[#9ca3af] hover:text-white text-lg leading-none ml-4"
+              >✕</button>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={docModal.url}
+              alt={docModal.title}
+              style={{ display: "block", maxWidth: "min(90vw, 800px)", maxHeight: "80vh", width: "auto", height: "auto" }}
+            />
+          </div>
+        </div>
       )}
     </div>
   )

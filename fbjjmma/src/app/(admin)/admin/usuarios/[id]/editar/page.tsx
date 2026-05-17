@@ -30,10 +30,7 @@ export default function EditarUsuarioPage() {
     phone: "",
     role: "COORDENADOR_GERAL",
     isActive: true,
-    password: "",
   })
-
-  const isCoordenadorTatame = form.role === "COORDENADOR_TATAME"
 
   useEffect(() => {
     fetch(`/api/admin/usuarios/${id}`)
@@ -173,23 +170,6 @@ export default function EditarUsuarioPage() {
             </SelectContent>
           </Select>
         </div>
-
-        {!isCoordenadorTatame && (
-          <div className="space-y-2">
-            <Label htmlFor="password">Nova Senha</Label>
-            <Input
-              id="password"
-              type="password"
-              value={form.password}
-              onChange={(e) => set("password", e.target.value)}
-              placeholder="Deixe em branco para não alterar"
-              autoComplete="new-password"
-            />
-            <p className="text-xs" style={{ color: "var(--muted)" }}>
-              Mínimo 6 caracteres. Deixe em branco para manter a senha atual.
-            </p>
-          </div>
-        )}
 
         <div className="flex items-center gap-3 pt-1">
           <Checkbox

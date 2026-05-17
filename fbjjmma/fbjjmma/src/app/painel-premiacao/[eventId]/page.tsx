@@ -55,6 +55,8 @@ interface BracketInfo {
   belt: string
   isAbsolute: boolean
   status: string
+  bracketGroupId?: string | null
+  isGrandFinal?: boolean
   weightCategory: { name: string; ageGroup: string; sex: string }
   positions: BPos[]
   matches: BMatch[]
@@ -85,46 +87,98 @@ function catLabel(b: BracketInfo): string {
   return `${sex} · ${age} · ${peso} · ${belt}`
 }
 
-function getPodium(b: BracketInfo): { pos: BPos; place: number }[] {
-  const posMap = new Map<string, BPos>()
-  for (const p of b.positions) posMap.set(p.id, p)
+interface Placement {
+  place: 1 | 2 | 3
+  positionId: string
+  registration: Reg | null
+}
 
-  const realMatches = b.matches.filter(m => m.position1Id && m.position2Id && m.endedAt)
-  const soloMatch = b.matches.find(m => m.position1Id && !m.position2Id && m.endedAt && m.winnerId)
+function getRealMatches(matches: BMatch[]) {
+  return matches.filter(m => m.position1Id !== null && m.position2Id !== null)
+}
 
-  if (realMatches.length === 0 && soloMatch) {
-    const champPos = soloMatch.winnerId ? posMap.get(soloMatch.winnerId) : undefined
-    return champPos ? [{ pos: champPos, place: 1 }] : []
+function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placement[] {
+  const { positions, matches } = b
+  if (positions.length === 0) return []
+
+  if (b.bracketGroupId && !b.isGrandFinal) {
+    if (positions.length === 1 && positions[0].registration)
+      return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
+    if (!matches || matches.length === 0) return []
+    const rm = getRealMatches(matches)
+    if (rm.length === 0) return []
+    const maxR = Math.max(...rm.map(m => m.round))
+    const fin = rm.find(m => m.round === maxR && m.matchNumber === 1)
+    if (!fin?.winnerId) return []
+    const fp = positions.find(p => p.id === fin.winnerId)
+    if (fp?.registration)
+      return [{ place: 1, positionId: fp.id, registration: fp.registration }]
+    return []
   }
 
-  const maxRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
+  if (positions.length === 1 && positions[0].registration) {
+    const soloMatch = matches.find(m => m.position1Id !== null && m.position2Id === null)
+    if (soloMatch?.isWO) return []
+    return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
+  }
+
+  if (!matches || matches.length === 0) return []
+
+  const realMatches = getRealMatches(matches)
+  if (realMatches.length === 0) return []
+
+  const maxRound = Math.max(...realMatches.map(m => m.round))
   const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
-  if (!finalMatch) return []
+  if (!finalMatch || !finalMatch.winnerId) return []
 
-  const champId = finalMatch.winnerId
-  const viceId = champId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
-  const champPos = champId ? posMap.get(champId) : undefined
-  const vicePos = viceId ? posMap.get(viceId) : undefined
+  const placements: Placement[] = []
 
-  const thirdPos = b.positions.find(p =>
-    p.id !== champPos?.id && p.id !== vicePos?.id && p.registration !== null &&
-    b.matches.some(m => (m.position1Id === p.id || m.position2Id === p.id) && m.endedAt) &&
-    !b.matches.some(m => m.round === maxRound && (m.position1Id === p.id || m.position2Id === p.id))
-  )
+  const firstPos = positions.find(p => p.id === finalMatch.winnerId)
+  if (firstPos?.registration)
+    placements.push({ place: 1, positionId: firstPos.id, registration: firstPos.registration })
 
-  const result: { pos: BPos; place: number }[] = []
-  if (champPos) result.push({ pos: champPos, place: 1 })
-  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
-  if (vicePos && !finalMatch.isWO) result.push({ pos: vicePos, place: 2 })
-  if (thirdPos) {
-    // Se o candidato ao 3° foi eliminado por W.O. em alguma partida, não recebe colocação
-    const eliminatedByWO = b.matches.some(m =>
-      m.isWO && m.endedAt && m.winnerId !== thirdPos.id &&
-      (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
-    )
-    if (!eliminatedByWO) result.push({ pos: thirdPos, place: 3 })
+  const secondPosId = finalMatch.position1Id === finalMatch.winnerId ? finalMatch.position2Id : finalMatch.position1Id
+  const secondPos = positions.find(p => p.id === secondPosId)
+  if (secondPos?.registration)
+    placements.push({ place: 2, positionId: secondPos.id, registration: secondPos.registration })
+
+  if (b.isGrandFinal && allBrackets && b.bracketGroupId) {
+    const champRegId = firstPos?.registration?.id
+    if (champRegId) {
+      const subBrackets = allBrackets.filter(sb => sb.bracketGroupId === b.bracketGroupId && !sb.isGrandFinal)
+      for (const sub of subBrackets) {
+        const subReal = getRealMatches(sub.matches)
+        const subMaxRound = subReal.length > 0 ? Math.max(...subReal.map(m => m.round)) : 0
+        const subFinal = subReal.find(m => m.round === subMaxRound && m.matchNumber === 1)
+        if (!subFinal?.winnerId) continue
+        const subChamp = sub.positions.find(p => p.id === subFinal.winnerId)
+        if (subChamp?.registration?.id !== champRegId) continue
+        const loserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
+        const loserPos = sub.positions.find(p => p.id === loserId)
+        if (loserPos?.registration)
+          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+        break
+      }
+    }
+  } else if (maxRound > 1) {
+    if (positions.length === 3) {
+      const thirdPos = positions.find(p => p.id !== firstPos?.id && p.id !== secondPos?.id)
+      if (thirdPos?.registration)
+        placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
+    } else {
+      const semiRound = maxRound - 1
+      const champSemi = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
+      const semiHadWO = champSemi?.isWO || (!champSemi && matches.some(m => m.round === semiRound && m.isWO))
+      if (champSemi && !semiHadWO) {
+        const loserId = champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
+        const loserPos = positions.find(p => p.id === loserId)
+        if (loserPos?.registration)
+          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+      }
+    }
   }
-  return result
+
+  return placements
 }
 
 // Retorna o timestamp da última partida finalizada da chave (proxy de quando foi finalizada)
@@ -143,9 +197,8 @@ function getAwardEntries(brackets: BracketInfo[]): AwardEntry[] {
   for (const b of sorted) {
     const category = catLabel(b)
     // Dentro de cada chave: 1°, 2°, 3°
-    const podium = getPodium(b).sort((a, c) => a.place - c.place)
-    for (const { pos, place } of podium) {
-      const reg = pos.registration
+    const placements = computePlacements(b, brackets).sort((a, c) => a.place - c.place)
+    for (const { registration: reg, place } of placements) {
       if (!reg || reg.awarded) continue
       entries.push({
         key: reg.id,
@@ -205,7 +258,7 @@ export default function PainelPremiacaoPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/painel-premiacao/${eventId}`)
+      const res = await fetch(`/api/premiacao/${eventId}`)
       if (!res.ok) return
       setData(await res.json())
       setLastUpdate(new Date())

@@ -21,8 +21,10 @@ jobs:
             echo "==> Atualizando código..."
             cd /var/www/fbjjmma
             git pull origin main
-            echo "==> Compilando..."
+            echo "==> Gerando cliente Prisma..."
             cd fbjjmma
+            npx prisma generate
+            echo "==> Compilando..."
             rm -rf .next
             npm run build
             echo "==> Reiniciando servidor..."

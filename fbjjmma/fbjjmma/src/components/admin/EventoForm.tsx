@@ -92,7 +92,7 @@ interface EventFormData {
 }
 
 interface EventoFormProps {
-  initialData?: Partial<EventFormData> & { banner?: string; schedule?: string }
+  initialData?: Partial<EventFormData> & { banner?: string; schedule?: string; pesoDoc?: string }
   eventId?: string
 }
 
@@ -104,8 +104,10 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
   const [weightTables, setWeightTables] = useState<WeightTable[]>([])
   const bannerRef = useRef<HTMLInputElement>(null)
   const scheduleRef = useRef<HTMLInputElement>(null)
+  const pesoDocRef = useRef<HTMLInputElement>(null)
   const [bannerPreview, setBannerPreview] = useState<string>(initialData?.banner || "")
   const [schedulePreview, setSchedulePreview] = useState<string>(initialData?.schedule || "")
+  const [pesoDocPreview, setPesoDocPreview] = useState<string>(initialData?.pesoDoc || "")
 
   const [form, setForm] = useState<EventFormData>({
     name: initialData?.name || "",
@@ -149,13 +151,14 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
 
   function handleFileChange(
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "banner" | "schedule"
+    type: "banner" | "schedule" | "pesoDoc"
   ) {
     const file = e.target.files?.[0]
     if (!file) return
     const url = URL.createObjectURL(file)
     if (type === "banner") setBannerPreview(url)
-    else setSchedulePreview(url)
+    else if (type === "schedule") setSchedulePreview(url)
+    else setPesoDocPreview(url)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -169,8 +172,10 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
       // Append file inputs
       const bannerFile = bannerRef.current?.files?.[0]
       const scheduleFile = scheduleRef.current?.files?.[0]
+      const pesoDocFile = pesoDocRef.current?.files?.[0]
       if (bannerFile) formData.append("banner", bannerFile)
       if (scheduleFile) formData.append("schedule", scheduleFile)
+      if (pesoDocFile) formData.append("pesoDoc", pesoDocFile)
 
       // Append form fields
       Object.entries(form).forEach(([key, value]) => {
@@ -287,6 +292,37 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => handleFileChange(e, "schedule")}
+                />
+              </div>
+            </div>
+
+            {/* Tabela de Peso */}
+            <div className="space-y-2">
+              <Label>Tabela de Peso (imagem)</Label>
+              <div
+                className="relative border-2 border-dashed rounded-lg overflow-hidden cursor-pointer hover:border-[#dc2626] transition-colors"
+                style={{ borderColor: "var(--border-alt)", minHeight: "120px" }}
+                onClick={() => pesoDocRef.current?.click()}
+              >
+                {pesoDocPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={pesoDocPreview}
+                    alt="Tabela de Peso preview"
+                    className="w-full h-32 object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 gap-2">
+                    <Upload className="h-6 w-6 text-[#6b7280]" />
+                    <p className="text-xs text-[#6b7280]">Clique para fazer upload</p>
+                  </div>
+                )}
+                <input
+                  ref={pesoDocRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e, "pesoDoc")}
                 />
               </div>
             </div>

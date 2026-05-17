@@ -162,11 +162,14 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
       if (thirdPos?.registration)
         placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
     } else {
+      const semiRound = maxRound - 1
       const champSemi = realMatches.find(
-        (m) => m.round === maxRound - 1 && m.winnerId === finalMatch.winnerId
+        (m) => m.round === semiRound && m.winnerId === finalMatch.winnerId
       )
-      // Se o atleta que seria 3° lugar perdeu por W.O., não há 3° lugar
-      if (champSemi && !champSemi.isWO) {
+      // Semi do campeão foi W.O. (2x2) — sem 3° lugar
+      // Campeão sem partida 2x2 na semi mas havia W.O. solo na rodada — sem 3° lugar
+      const semiHadWO = champSemi?.isWO || (!champSemi && matches.some(m => m.round === semiRound && m.isWO))
+      if (champSemi && !semiHadWO) {
         const loserId =
           champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
         const loserPos = positions.find((p) => p.id === loserId)

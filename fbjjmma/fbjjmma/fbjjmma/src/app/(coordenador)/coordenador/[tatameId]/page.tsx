@@ -69,6 +69,7 @@ interface BracketData {
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
+  inPanel?: boolean
   weightCategory: { id?: string; name: string; ageGroup: string; sex: string; maxWeight: number }
   positions: BracketPositionData[]
   matches: MatchData[]
@@ -401,7 +402,8 @@ export default function TatamePage() {
           ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
           : null)
     : null
-  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch
+  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
+  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch && !podiumLastMatch.isWO
     ? podiumBracket.positions.find(p =>
         p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
@@ -415,14 +417,23 @@ export default function TatamePage() {
       if (podiumBracket.positions.length === 3) {
         const firstId = podiumLastMatch.winnerId
         const secondId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
-        return podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+        const thirdCandidate = podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
+        // Se o candidato ao 3° foi eliminado por W.O., não recebe colocação
+        const eliminatedByWO = thirdCandidate ? podiumBracket.matches.some(m =>
+          m.isWO && m.endedAt && m.winnerId !== thirdCandidate.id &&
+          (m.position1Id === thirdCandidate.id || m.position2Id === thirdCandidate.id)
+        ) : false
+        return eliminatedByWO ? null : thirdCandidate
       }
       if (podiumMaxRound < 2) return null
-      // Tenta a semifinal do campeão; se foi W.O. (BYE), tenta a do vice-campeão
       const champSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
+      // Se a semi do campeão foi qualquer W.O. — sem 3° lugar
+      if (champSemi?.isWO) return null
+      // Se o campeão não teve partida 2x2 na semi, verificar W.O. solo na mesma rodada
+      if (!champSemi && podiumBracket.matches.some(m => m.round === podiumMaxRound - 1 && m.isWO)) return null
       const runnerUpId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
       const runnerUpSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === runnerUpId)
-      const semi = (!champSemi?.isWO ? champSemi : null) ?? (!runnerUpSemi?.isWO ? runnerUpSemi : null)
+      const semi = champSemi ?? (!runnerUpSemi?.isWO ? runnerUpSemi : null)
       if (!semi) return null
       const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
       return loserId ? podiumBracket.positions.find(p => p.id === loserId) ?? null : null
@@ -638,23 +649,30 @@ export default function TatamePage() {
                   <div className="rounded-xl border p-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <p className="text-[#6b7280] text-xs">Chave #{bracket.bracketNumber}</p>
-                      <span
-                        className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0"
-                        style={{
-                          backgroundColor:
-                            bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
-                            bracket.status === "FINALIZADA" ? "#14532d60" :
-                            bracket.status === "PREMIADA" ? "#4a1d9660" : "#1a1a1a",
-                          color:
-                            bracket.status === "EM_ANDAMENTO" ? "#fbbf24" :
-                            bracket.status === "FINALIZADA" ? "#4ade80" :
-                            bracket.status === "PREMIADA" ? "#a78bfa" : "#6b7280",
-                        }}
-                      >
-                        {bracket.status === "EM_ANDAMENTO" ? "Em Andamento" :
-                         bracket.status === "FINALIZADA" ? "Finalizada" :
-                         bracket.status === "PREMIADA" ? "Premiada" : "Aguardando"}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {bracket.status === "EM_ANDAMENTO" && !bracket.matches.some(m => (m.callTimes ?? []).some((c: CallTime) => c.call === 1 && c.pos === null)) && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: "#450a0a", color: "#f87171" }}>
+                            Fora do Painel
+                          </span>
+                        )}
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                          style={{
+                            backgroundColor:
+                              bracket.status === "EM_ANDAMENTO" ? "#78350f60" :
+                              bracket.status === "FINALIZADA" ? "#14532d60" :
+                              bracket.status === "PREMIADA" ? "#4a1d9660" : "#1a1a1a",
+                            color:
+                              bracket.status === "EM_ANDAMENTO" ? "#fbbf24" :
+                              bracket.status === "FINALIZADA" ? "#4ade80" :
+                              bracket.status === "PREMIADA" ? "#a78bfa" : "#6b7280",
+                          }}
+                        >
+                          {bracket.status === "EM_ANDAMENTO" ? "Em Andamento" :
+                           bracket.status === "FINALIZADA" ? "Finalizada" :
+                           bracket.status === "PREMIADA" ? "Premiada" : "Aguardando"}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-white font-bold text-xs leading-tight whitespace-nowrap overflow-hidden">{catLabel(bracket)}</p>
                     {!bracket.isAbsolute && (

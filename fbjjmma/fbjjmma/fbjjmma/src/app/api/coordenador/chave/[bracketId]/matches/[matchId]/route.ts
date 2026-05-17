@@ -135,23 +135,83 @@ export async function PUT(
             id: { notIn: [match.position1Id, match.position2Id].filter(Boolean) as string[] },
           },
         })
-        // Perdedor do R1 estava presente (jogou a partida); thirdPosition ainda não foi confirmado
-        await matchAny.create({
-          data: {
+
+        // Fecha a partida solo de check-in do atleta em espera (R1 matchNumber 2)
+        // para que não apareça mais como luta pendente na tela do coordenador
+        await prisma.match.updateMany({
+          where: {
             bracketId,
-            round: 2,
-            matchNumber: 1,
-            position1Id: loserId ?? null,
-            position2Id: thirdPosition!.id,
-            p1CheckedIn: !!loserId, // perdedor estava presente
+            round: 1,
+            matchNumber: { not: match.matchNumber },
+            position2Id: null,
+            winnerId: null,
+            endedAt: null,
+          },
+          data: {
+            winnerId: thirdPosition!.id,
+            endedAt: new Date(),
           },
         })
+
+        // Verifica se o atleta em espera já foi W.O.'d na partida solo de check-in
+        const thirdAlreadyWO = await prisma.match.findFirst({
+          where: {
+            bracketId,
+            position1Id: thirdPosition!.id,
+            position2Id: null,
+            isWO: true,
+            endedAt: { not: null },
+          },
+        })
+
+        if (isWO && loserId) {
+          // W.O. no R1 (ex: desclassificação por peso ou ausência): o perdedor está fora.
+          if (thirdAlreadyWO) {
+            // Atleta em espera também já foi W.O.'d: vencedor do R1 é campeão — cria R3 solo já finalizado
+            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+            await matchAny.create({
+              data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null,
+                      winnerId: winnerId, p1CheckedIn: true, endedAt: new Date() },
+            })
+            await finalizeBracket(bracketId)
+          } else {
+            // Atleta em espera está disponível: vai direto para a final contra o vencedor do R1
+            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+            await matchAny.create({
+              data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: thirdPosition!.id, p1CheckedIn: true },
+            })
+          }
+        } else if (thirdAlreadyWO) {
+          // Resultado normal no R1, mas atleta em espera já foi W.O.'d:
+          // perdedor do R1 é eliminado, vencedor é campeão — cria R3 solo já finalizado
+          if (loserId) {
+            await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
+          }
+          await matchAny.create({
+            data: { bracketId, round: 3, matchNumber: 1, position1Id: winnerId, position2Id: null,
+                    winnerId: winnerId, p1CheckedIn: true, endedAt: new Date() },
+          })
+          await finalizeBracket(bracketId)
+        } else {
+          // Resultado normal: perdedor do R1 tem segunda chance contra o atleta em espera
+          await matchAny.create({
+            data: {
+              bracketId,
+              round: 2,
+              matchNumber: 1,
+              position1Id: loserId ?? null,
+              position2Id: thirdPosition!.id,
+              p1CheckedIn: !!loserId,
+            },
+          })
+        }
       } else if (match.round === 2) {
         // Loser of round 2 = 3rd place
         if (loserId) {
           await prisma.bracketPosition.update({ where: { id: loserId }, data: { isEliminated: true } })
         }
-        const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1 } })
+        // matchNumber: 1 garante que pegamos o combate real, não a partida solo de check-in (matchNumber: 2)
+        const round1Match = await prisma.match.findFirst({ where: { bracketId, round: 1, matchNumber: 1 } })
         // Ambos os finalistas já jogaram rodadas anteriores — ambos confirmados
         await matchAny.create({
           data: {

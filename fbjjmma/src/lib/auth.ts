@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       name: "credentials",
@@ -19,7 +19,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const identifier = credentials.identifier as string
         const password = credentials.password as string
 
-        // Determine if identifier is CPF or email
         const isCpf = /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/.test(identifier)
 
         const user = await prisma.user.findFirst({
@@ -28,7 +27,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             : { email: identifier },
         })
 
-        // Also try raw CPF digits if formatted not found
         let resolvedUser = user
         if (!resolvedUser && isCpf) {
           const rawCpf = identifier.replace(/\D/g, "")
@@ -80,3 +78,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
 })
+
+export const auth: typeof _auth = _auth

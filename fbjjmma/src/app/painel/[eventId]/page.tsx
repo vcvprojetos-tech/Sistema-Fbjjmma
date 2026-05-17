@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { ThemeLogo } from "@/components/ThemeLogo"
 
 const AGE_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -55,11 +54,13 @@ interface MatchInfo {
 }
 interface BracketInfo {
   id: string; bracketNumber: number; belt: string; isAbsolute: boolean; status: string
+  startedAt: string | null
   weightCategory: { name: string; ageGroup: string; sex: string }
   matches: MatchInfo[]
 }
 interface TatameInfo {
   id: string; name: string
+  panelBracketIds: string[]
   operations: { user: { name: string } }[]
   brackets: BracketInfo[]
 }
@@ -124,21 +125,35 @@ function filterGroupsToFit(groups: BracketGroup[], maxH: number): BracketGroup[]
 
 function bracketHasAppeared(b: BracketInfo, visibleBrackets: Set<string>): boolean {
   if (visibleBrackets.has(b.id)) return true
-  return b.matches.some(m => ((m.callTimes ?? []) as CallTime[]).some(c => c.call === 1))
+  // Só considera "apareceu no painel" se tiver o marcador pos:null (registrado pelo painel, não pelo coordenador)
+  return b.matches.some(m => ((m.callTimes ?? []) as CallTime[]).some(c => c.call === 1 && c.pos === null))
 }
 
 function getGroupsForTatame(tatame: TatameInfo, visibleBrackets: Set<string>): BracketGroup[] {
   const groups: BracketGroup[] = []
 
+  // Combina o tracking local (ref) com o estado persistido no servidor (panelBracketIds).
+  // Isso garante que mesmo no primeiro render (antes dos effects rodarem), chaves já admitidas
+  // pelo painel — salvas no DB — sejam tratadas como "aparecidas" e não sejam deslocadas.
+  const appeared = new Set<string>(visibleBrackets)
+  for (const id of tatame.panelBracketIds) appeared.add(id)
+
   const sorted = [...tatame.brackets].sort((a, b) => {
     const statusOrder = (s: string) => s === "EM_ANDAMENTO" ? 0 : 1
+    // 1º: chaves que já apareceram no painel ficam fixas (nunca são deslocadas por novas)
+    const aApp = bracketHasAppeared(a, appeared) ? 0 : 1
+    const bApp = bracketHasAppeared(b, appeared) ? 0 : 1
+    if (aApp !== bApp) return aApp - bApp
+    // 2º: dentro do mesmo grupo (apareceu/não-apareceu), EM_ANDAMENTO tem prioridade
     const aOrd = statusOrder(a.status)
     const bOrd = statusOrder(b.status)
     if (aOrd !== bOrd) return aOrd - bOrd
-    // Dentro de EM_ANDAMENTO: chaves já exibidas no painel vêm antes das recém-iniciadas
-    const aApp = bracketHasAppeared(a, visibleBrackets) ? 0 : 1
-    const bApp = bracketHasAppeared(b, visibleBrackets) ? 0 : 1
-    if (aApp !== bApp) return aApp - bApp
+    // 3º: novas chaves (não aparecidas) entram por FIFO; aparecidas por número
+    if (aApp === 1) {
+      const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0
+      const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0
+      return aTime - bTime
+    }
     return a.bracketNumber - b.bracketNumber
   })
 
@@ -271,6 +286,8 @@ export default function PainelPage() {
   }, [fetchData])
 
   // Informa ao servidor quais brackets estão visíveis neste painel
+  // Em cada tick, mescla panelBracketIds do servidor em visibleBracketsRef para garantir
+  // que chaves já admitidas mantenham prioridade mesmo após recarregamentos do painel
   useEffect(() => {
     if (!data) return
     const allTatames = data.tatames
@@ -280,6 +297,10 @@ export default function PainelPage() {
       : painelNum === "1" ? allTatames.slice(0, splitAt)
       : allTatames.slice(splitAt)
     for (const tatame of myTatames) {
+      // Sincroniza estado persistido do servidor com o tracking local (idempotente)
+      for (const id of tatame.panelBracketIds) {
+        visibleBracketsRef.current.add(id)
+      }
       const groups = filterGroupsToFit(getGroupsForTatame(tatame, visibleBracketsRef.current), CONTENT_H)
       const visibleIds = groups.map(g => g.bracketId)
       fetch(`/api/painel/${eventId}/visible`, {
@@ -310,7 +331,8 @@ export default function PainelPage() {
         visibleBracketsRef.current.add(bracket.id)
         for (const match of bracket.matches) {
           const allCalls = (match.callTimes ?? []) as CallTime[]
-          if (allCalls.some(c => c.call === 1)) continue
+          // Só pula se o painel já registrou o marcador (pos:null) — chamadas do coordenador não contam
+          if (allCalls.some(c => c.call === 1 && c.pos === null)) continue
           if (triggeredRef.current.has(match.id)) continue
           triggeredRef.current.add(match.id)
           fetch(`/api/painel/${eventId}/chamada`, {
@@ -344,7 +366,8 @@ export default function PainelPage() {
       {showOverlay && (
         <div onClick={enterFullscreen} style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#f0f4f8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <ThemeLogo style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-color.png" alt="FBJJMMA" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 24 }} />
           <div style={{ color: "#1e293b", fontSize: "1.5rem", fontWeight: 900, marginBottom: 12 }}>
             Painel de Chamadas{painelNum ? ` — Painel ${painelNum}` : ""}
           </div>
@@ -376,7 +399,8 @@ export default function PainelPage() {
         <div style={{ height: TOPBAR_H, marginBottom: TOPBAR_MB, backgroundColor: "#ffffff", borderBottom: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "space-between", padding: `0 ${OUTER_PAD_H}px` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <ThemeLogo style={{ width: 34, height: 34, objectFit: "contain" }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-color.png" alt="FBJJMMA" style={{ width: 34, height: 34, objectFit: "contain", transform: "scale(3.5)", transformOrigin: "center" }} />
             <div>
               <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 18 }}>{event.name}</div>
               <div style={{ color: "#64748b", fontSize: 12 }}>Painel de Chamadas — Área de Pesagem</div>

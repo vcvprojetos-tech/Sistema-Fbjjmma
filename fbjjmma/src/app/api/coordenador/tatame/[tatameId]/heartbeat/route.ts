@@ -21,7 +21,8 @@ export async function POST(
     data: { lastHeartbeat: now },
   })
 
-  // Se não há operação ativa, reabre a mais recente (coordenador ainda tem a página aberta)
+  // Se não há operação ativa (ex: reinício do servidor fechou a sessão via beforeunload),
+  // reabre a mais recente para que o admin veja o coordenador como conectado novamente.
   if (updated.count === 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lastOp = await (prisma.tatameOperation as any).findFirst({
