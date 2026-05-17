@@ -30,7 +30,7 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const { winnerId, isWO, woType, woWeight, woReason } = body
+    const { winnerId, isWO, woType, woWeight, woWeight1: woWeight1Body, woWeight2: woWeight2Body, woReason } = body
 
     const [match, bracketRecord] = await Promise.all([
       prisma.match.findFirst({ where: { id: matchId, bracketId } }),
@@ -109,13 +109,22 @@ export async function PUT(
       return NextResponse.json({ message: isWO ? "Atleta desclassificado." : "Campeão declarado." })
     }
 
-    // W.O. duplo: ambos ausentes, nenhum avança
+    // W.O. duplo: ambos ausentes ou ambos desclassificados, nenhum avança
     const isDoubleWO = Boolean(isWO) && (!winnerId || winnerId === "") && !isSoloMatch
     if (isDoubleWO) {
       await prisma.$transaction([
-        prisma.match.update({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (prisma.match as any).update({
           where: { id: matchId },
-          data: { winnerId: null, isWO: true, woType: "AUSENCIA", endedAt: new Date() },
+          data: {
+            winnerId: null,
+            isWO: true,
+            woType: woType ? (woType as WOType) : "AUSENCIA",
+            woReason: woReason ?? null,
+            ...(woWeight1Body != null && { woWeight1: Number(woWeight1Body) }),
+            ...(woWeight2Body != null && { woWeight2: Number(woWeight2Body) }),
+            endedAt: new Date(),
+          },
         }),
         ...(match.position1Id
           ? [prisma.bracketPosition.update({ where: { id: match.position1Id }, data: { isEliminated: true } })]
