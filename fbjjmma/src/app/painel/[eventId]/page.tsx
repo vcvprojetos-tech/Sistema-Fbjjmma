@@ -60,6 +60,7 @@ interface BracketInfo {
 }
 interface TatameInfo {
   id: string; name: string
+  panelBracketIds: string[]
   operations: { user: { name: string } }[]
   brackets: BracketInfo[]
 }
@@ -262,6 +263,7 @@ export default function PainelPage() {
 
   const triggeredRef = useRef<Set<string>>(new Set())
   const visibleBracketsRef = useRef<Set<string>>(new Set())
+  const seededRef = useRef(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -277,6 +279,17 @@ export default function PainelPage() {
     const iv = setInterval(fetchData, 5000)
     return () => clearInterval(iv)
   }, [fetchData])
+
+  // Inicializa visibleBracketsRef a partir do estado persistido no servidor (uma única vez)
+  useEffect(() => {
+    if (!data || seededRef.current) return
+    seededRef.current = true
+    for (const tatame of data.tatames) {
+      for (const id of tatame.panelBracketIds) {
+        visibleBracketsRef.current.add(id)
+      }
+    }
+  }, [data])
 
   // Informa ao servidor quais brackets estão visíveis neste painel
   useEffect(() => {
