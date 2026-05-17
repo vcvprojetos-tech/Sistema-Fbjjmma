@@ -141,9 +141,7 @@ function sortByStarted(list: BracketData[]) {
 }
 
 function sortByDesignated(list: BracketData[]) {
-  return [...list].sort((a, b) =>
-    new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
-  )
+  return [...list].sort((a, b) => a.bracketNumber - b.bracketNumber)
 }
 
 // Deve coincidir com CALL_INTERVAL_MS na rota chamada/route.ts
