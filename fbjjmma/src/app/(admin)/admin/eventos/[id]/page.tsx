@@ -356,6 +356,17 @@ export default function EventoDetailPage() {
   const [chavesLoading, setChavesLoading] = useState(false)
   const [chavesGenerating, setChavesGenerating] = useState(false)
 
+  // Troca de posição na chave
+  const [cardAction, setCardAction] = useState<{
+    registrationId: string; positionId: string; positionNum: number
+    bracketId: string; name: string; bracketStatus: string
+  } | null>(null)
+  const [swapModal, setSwapModal] = useState<{
+    fromPosId: string; fromPosNum: number; fromName: string; bracketId: string
+    allPositions: Array<{ id: string; position: number; name: string }>
+  } | null>(null)
+  const [swapSaving, setSwapSaving] = useState(false)
+
   // Tatames
   const [tatames, setTatames] = useState<Tatame[]>([])
   const [tatamesLoading, setTatamesLoading] = useState(false)
@@ -542,6 +553,34 @@ export default function EventoDetailPage() {
       setChavesLoading(false)
     }
   }, [id])
+
+  const handleBracketCardClick = useCallback((info: { registrationId: string; positionId: string; positionNum: number; bracketId: string }) => {
+    const bracket = brackets.find(b => b.id === info.bracketId)
+    const regInPos = bracket?.positions.find(p => p.id === info.positionId)?.registration
+    const name = regInPos?.athlete?.user.name ?? regInPos?.guestName ?? `Posição ${info.positionNum}`
+    setCardAction({ ...info, name, bracketStatus: bracket?.status ?? "" })
+  }, [brackets])
+
+  const handleSwapPosition = useCallback(async (toPosId: string) => {
+    if (!swapModal) return
+    setSwapSaving(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/chaves/${swapModal.bracketId}/swap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromPosId: swapModal.fromPosId, toPosId }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        alert(data.error || "Erro ao trocar posições.")
+        return
+      }
+      setSwapModal(null)
+      await loadAllChaves()
+    } finally {
+      setSwapSaving(false)
+    }
+  }, [swapModal, id, loadAllChaves])
 
   const loadTatames = useCallback(async () => {
     setTatamesLoading(true)
@@ -2344,7 +2383,10 @@ export default function EventoDetailPage() {
                         {b.isGrandFinal ? `🏆 Grande Final (#${b.bracketNumber})` : `Sub-chave #${b.bracketNumber} — ${b.positions.length} atleta(s)`}
                       </p>
                     )}
-                    <BracketView bracket={b} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
+                    <BracketView
+                      bracket={b}
+                      onPositionCardClick={(info) => handleBracketCardClick({ ...info, bracketId: b.id })}
+                    />
                   </div>
                 ))}
               </div>
@@ -2365,6 +2407,120 @@ export default function EventoDetailPage() {
             setGerenciarId(null)
           }}
         />
+      )}
+
+      {/* Modal de ação ao clicar em atleta na chave */}
+      {cardAction && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+          onClick={() => setCardAction(null)}
+        >
+          <div
+            className="rounded-xl border p-5 w-72 space-y-3"
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div>
+              <p className="text-sm font-bold text-white">{cardAction.name}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#6b7280" }}>Posição {cardAction.positionNum} na chave</p>
+            </div>
+            <div className="space-y-2">
+              <button
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors hover:brightness-110"
+                style={{ backgroundColor: "#1e3a5f", color: "#93c5fd" }}
+                onClick={() => { setGerenciarId(cardAction.registrationId); setCardAction(null) }}
+              >
+                Gerenciar atleta →
+              </button>
+              {(cardAction.bracketStatus === "PENDENTE" || cardAction.bracketStatus === "DESIGNADA") && (
+                <button
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors hover:brightness-110"
+                  style={{ backgroundColor: "#1e293b", color: "#94a3b8" }}
+                  onClick={() => {
+                    const bracket = brackets.find(b => b.id === cardAction.bracketId)
+                    setSwapModal({
+                      fromPosId: cardAction.positionId,
+                      fromPosNum: cardAction.positionNum,
+                      fromName: cardAction.name,
+                      bracketId: cardAction.bracketId,
+                      allPositions: (bracket?.positions ?? []).map(p => ({
+                        id: p.id,
+                        position: p.position,
+                        name: p.registration?.athlete?.user.name ?? p.registration?.guestName ?? "(vazio)",
+                      })),
+                    })
+                    setCardAction(null)
+                  }}
+                >
+                  Trocar posição na chave ↕
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de troca de posição */}
+      {swapModal && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+          onClick={() => !swapSaving && setSwapModal(null)}
+        >
+          <div
+            className="rounded-xl border flex flex-col"
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)", width: 320, maxHeight: "70vh" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
+              <div>
+                <p className="text-sm font-bold text-white">Trocar posição</p>
+                <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
+                  {swapModal.fromName} — posição atual: {swapModal.fromPosNum}
+                </p>
+              </div>
+              <button
+                onClick={() => setSwapModal(null)}
+                className="text-[#6b7280] hover:text-white text-lg leading-none ml-3"
+                disabled={swapSaving}
+              >✕</button>
+            </div>
+            <div className="overflow-auto flex-1 p-2">
+              {[...swapModal.allPositions].sort((a, b) => a.position - b.position).map(pos => {
+                const isCurrent = pos.id === swapModal.fromPosId
+                return (
+                  <button
+                    key={pos.id}
+                    disabled={isCurrent || swapSaving}
+                    onClick={() => handleSwapPosition(pos.id)}
+                    className="w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-all"
+                    style={{
+                      backgroundColor: isCurrent ? "#1e3a5f" : "var(--card-alt)",
+                      opacity: isCurrent ? 0.5 : 1,
+                      cursor: isCurrent ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <span className="text-xs font-bold mr-2" style={{ color: "#6b7280" }}>
+                      {pos.position}
+                    </span>
+                    <span className="text-sm font-semibold" style={{ color: isCurrent ? "#60a5fa" : "var(--foreground)" }}>
+                      {pos.name}
+                    </span>
+                    {isCurrent && (
+                      <span className="text-xs ml-2" style={{ color: "#6b7280" }}>(posição atual)</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="px-4 py-2 border-t" style={{ borderColor: "var(--border)" }}>
+              <p className="text-xs" style={{ color: "#6b7280" }}>
+                {swapSaving ? "Trocando..." : "Clique em uma posição para trocar"}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal de consulta — cronograma e tabela de peso */}

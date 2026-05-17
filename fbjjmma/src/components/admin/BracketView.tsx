@@ -298,13 +298,17 @@ function buildSlots(
   return slots
 }
 
+type PositionCardInfo = { registrationId: string; positionId: string; positionNum: number; bracketId: string }
+
 // ── 3-athlete FBJJMMA repescagem bracket ──────────────────────────────────
 function ThreeAthleteBracket({
   bracket,
   onAthleteClick,
+  onPositionCardClick,
 }: {
   bracket: BracketData
   onAthleteClick?: (registrationId: string) => void
+  onPositionCardClick?: (info: PositionCardInfo) => void
 }) {
   const { positions, weightCategory, bracketNumber, isAbsolute, belt, matches = [] } = bracket
 
@@ -383,10 +387,17 @@ function ThreeAthleteBracket({
     const reg = pos?.registration ?? null
     const name = reg?.athlete?.user.name ?? reg?.guestName ?? null
     const team = reg?.team?.name ?? null
-    const clickable = !!reg && !!onAthleteClick && !dimmed
+    const clickable = !!reg && !dimmed && !!(onAthleteClick || onPositionCardClick)
+    const handleCardClick = clickable ? () => {
+      if (onPositionCardClick && pos) {
+        onPositionCardClick({ registrationId: reg!.id, positionId: pos.id, positionNum: pos.position, bracketId: bracket.id })
+      } else if (onAthleteClick) {
+        onAthleteClick(reg!.id)
+      }
+    } : undefined
     return (
       <div
-        onClick={clickable ? () => onAthleteClick!(reg!.id) : undefined}
+        onClick={handleCardClick}
         style={{
           position: "absolute", left: PAD, top, width: CW, height: CH,
           border: `1px solid ${name && !dimmed ? "var(--bracket-card-border)" : dimmed && name ? "var(--bracket-dimmed-border)" : "var(--border)"}`,
@@ -548,7 +559,7 @@ function ThreeAthleteBracket({
 }
 // ── End ThreeAthleteBracket ────────────────────────────────────────────────
 
-function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData; onAthleteClick?: (registrationId: string) => void }) {
+function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: { bracket: BracketData; onAthleteClick?: (registrationId: string) => void; onPositionCardClick?: (info: PositionCardInfo) => void }) {
   const { positions, weightCategory, bracketNumber, isAbsolute, belt, matches = [] } = bracket
 
   const posMap = useMemo(() => {
@@ -731,11 +742,18 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     const reg = pos?.registration ?? null
     const name = reg?.athlete?.user.name ?? reg?.guestName ?? null
     const team = reg?.team?.name ?? null
-    const clickable = !!reg && !!onAthleteClick
+    const clickable = !!reg && !!(onAthleteClick || onPositionCardClick)
+    const handleLeftClick = clickable ? () => {
+      if (onPositionCardClick && pos) {
+        onPositionCardClick({ registrationId: reg!.id, positionId: pos.id, positionNum: posNum, bracketId: bracket.id })
+      } else if (onAthleteClick) {
+        onAthleteClick(reg!.id)
+      }
+    } : undefined
     cards.push(
       <div
         key={`left-0-${posNum}`}
-        onClick={clickable ? () => onAthleteClick!(reg!.id) : undefined}
+        onClick={handleLeftClick}
         style={{
           position: "absolute",
           left: leftColX(0),
@@ -808,11 +826,18 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     const reg = pos?.registration ?? null
     const name = reg?.athlete?.user.name ?? reg?.guestName ?? null
     const team = reg?.team?.name ?? null
-    const clickable = !!reg && !!onAthleteClick
+    const clickable = !!reg && !!(onAthleteClick || onPositionCardClick)
+    const handleRightClick = clickable ? () => {
+      if (onPositionCardClick && pos) {
+        onPositionCardClick({ registrationId: reg!.id, positionId: pos.id, positionNum: posNum, bracketId: bracket.id })
+      } else if (onAthleteClick) {
+        onAthleteClick(reg!.id)
+      }
+    } : undefined
     cards.push(
       <div
         key={`right-0-${posNum}`}
-        onClick={clickable ? () => onAthleteClick!(reg!.id) : undefined}
+        onClick={handleRightClick}
         style={{
           position: "absolute",
           left: rightColX(0),
@@ -1057,9 +1082,9 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   )
 }
 
-export default function BracketView({ bracket, onAthleteClick }: { bracket: BracketData; onAthleteClick?: (registrationId: string) => void }) {
+export default function BracketView({ bracket, onAthleteClick, onPositionCardClick }: { bracket: BracketData; onAthleteClick?: (registrationId: string) => void; onPositionCardClick?: (info: PositionCardInfo) => void }) {
   if (bracket.positions.length === 3) {
-    return <ThreeAthleteBracket bracket={bracket} onAthleteClick={onAthleteClick} />
+    return <ThreeAthleteBracket bracket={bracket} onAthleteClick={onAthleteClick} onPositionCardClick={onPositionCardClick} />
   }
-  return <StandardBracketView bracket={bracket} onAthleteClick={onAthleteClick} />
+  return <StandardBracketView bracket={bracket} onAthleteClick={onAthleteClick} onPositionCardClick={onPositionCardClick} />
 }
