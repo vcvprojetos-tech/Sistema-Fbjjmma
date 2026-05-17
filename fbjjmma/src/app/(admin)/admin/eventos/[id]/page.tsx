@@ -625,11 +625,16 @@ export default function EventoDetailPage() {
   }, [id, loadTatames])
 
   const excluirTatame = useCallback(async (tatameId: string) => {
-    if (!confirm("Excluir este tatame?")) return
+    const tatame = tatames.find(t => t.id === tatameId)
+    const qtdChaves = tatame?.brackets.length ?? 0
+    const aviso = qtdChaves > 0
+      ? `Excluir este tatame? As ${qtdChaves} chave(s) atribuídas a ele voltarão para "Sem tatame".\n\nSe o coordenador desconectou temporariamente, aguarde a reconexão em vez de excluir.`
+      : "Excluir este tatame?"
+    if (!confirm(aviso)) return
     await fetch(`/api/admin/eventos/${id}/tatames/${tatameId}`, { method: "DELETE" })
     await loadTatames()
     await loadAllChaves()
-  }, [id, loadTatames, loadAllChaves])
+  }, [id, tatames, loadTatames, loadAllChaves])
 
   const atribuirTatame = useCallback(async (bracketId: string, tatameId: string | null) => {
     // Atualização otimista — sem loading
@@ -749,6 +754,9 @@ export default function EventoDetailPage() {
     if (tab === "tatames") {
       loadTatames()
       loadAllChaves()
+    }
+    if (tab === "chaves") {
+      loadTatames()
     }
   }, [tab, loadTatames, loadAllChaves])
 
