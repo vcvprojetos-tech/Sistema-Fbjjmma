@@ -522,7 +522,17 @@ export default function TatamePage() {
         const w2 = bDecModal.aIsPos1 ? parseFloat(bDecPeso) : parseFloat(bDecModal.aWeight || "0")
         payload = { winnerId: null, isWO: true, woType: "PESO", woWeight1: w1, woWeight2: w2 }
       } else if (decision === "AUSENCIA") {
-        payload = { winnerId: null, isWO: true, woType: "AUSENCIA" }
+        // Preserva o tipo e peso do atleta A — B está ausente mas A pode ter sido DQ por peso
+        const wA = bDecModal.aWoType === "PESO" ? parseFloat(bDecModal.aWeight || "") : undefined
+        const w1 = bDecModal.aIsPos1 ? wA : undefined
+        const w2 = !bDecModal.aIsPos1 ? wA : undefined
+        payload = {
+          winnerId: null, isWO: true,
+          woType: bDecModal.aWoType,
+          ...(w1 != null && !isNaN(w1) && { woWeight1: w1 }),
+          ...(w2 != null && !isNaN(w2) && { woWeight2: w2 }),
+          ...(bDecModal.aReason ? { woReason: bDecModal.aReason } : {}),
+        }
       } else {
         payload = { winnerId: null, isWO: true, woType: "DESCLASSIFICACAO", woReason: bDecReason.trim() || bDecModal.aReason }
       }
