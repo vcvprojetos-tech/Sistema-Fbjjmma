@@ -156,6 +156,7 @@ interface Bracket {
       athlete: { user: { name: string } } | null
       guestName: string | null
       team: { name: string } | null
+      prizePix: string | null
     } | null
   }[]
   matches: {
@@ -366,6 +367,16 @@ export default function EventoDetailPage() {
     allPositions: Array<{ id: string; position: number; name: string }>
   } | null>(null)
   const [swapSaving, setSwapSaving] = useState(false)
+
+  // PIX do campeão (edição pelo admin)
+  const [pixAdminModal, setPixAdminModal] = useState<{
+    bracketId: string
+    registrationId: string
+    champName: string
+    currentPix: string
+  } | null>(null)
+  const [pixAdminValue, setPixAdminValue] = useState("")
+  const [pixAdminSaving, setPixAdminSaving] = useState(false)
 
   // Tatames
   const [tatames, setTatames] = useState<Tatame[]>([])
@@ -581,6 +592,27 @@ export default function EventoDetailPage() {
       setSwapSaving(false)
     }
   }, [swapModal, id, loadAllChaves])
+
+  const handleSavePixAdmin = useCallback(async () => {
+    if (!pixAdminModal) return
+    setPixAdminSaving(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/chaves/${pixAdminModal.bracketId}/pix`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prizePix: pixAdminValue.trim() || null }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        alert(data.error || "Erro ao salvar PIX.")
+        return
+      }
+      setPixAdminModal(null)
+      await loadAllChaves()
+    } finally {
+      setPixAdminSaving(false)
+    }
+  }, [pixAdminModal, pixAdminValue, id, loadAllChaves])
 
   const loadTatames = useCallback(async () => {
     setTatamesLoading(true)
@@ -2363,6 +2395,33 @@ export default function EventoDetailPage() {
           bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
           bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
         ].filter(Boolean).join(" | ")
+
+        // Para chaves absolutas: encontra o campeão para o botão de PIX
+        const findChampionFromBracket = (b: Bracket): { registrationId: string; name: string; prizePix: string | null } | null => {
+          const real = b.matches.filter(m => m.position1Id && m.position2Id)
+          let champPosId: string | null = null
+          if (real.length > 0) {
+            const maxR = Math.max(...real.map(m => m.round))
+            const final = real.find(m => m.round === maxR && m.matchNumber === 1)
+            champPosId = final?.winnerId ?? null
+          } else {
+            const solo = b.matches.find(m => m.position1Id && !m.position2Id && m.winnerId)
+            champPosId = solo?.winnerId ?? null
+          }
+          if (!champPosId && b.positions.length === 1) champPosId = b.positions[0].id
+          if (!champPosId) return null
+          const pos = b.positions.find(p => p.id === champPosId)
+          if (!pos?.registration) return null
+          const name = pos.registration.athlete?.user.name ?? pos.registration.guestName ?? "Atleta"
+          return { registrationId: pos.registration.id, name, prizePix: pos.registration.prizePix ?? null }
+        }
+
+        // Usa a grande final se existir no grupo, senão usa a chave principal
+        const absoluteBracketForPix = bracket.isAbsolute
+          ? (bracketsToShow.find(b => b.isGrandFinal) ?? (bracketsToShow.find(b => b.isAbsolute) ?? null))
+          : null
+        const champInfo = absoluteBracketForPix ? findChampionFromBracket(absoluteBracketForPix) : null
+
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -2376,12 +2435,32 @@ export default function EventoDetailPage() {
             >
               <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
                 <span className="text-sm font-semibold text-white">{modalTitle}</span>
-                <button
-                  className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"
-                  onClick={() => setSelectedBracketId(null)}
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  {champInfo && absoluteBracketForPix && (
+                    <button
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"
+                      style={{ backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40" }}
+                      onClick={() => {
+                        setPixAdminModal({
+                          bracketId: absoluteBracketForPix.id,
+                          registrationId: champInfo.registrationId,
+                          champName: champInfo.name,
+                          currentPix: champInfo.prizePix ?? "",
+                        })
+                        setPixAdminValue(champInfo.prizePix ?? "")
+                      }}
+                    >
+                      <span>📱</span>
+                      PIX do Campeão
+                    </button>
+                  )}
+                  <button
+                    className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"
+                    onClick={() => setSelectedBracketId(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
               <div className="p-4 space-y-6">
                 {bracketsToShow.map(b => (
@@ -2402,6 +2481,58 @@ export default function EventoDetailPage() {
           </div>
         )
       })()}
+
+      {/* Modal de PIX do Campeão (admin) */}
+      {pixAdminModal && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
+          onClick={() => setPixAdminModal(null)}
+        >
+          <div
+            className="rounded-2xl border p-6 w-full max-w-sm space-y-4"
+            style={{ backgroundColor: "var(--card)", borderColor: "#16a34a40" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <p className="text-xs text-[#6b7280] font-semibold uppercase tracking-wider mb-1">PIX — 1° Lugar Absoluto</p>
+              <p className="font-bold text-base" style={{ color: "var(--foreground)" }}>{pixAdminModal.champName}</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold" style={{ color: "#9ca3af" }}>
+                Chave PIX <span className="font-normal text-[#6b7280]">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                value={pixAdminValue}
+                onChange={(e) => setPixAdminValue(e.target.value)}
+                placeholder="CPF, e-mail, telefone ou chave aleatória"
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && !pixAdminSaving && handleSavePixAdmin()}
+                className="rounded-xl px-4 py-3 text-sm outline-none w-full"
+                style={{ backgroundColor: "#1a1a1a", color: "#ffffff", border: "1px solid #374151" }}
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setPixAdminModal(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                style={{ backgroundColor: "#374151", color: "#d1d5db" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSavePixAdmin}
+                disabled={pixAdminSaving}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                style={{ backgroundColor: "#16a34a", color: "#ffffff", opacity: pixAdminSaving ? 0.6 : 1 }}
+              >
+                {pixAdminSaving ? "Salvando..." : "Salvar PIX"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Gerenciar Atleta Modal */}
       {gerenciarId && (
