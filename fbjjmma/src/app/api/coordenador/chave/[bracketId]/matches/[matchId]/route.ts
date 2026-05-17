@@ -7,10 +7,18 @@ import { propagateBracket, resetBracketAwards, checkAndCreateGrandFinal } from "
 import { saveBackupFile } from "@/lib/event-backup"
 
 async function finalizeBracket(bracketId: string) {
+  // Chave sem campeão (todos eliminados = W.O. duplo): pula a fila de premiação
+  const positions = await prisma.bracketPosition.findMany({
+    where: { bracketId },
+    select: { isEliminated: true },
+  })
+  const hasChampion = positions.length > 0 && positions.some(p => !p.isEliminated)
+  const finalStatus = hasChampion ? "FINALIZADA" : "PREMIADA"
+
   await resetBracketAwards(bracketId)
   const bracket = await prisma.bracket.update({
     where: { id: bracketId },
-    data: { status: "FINALIZADA" },
+    data: { status: finalStatus },
     select: { eventId: true },
   })
   await checkAndCreateGrandFinal(bracketId)
