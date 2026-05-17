@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
       },
     })
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (e) {
+    console.error("[painel/visible] Erro ao salvar:", e)
     return NextResponse.json({ ok: false }, { status: 500 })
   }
 }

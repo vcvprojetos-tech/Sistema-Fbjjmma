@@ -263,7 +263,6 @@ export default function PainelPage() {
 
   const triggeredRef = useRef<Set<string>>(new Set())
   const visibleBracketsRef = useRef<Set<string>>(new Set())
-  const seededRef = useRef(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -280,18 +279,9 @@ export default function PainelPage() {
     return () => clearInterval(iv)
   }, [fetchData])
 
-  // Inicializa visibleBracketsRef a partir do estado persistido no servidor (uma única vez)
-  useEffect(() => {
-    if (!data || seededRef.current) return
-    seededRef.current = true
-    for (const tatame of data.tatames) {
-      for (const id of tatame.panelBracketIds) {
-        visibleBracketsRef.current.add(id)
-      }
-    }
-  }, [data])
-
   // Informa ao servidor quais brackets estão visíveis neste painel
+  // Em cada tick, mescla panelBracketIds do servidor em visibleBracketsRef para garantir
+  // que chaves já admitidas mantenham prioridade mesmo após recarregamentos do painel
   useEffect(() => {
     if (!data) return
     const allTatames = data.tatames
@@ -301,6 +291,10 @@ export default function PainelPage() {
       : painelNum === "1" ? allTatames.slice(0, splitAt)
       : allTatames.slice(splitAt)
     for (const tatame of myTatames) {
+      // Sincroniza estado persistido do servidor com o tracking local (idempotente)
+      for (const id of tatame.panelBracketIds) {
+        visibleBracketsRef.current.add(id)
+      }
       const groups = filterGroupsToFit(getGroupsForTatame(tatame, visibleBracketsRef.current), CONTENT_H)
       const visibleIds = groups.map(g => g.bracketId)
       fetch(`/api/painel/${eventId}/visible`, {
