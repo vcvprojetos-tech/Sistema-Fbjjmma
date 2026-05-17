@@ -302,13 +302,15 @@ model Registration {
 // ─── TATAMES E COORDENADORES ─────────────────────────────────────────────────
 
 model Tatame {
-  id        String   @id @default(cuid())
-  eventId   String
-  event     Event    @relation(fields: [eventId], references: [id])
-  name      String
-  pin       String
-  isActive  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id                String    @id @default(cuid())
+  eventId           String
+  event             Event     @relation(fields: [eventId], references: [id])
+  name              String
+  pin               String
+  isActive          Boolean   @default(false)
+  panelBracketIds   String[]  @default([])
+  panelUpdatedAt    DateTime?
+  createdAt         DateTime  @default(now())
 
   brackets   Bracket[]
   operations TatameOperation[]

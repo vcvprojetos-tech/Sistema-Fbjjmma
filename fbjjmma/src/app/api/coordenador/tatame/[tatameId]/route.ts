@@ -78,7 +78,16 @@ export async function GET(
   })
 
   if (!tatame) return NextResponse.json({ error: "Tatame não encontrado." }, { status: 404 })
-  return NextResponse.json(tatame)
+  const panelActive = !!tatame.panelUpdatedAt && Date.now() - tatame.panelUpdatedAt.getTime() < 30_000
+  const responseData = {
+    ...tatame,
+    panelActive,
+    brackets: tatame.brackets.map(bracket => ({
+      ...bracket,
+      inPanel: panelActive && tatame.panelBracketIds.includes(bracket.id),
+    })),
+  }
+  return NextResponse.json(responseData)
 }
 
 // Coordenador desconecta: encerra a operação ativa

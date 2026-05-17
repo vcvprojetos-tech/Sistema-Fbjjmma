@@ -85,6 +85,7 @@ interface TatameData {
   event: { id: string; name: string; status: string; schedule: string | null; pesoDoc: string | null }
   brackets: BracketData[]
   operations: { user: { name: string }; startedAt: string }[]
+  panelActive?: boolean
 }
 
 interface ConsultaResult {
@@ -995,7 +996,7 @@ export default function TatamePage() {
                             ↩ Desfazer
                           </button>
                         )}
-                        {bracket.status === "EM_ANDAMENTO" && !bracket.matches.some(m => (m.callTimes ?? []).some((c: CallTime) => c.call === 1 && c.pos === null)) && (
+                        {bracket.status === "EM_ANDAMENTO" && tatame.panelActive && !bracket.inPanel && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ backgroundColor: "#450a0a", color: "#f87171", border: "1px solid #7f1d1d" }}>
                             Fora do Painel
                           </span>
