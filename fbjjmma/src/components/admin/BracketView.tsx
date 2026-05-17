@@ -286,7 +286,8 @@ function buildSlots(
         // Both have athletes — look up the match result
         const key = [a.posId, b.posId].sort().join("|")
         const match = matchByPair.get(key)
-        curr.push({ posId: match?.winnerId ?? null, isWinner: !!match?.winnerId, hasPotential: true })
+        const isResolved = !!match?.winnerId || (match?.isWO && !!match?.endedAt)
+        curr.push({ posId: match?.winnerId ?? null, isWinner: !!match?.winnerId, hasPotential: !match || !isResolved })
       }
     }
     slots.push(curr)
