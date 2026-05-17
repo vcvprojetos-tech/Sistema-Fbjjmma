@@ -24,6 +24,11 @@ const GROUP_HEADER_H = 58
 const ATHLETE_H = 50
 const ATHLETE_GAP = 5
 
+const TOPBAR_H = 52
+const LEGEND_H = 38
+// Altura disponível para os cards: altura total menos padding externo (16+10) e cabeçalhos (topbar + legenda + margens)
+const CONTENT_H = DESIGN_H - 16 - TOPBAR_H - 10 - LEGEND_H - 10 - 10
+
 const MEDAL_COLORS: Record<number, { bg: string; border: string; text: string; subText: string; label: string; emoji: string }> = {
   1: { bg: "#fbbf24", border: "#d97706", text: "#1c1917", subText: "#44403c", label: "1°\nLugar", emoji: "🥇" },
   2: { bg: "#e2e8f0", border: "#cbd5e1", text: "#1e293b", subText: "#475569", label: "2°\nLugar", emoji: "🥈" },
@@ -284,9 +289,6 @@ export default function PainelPremiacaoPage() {
 
   const groups = getAwardGroups(data.brackets)
   const totalAthletes = groups.reduce((s, g) => s + g.athletes.length, 0)
-
-  const TOPBAR_H = 52
-  const LEGEND_H = 38
 
   return (
     <div style={{ width: "100vw", height: "100dvh", backgroundColor: "#f0f4f8", overflow: "hidden", position: "relative" }}>
