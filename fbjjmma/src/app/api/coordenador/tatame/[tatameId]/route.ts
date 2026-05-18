@@ -24,7 +24,7 @@ export async function GET(
   const tatame = await prisma.tatame.findUnique({
     where: { id: tatameId },
     include: {
-      event: { select: { id: true, name: true, status: true, schedule: true, pesoDoc: true } },
+      event: { select: { id: true, name: true, status: true } },
       brackets: {
         include: {
           weightCategory: true,
@@ -78,16 +78,7 @@ export async function GET(
   })
 
   if (!tatame) return NextResponse.json({ error: "Tatame não encontrado." }, { status: 404 })
-  const panelActive = !!tatame.panelUpdatedAt && Date.now() - tatame.panelUpdatedAt.getTime() < 30_000
-  const responseData = {
-    ...tatame,
-    panelActive,
-    brackets: tatame.brackets.map(bracket => ({
-      ...bracket,
-      inPanel: panelActive && tatame.panelBracketIds.includes(bracket.id),
-    })),
-  }
-  return NextResponse.json(responseData)
+  return NextResponse.json(tatame)
 }
 
 // Coordenador desconecta: encerra a operação ativa

@@ -400,18 +400,11 @@ export default function PremiacaoPage() {
     }
   }, [eventId, load])
 
-  // Grupos com grande final: sub-chaves só aparecem após a grande final ser premiada
-  const grandFinalGroups = new Set(
-    brackets
-      .filter((b) => b.isGrandFinal)
-      .map((b) => b.bracketGroupId)
-      .filter(Boolean) as string[]
-  )
   const pendentes = brackets
     .filter((b) => {
       if (b.status !== "FINALIZADA") return false
-      // Sub-chave com grande final em andamento: não listar ainda
-      if (b.bracketGroupId && !b.isGrandFinal && grandFinalGroups.has(b.bracketGroupId)) return false
+      // Sub-chave de grupo: nunca listar diretamente — aguardar a grande final
+      if (b.bracketGroupId && !b.isGrandFinal) return false
       // Chave de 1 atleta que tomou W.O.: não vai para premiação
       if (b.positions.length === 1) {
         const soloMatch = b.matches.find(m => m.position1Id !== null && m.position2Id === null)

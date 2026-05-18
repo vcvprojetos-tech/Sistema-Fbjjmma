@@ -7,7 +7,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ThemeLogo } from "@/components/ThemeLogo"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -42,15 +41,13 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex items-center justify-center py-12 px-4"
-      style={{ minHeight: "100svh", backgroundColor: "var(--background)" }}
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: "var(--background)" }}
     >
       <div className="w-full max-w-md px-4">
         {/* Logo / Branding */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-24 h-24 mb-4">
-            <ThemeLogo className="w-full h-full" />
-          </div>
+          <img src="/logo.png" alt="FBJJMMA" className="w-24 h-24 object-contain mb-4" />
           <h1 className="text-2xl font-bold text-white tracking-wider">
             FBJJMMA
           </h1>
