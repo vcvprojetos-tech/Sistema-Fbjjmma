@@ -22,13 +22,11 @@ jobs:
             cd /var/www/fbjjmma
             git pull origin main
             echo "==> Gerando cliente Prisma..."
+            cd fbjjmma
             npx prisma generate
             echo "==> Compilando..."
             rm -rf .next
             npm run build
             echo "==> Reiniciando servidor..."
-            pm2 stop fbjjmma 2>/dev/null || pm2 stop all 2>/dev/null || true
-            pm2 delete fbjjmma 2>/dev/null || pm2 delete all 2>/dev/null || true
-            pm2 start npm --name fbjjmma -- start
-            pm2 save
+            pm2 restart all
             echo "==> Deploy concluído!"

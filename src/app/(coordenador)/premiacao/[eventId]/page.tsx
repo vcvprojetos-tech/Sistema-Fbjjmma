@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { useTheme } from "next-themes"
+import { ThemeLogo } from "@/components/ThemeLogo"
 import { RefreshCw, Trophy, Award, CheckCircle2, ChevronRight, Search, X } from "lucide-react"
 import BracketView from "@/components/admin/BracketView"
 
@@ -492,8 +493,7 @@ export default function PremiacaoPage() {
     {showOverlay && (
       <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <div style={{ width: 80, height: 80, overflow: "hidden", marginBottom: 24 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="FBJJMMA" className="w-full h-full object-contain" />
+          <ThemeLogo className="w-full h-full" />
         </div>
         <div style={{ color: "var(--foreground)", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>Premiação</div>
         <div style={{ color: "var(--muted)", fontSize: "0.95rem", marginBottom: 32 }}>{eventName}</div>
