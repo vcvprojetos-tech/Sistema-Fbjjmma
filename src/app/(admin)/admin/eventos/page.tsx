@@ -7,6 +7,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 
+const iconBtnStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: 32,
+  height: 32,
+  padding: 0,
+  border: "1px solid var(--border-alt)",
+  borderRadius: 6,
+  background: "transparent",
+  cursor: "pointer",
+}
+
 interface EventType {
   id: string
   name: string
@@ -37,19 +50,23 @@ export default function EventosPage() {
   const [search, setSearch] = useState("")
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [apiError, setApiError] = useState(false)
 
   async function loadEvents() {
     setLoading(true)
+    setApiError(false)
     const params = new URLSearchParams()
     if (tab === "lixeira") params.set("trash", "1")
     if (search) params.set("search", search)
 
     try {
       const res = await fetch(`/api/admin/eventos?${params}`)
+      if (!res.ok) { setApiError(true); return }
       const data = await res.json()
       if (Array.isArray(data)) setEvents(data)
+      else setApiError(true)
     } catch {
-      console.error("Erro ao carregar eventos")
+      setApiError(true)
     } finally {
       setLoading(false)
     }
@@ -87,7 +104,7 @@ export default function EventosPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Eventos</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Eventos</h1>
           <p className="text-[#6b7280] text-sm mt-1">
             Gerencie os eventos da federação
           </p>
@@ -167,6 +184,15 @@ export default function EventosPage() {
                     Carregando...
                   </td>
                 </tr>
+              ) : apiError ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center">
+                    <div style={{ color: "#ef4444", fontWeight: 600, marginBottom: 4 }}>Erro ao carregar eventos</div>
+                    <button onClick={loadEvents} style={{ color: "#3b82f6", fontSize: 13, textDecoration: "underline", background: "none", border: "none", cursor: "pointer" }}>
+                      Tentar novamente
+                    </button>
+                  </td>
+                </tr>
               ) : events.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-[#6b7280]">
@@ -227,38 +253,27 @@ export default function EventosPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                         {tab === "ativos" ? (
                           <>
                             <Link href={`/admin/eventos/${event.id}`}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Gerenciar">
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
+                              <button style={iconBtnStyle} title="Gerenciar">
+                                <Eye size={14} color="#6366f1" />
+                              </button>
                             </Link>
                             <Link href={`/admin/eventos/${event.id}/editar`}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar">
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
+                              <button style={iconBtnStyle} title="Editar">
+                                <Pencil size={14} color="#3b82f6" />
+                              </button>
                             </Link>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 hover:text-[#dc2626]"
-                              onClick={() => handleDelete(event.id)}
-                              title="Excluir"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            <button style={iconBtnStyle} onClick={() => handleDelete(event.id)} title="Excluir">
+                              <Trash2 size={14} color="#dc2626" />
+                            </button>
                           </>
                         ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:text-green-400"
-                            title="Restaurar"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                          </Button>
+                          <button style={iconBtnStyle} title="Restaurar">
+                            <RotateCcw size={14} color="#16a34a" />
+                          </button>
                         )}
                       </div>
                     </td>

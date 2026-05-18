@@ -144,8 +144,8 @@ function getAthletes(tatame: TatameInfo): AthleteEntry[] {
       }
     }
 
-    if (bracketEntries.length === 0) continue // todos conferidos, próxima chave
-    if (slotsUsed + bracketEntries.length > NAMES_PER_COL) break // sem espaço, para a fila
+    if (bracketEntries.length === 0) continue
+    if (slotsUsed + bracketEntries.length > NAMES_PER_COL) break
 
     for (const e of bracketEntries) seen.add(e.key)
     entries.push(...bracketEntries)

@@ -1,7 +1,6 @@
 ﻿"use client"
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
-import { useTheme } from "next-themes"
 import { useParams } from "next/navigation"
 import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -68,6 +67,7 @@ type Tab =
 interface Event {
   id: string
   name: string
+  status: string
   typeId: string
   state: string
   city: string
@@ -156,7 +156,6 @@ interface Bracket {
       athlete: { user: { name: string } } | null
       guestName: string | null
       team: { name: string } | null
-      prizePix: string | null
     } | null
   }[]
   matches: {
@@ -317,11 +316,30 @@ const FiltersBar = React.memo(function FiltersBar({
 
 export default function EventoDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme !== "light"
   const [tab, setTab] = useState<Tab>("evento")
   const [event, setEvent] = useState<Event | null>(null)
   const [eventLoading, setEventLoading] = useState(true)
+
+  async function removeDoc(field: "schedule" | "pesoDoc") {
+    if (!event) return
+    const fd = new FormData()
+    fd.append(field === "schedule" ? "removeSchedule" : "removePesoDoc", "true")
+    fd.append("name", event.name); fd.append("typeId", event.typeId)
+    fd.append("state", event.state); fd.append("city", event.city)
+    fd.append("location", event.location); fd.append("date", event.date)
+    fd.append("registrationDeadline", event.registrationDeadline)
+    fd.append("correctionDeadline", event.correctionDeadline)
+    fd.append("paymentDeadline", event.paymentDeadline)
+    fd.append("checkinRelease", event.checkinRelease)
+    fd.append("bracketRelease", event.bracketRelease)
+    fd.append("weightTableId", event.weightTableId)
+    fd.append("value", String(event.value))
+    fd.append("hasAbsolute", String(event.hasAbsolute))
+    fd.append("registrationOpen", String(event.registrationOpen))
+    fd.append("isVisible", String(event.isVisible))
+    const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+    if (res.ok) { const updated = await res.json(); setEvent(updated) }
+  }
 
   // Valores tab
   const [valoresData, setValoresData] = useState<CategoryValue[]>([])
@@ -357,27 +375,6 @@ export default function EventoDetailPage() {
   const [chavesLoading, setChavesLoading] = useState(false)
   const [chavesGenerating, setChavesGenerating] = useState(false)
 
-  // Troca de posição na chave
-  const [cardAction, setCardAction] = useState<{
-    registrationId: string; positionId: string; positionNum: number
-    bracketId: string; name: string; bracketStatus: string
-  } | null>(null)
-  const [swapModal, setSwapModal] = useState<{
-    fromPosId: string; fromPosNum: number; fromName: string; bracketId: string
-    allPositions: Array<{ id: string; position: number; name: string }>
-  } | null>(null)
-  const [swapSaving, setSwapSaving] = useState(false)
-
-  // PIX do campeão (edição pelo admin)
-  const [pixAdminModal, setPixAdminModal] = useState<{
-    bracketId: string
-    registrationId: string
-    champName: string
-    currentPix: string
-  } | null>(null)
-  const [pixAdminValue, setPixAdminValue] = useState("")
-  const [pixAdminSaving, setPixAdminSaving] = useState(false)
-
   // Tatames
   const [tatames, setTatames] = useState<Tatame[]>([])
   const [tatamesLoading, setTatamesLoading] = useState(false)
@@ -396,6 +393,42 @@ export default function EventoDetailPage() {
   const [resultadoLoading, setResultadoLoading] = useState(false)
   const [resultadoEdits, setResultadoEdits] = useState<Record<string, Partial<Registration>>>({})
   const [resultadoSaving, setResultadoSaving] = useState(false)
+
+  // Finalizar evento
+  const [finalizarLoading, setFinalizarLoading] = useState(false)
+
+  const finalizarEvento = useCallback(async () => {
+    if (!confirm("Finalizar este evento? Coordenadores não poderão mais criar tatames para ele.")) return
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ENCERRADO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
+
+  const reabrirEvento = useCallback(async () => {
+    setFinalizarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "EM_ANDAMENTO" }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
+      }
+    } catch { /* silencioso */ }
+    finally { setFinalizarLoading(false) }
+  }, [id])
 
   // Modal inscrição
   const [inscreverOpen, setInscreverOpen] = useState(false)
@@ -565,55 +598,6 @@ export default function EventoDetailPage() {
     }
   }, [id])
 
-  const handleBracketCardClick = useCallback((info: { registrationId: string; positionId: string; positionNum: number; bracketId: string }) => {
-    const bracket = brackets.find(b => b.id === info.bracketId)
-    const regInPos = bracket?.positions.find(p => p.id === info.positionId)?.registration
-    const name = regInPos?.athlete?.user.name ?? regInPos?.guestName ?? `Posição ${info.positionNum}`
-    setCardAction({ ...info, name, bracketStatus: bracket?.status ?? "" })
-  }, [brackets])
-
-  const handleSwapPosition = useCallback(async (toPosId: string) => {
-    if (!swapModal) return
-    setSwapSaving(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}/chaves/${swapModal.bracketId}/swap`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fromPosId: swapModal.fromPosId, toPosId }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        alert(data.error || "Erro ao trocar posições.")
-        return
-      }
-      setSwapModal(null)
-      await loadAllChaves()
-    } finally {
-      setSwapSaving(false)
-    }
-  }, [swapModal, id, loadAllChaves])
-
-  const handleSavePixAdmin = useCallback(async () => {
-    if (!pixAdminModal) return
-    setPixAdminSaving(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}/chaves/${pixAdminModal.bracketId}/pix`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prizePix: pixAdminValue.trim() || null }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        alert(data.error || "Erro ao salvar PIX.")
-        return
-      }
-      setPixAdminModal(null)
-      await loadAllChaves()
-    } finally {
-      setPixAdminSaving(false)
-    }
-  }, [pixAdminModal, pixAdminValue, id, loadAllChaves])
-
   const loadTatames = useCallback(async () => {
     setTatamesLoading(true)
     try {
@@ -657,16 +641,11 @@ export default function EventoDetailPage() {
   }, [id, loadTatames])
 
   const excluirTatame = useCallback(async (tatameId: string) => {
-    const tatame = tatames.find(t => t.id === tatameId)
-    const qtdChaves = tatame?.brackets.length ?? 0
-    const aviso = qtdChaves > 0
-      ? `Excluir este tatame? As ${qtdChaves} chave(s) atribuídas a ele voltarão para "Sem tatame".\n\nSe o coordenador desconectou temporariamente, aguarde a reconexão em vez de excluir.`
-      : "Excluir este tatame?"
-    if (!confirm(aviso)) return
+    if (!confirm("Excluir este tatame?")) return
     await fetch(`/api/admin/eventos/${id}/tatames/${tatameId}`, { method: "DELETE" })
     await loadTatames()
     await loadAllChaves()
-  }, [id, tatames, loadTatames, loadAllChaves])
+  }, [id, loadTatames, loadAllChaves])
 
   const atribuirTatame = useCallback(async (bracketId: string, tatameId: string | null) => {
     // Atualização otimista — sem loading
@@ -787,9 +766,6 @@ export default function EventoDetailPage() {
       loadTatames()
       loadAllChaves()
     }
-    if (tab === "chaves") {
-      loadTatames()
-    }
   }, [tab, loadTatames, loadAllChaves])
 
   // Polling silencioso na aba tatames (a cada 5 segundos, sem ativar loading)
@@ -894,9 +870,9 @@ export default function EventoDetailPage() {
   }
 
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-    PENDENTE: { bg: "#92400e30", text: "#fbbf24" },
-    APROVADO: { bg: "#14532d30", text: "#4ade80" },
-    CANCELADO: { bg: "#7f1d1d30", text: "#f87171" },
+    PENDENTE: { bg: "#92400e", text: "#ffffff" },
+    APROVADO: { bg: "#166534", text: "#ffffff" },
+    CANCELADO: { bg: "#dc2626", text: "#ffffff" },
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -948,46 +924,59 @@ export default function EventoDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/admin/eventos">
-          <Button variant="ghost" size="icon">
+          <button className="admin-btn admin-btn-ghost h-8 w-8 p-0 flex items-center justify-center">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
+          </button>
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold truncate" style={{ color: "var(--foreground)" }}>
-            {eventLoading ? "Carregando..." : event?.name || "Evento"}
-          </h1>
-          <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="admin-page-title">
+              {eventLoading ? "Carregando..." : event?.name || "Evento"}
+            </p>
+            {event?.status === "ENCERRADO" && (
+              <span className="admin-badge admin-badge-red">ENCERRADO</span>
+            )}
+          </div>
+          <p className="admin-page-subtitle">Gerenciamento do evento</p>
         </div>
-        {/* Botões de consulta rápida */}
+        {/* Botões de consulta rápida + ação de evento */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => event?.schedule && setDocModal({ title: "📅 Cronograma do Evento", url: event.schedule })}
             disabled={!event?.schedule}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
-            style={{
-              backgroundColor: "var(--card-alt)",
-              color: event?.schedule ? "var(--foreground)" : "var(--muted)",
-              borderColor: "var(--border-alt)",
-              opacity: event?.schedule ? 1 : 0.45,
-              cursor: event?.schedule ? "pointer" : "not-allowed",
-            }}
+            className="admin-btn admin-btn-ghost text-xs"
+            style={{ opacity: event?.schedule ? 1 : 0.45, cursor: event?.schedule ? "pointer" : "not-allowed" }}
           >
             📅 Cronograma
           </button>
           <button
             onClick={() => event?.pesoDoc && setDocModal({ title: "⚖️ Tabela de Peso", url: event.pesoDoc })}
             disabled={!event?.pesoDoc}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
-            style={{
-              backgroundColor: "var(--card-alt)",
-              color: event?.pesoDoc ? "var(--foreground)" : "var(--muted)",
-              borderColor: "var(--border-alt)",
-              opacity: event?.pesoDoc ? 1 : 0.45,
-              cursor: event?.pesoDoc ? "pointer" : "not-allowed",
-            }}
+            className="admin-btn admin-btn-ghost text-xs"
+            style={{ opacity: event?.pesoDoc ? 1 : 0.45, cursor: event?.pesoDoc ? "pointer" : "not-allowed" }}
           >
             ⚖️ Tabela de Peso
           </button>
+          {event && (
+            event.status === "ENCERRADO" ? (
+              <button
+                onClick={reabrirEvento}
+                disabled={finalizarLoading}
+                className="admin-btn admin-btn-ghost text-xs"
+              >
+                {finalizarLoading ? "..." : "Reabrir Evento"}
+              </button>
+            ) : (
+              <button
+                onClick={finalizarEvento}
+                disabled={finalizarLoading}
+                className="admin-btn text-xs font-bold"
+                style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
+              >
+                {finalizarLoading ? "..." : "Finalizar Evento"}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -1343,13 +1332,13 @@ export default function EventoDetailPage() {
                             <p className="text-xs text-[#6b7280]">Total na planilha</p>
                             <p className="text-xl font-bold" style={{ color: "var(--foreground)" }}>{importResult.total}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#14532d30" }}>
-                            <p className="text-xs text-[#4ade80]">Importados</p>
-                            <p className="text-xl font-bold text-[#4ade80]">{importResult.importados}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#166534" }}>
+                            <p className="text-xs text-[#86efac]">Importados</p>
+                            <p className="text-xl font-bold text-[#86efac]">{importResult.importados}</p>
                           </div>
-                          <div className="rounded-lg p-3" style={{ backgroundColor: "#7f1d1d30" }}>
-                            <p className="text-xs text-[#f87171]">Erros</p>
-                            <p className="text-xl font-bold text-[#f87171]">{importResult.erros.length}</p>
+                          <div className="rounded-lg p-3" style={{ backgroundColor: "#dc2626" }}>
+                            <p className="text-xs text-[#fca5a5]">Erros</p>
+                            <p className="text-xl font-bold text-[#fca5a5]">{importResult.erros.length}</p>
                           </div>
                         </div>
                         {importResult.erros.length > 0 && (
@@ -1640,11 +1629,11 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
-                  DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
-                  EM_ANDAMENTO: { bg: "#b45309", text: "#ffffff" },
-                  FINALIZADA:   { bg: "#166534", text: "#ffffff" },
-                  PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
+                  PENDENTE: { bg: "#dc2626", text: "#ffffff" },
+                  DESIGNADA: { bg: "#1e3a8a", text: "#ffffff" },
+                  EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
+                  FINALIZADA: { bg: "#166534", text: "#ffffff" },
+                  PREMIADA: { bg: "#5b21b6", text: "#ffffff" },
                 }
                 const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
@@ -1678,7 +1667,7 @@ export default function EventoDetailPage() {
                     const totalAthletes = group.reduce((s, b) => s + b.positions.length, 0)
                     const groupTatameId = group[0].tatameId || ""
                     rendered.push(
-                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
+                      <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#d97706" }}>
                         <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--card-alt)" }}>
                           <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
                           <button
@@ -1984,17 +1973,23 @@ export default function EventoDetailPage() {
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
                   const emEspera = !operador
+                  // Cores adaptadas ao fundo do card
+                  const cardBg     = emEspera ? "#fef9c3" : "#dcfce7"
+                  const cardBorder = emEspera ? "#eab308" : "#16a34a"
+                  const titleColor = emEspera ? "#713f12" : "#14532d"
+                  const baseText   = emEspera ? "#78350f" : "#166534"
+                  const aguardandoColor  = "#1d4ed8"
+                  const emAndamentoColor = emEspera ? "#92400e" : "#ca8a04"
+                  const finalizadasColor = emEspera ? "#166534" : "#14532d"
+                  const operandoColor    = emEspera ? "#166534" : "#14532d"
+                  const reconexaoColor   = emEspera ? "#92400e" : "#ca8a04"
                   return (
                     <div
                       key={tatame.id}
-                      className="rounded-lg border p-3"
-                      style={{
-                        borderColor: emEspera ? (isDark ? "#78350f60" : "#d9770660") : (isDark ? "#16a34a40" : "#16a34a50"),
-                        backgroundColor: emEspera ? (isDark ? "#1c1200" : "#fffbeb") : (isDark ? "#0d1f0d" : "#f0fdf4"),
-                      }}
+                      className="rounded-lg border p-4 space-y-3"
+                      style={{ borderColor: cardBorder, backgroundColor: cardBg }}
                     >
-                      {/* Header: nome + badge + lixeira */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           {(() => {
                             const dashIdx = tatame.name.lastIndexOf(" - ")
@@ -2002,41 +1997,44 @@ export default function EventoDetailPage() {
                             const prefix = dashIdx >= 0 ? tatame.name.slice(0, dashIdx) : null
                             return (
                               <>
-                                {prefix && <span className="text-[10px] block truncate" style={{ color: isDark ? "#9ca3af" : "#6b7280" }}>{prefix}</span>}
-                                <span className="font-bold text-sm block" style={{ color: isDark ? "#ffffff" : "#111827" }}>{tataLabel}</span>
+                                {prefix && <span className="text-[10px] block truncate" style={{ color: "#6b7280" }}>{prefix}</span>}
+                                <span className="font-semibold block" style={{ color: titleColor }}>{tataLabel}</span>
                               </>
                             )
                           })()}
-                          <span
-                            className="text-[10px] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5"
-                            style={{
-                              backgroundColor: emEspera ? "#d97706" : "#16a34a",
-                              color: "#ffffff",
-                            }}
-                          >
-                            {emEspera ? "AGUARDANDO" : "ATIVO"}
-                          </span>
                         </div>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-[#dc2626] flex-shrink-0" onClick={() => excluirTatame(tatame.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                          style={{
+                            backgroundColor: emEspera ? "#ca8a04" : "#16a34a",
+                            color: "#ffffff",
+                          }}
+                        >
+                          {emEspera ? "AGUARDANDO" : "ATIVO"}
+                        </span>
                       </div>
-                      {/* Stats em grid 2 colunas */}
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] mb-1.5">
-                        <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>Atribuídas: <span style={{ color: isDark ? "#ffffff" : "#111827", fontWeight: 600 }}>{tatame.brackets.length}</span></span>
-                        <span style={{ color: isDark ? "#60a5fa" : "#1d4ed8" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
-                        <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
-                        <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
-                      </div>
-                      {/* Operador */}
-                      <div className="text-[11px]">
+                      <div className="text-xs space-y-1" style={{ color: baseText }}>
+                        <p>Chaves atribuídas: {tatame.brackets.length}</p>
+                        <p style={{ color: aguardandoColor }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
+                        <p style={{ color: emAndamentoColor }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
+                        <p style={{ color: finalizadasColor }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
                         {operador ? (
-                          <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>
-                            {operador.user.name} desde {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
+                          <p style={{ color: operandoColor }}>
+                            Operando: {operador.user.name} desde{" "}
+                            {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
                         ) : (
-                          <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Aguardando reconexão...</span>
+                          <p style={{ color: reconexaoColor }}>Aguardando reconexão...</p>
                         )}
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          className="h-8 w-8 p-0 flex items-center justify-center rounded hover:text-[#dc2626] transition-colors"
+                          style={{ color: baseText, backgroundColor: "transparent", border: "none" }}
+                          onClick={() => excluirTatame(tatame.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
                   )
@@ -2103,7 +2101,7 @@ export default function EventoDetailPage() {
               const statusColors: Record<string, { bg: string; text: string }> = {
                 PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
                 DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
-                EM_ANDAMENTO: { bg: "#b45309", text: "#ffffff" },
+                EM_ANDAMENTO: { bg: "#92400e", text: "#ffffff" },
                 FINALIZADA:   { bg: "#166534", text: "#ffffff" },
                 PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
               }
@@ -2243,10 +2241,6 @@ export default function EventoDetailPage() {
               )
               const allTabSelected = allTabIds.length > 0 && allTabIds.every(bid => selectedBrackets.has(bid))
 
-              const tabColor = tatamesChaveTab === "pendentes" ? "#b45309"
-                : tatamesChaveTab === "finalizadas" ? "#166534"
-                : "#5b21b6"
-
               return (
                 <div className="space-y-0">
                   {/* Abas */}
@@ -2269,7 +2263,6 @@ export default function EventoDetailPage() {
                         {t.label} ({t.count})
                       </button>
                     ))}
-                    {/* Selecionar todas (só na aba pendentes com modo seleção ativo) */}
                     {selectionMode && isSelectable && tabList.length > 0 && (
                       <button
                         className="ml-auto px-4 py-2.5 text-xs text-[#60a5fa] hover:text-white transition-colors"
@@ -2375,6 +2368,116 @@ export default function EventoDetailPage() {
             </a>
           </div>
 
+          {/* Documentos para Coordenadores */}
+          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>📄 Documentos para Coordenadores</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Anexe os documentos que os coordenadores poderão consultar diretamente na tela de controle de tatame.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Cronograma */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>📅 Cronograma do Evento</p>
+                {event?.schedule ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.schedule} target="_blank" rel="noopener noreferrer"
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover o cronograma?")) removeDoc("schedule") }}
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
+                      title="Remover">✕</button>
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
+                    {event?.schedule ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("schedule", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
+                </label>
+              </div>
+              {/* Tabela de Peso */}
+              <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>⚖️ Tabela de Peso</p>
+                {event?.pesoDoc ? (
+                  <div className="flex items-center gap-2">
+                    <a href={event.pesoDoc} target="_blank" rel="noopener noreferrer"
+                      className="text-xs underline truncate flex-1" style={{ color: "#2563eb" }}>
+                      Ver arquivo atual
+                    </a>
+                    <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Anexado</span>
+                    <button
+                      onClick={() => { if (confirm("Remover a tabela de peso?")) removeDoc("pesoDoc") }}
+                      className="text-xs font-bold ml-1 hover:opacity-80"
+                      style={{ color: "#dc2626", background: "none", border: "none" }}
+                      title="Remover">✕</button>
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Nenhum arquivo anexado</p>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="px-3 py-1.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: "#1d4ed8", color: "#ffffff" }}>
+                    {event?.pesoDoc ? "Substituir" : "Anexar"}
+                  </span>
+                  <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0]
+                      if (!file || !event) return
+                      const fd = new FormData()
+                      fd.append("pesoDoc", file)
+                      fd.append("name", event.name); fd.append("typeId", event.typeId)
+                      fd.append("state", event.state); fd.append("city", event.city)
+                      fd.append("location", event.location); fd.append("date", event.date)
+                      fd.append("registrationDeadline", event.registrationDeadline)
+                      fd.append("correctionDeadline", event.correctionDeadline)
+                      fd.append("paymentDeadline", event.paymentDeadline)
+                      fd.append("checkinRelease", event.checkinRelease)
+                      fd.append("bracketRelease", event.bracketRelease)
+                      fd.append("weightTableId", event.weightTableId)
+                      fd.append("value", String(event.value))
+                      fd.append("hasAbsolute", String(event.hasAbsolute))
+                      fd.append("registrationOpen", String(event.registrationOpen))
+                      fd.append("isVisible", String(event.isVisible))
+                      const res = await fetch(`/api/admin/eventos/${id}`, { method: "PUT", body: fd })
+                      if (res.ok) { const updated = await res.json(); setEvent(updated) }
+                      e.target.value = ""
+                    }}
+                  />
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>PDF, PNG ou JPG</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           </div>
         </div>
       )}
@@ -2395,33 +2498,6 @@ export default function EventoDetailPage() {
           bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
           bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
         ].filter(Boolean).join(" | ")
-
-        // Para chaves absolutas: encontra o campeão para o botão de PIX
-        const findChampionFromBracket = (b: Bracket): { registrationId: string; name: string; prizePix: string | null } | null => {
-          const real = b.matches.filter(m => m.position1Id && m.position2Id)
-          let champPosId: string | null = null
-          if (real.length > 0) {
-            const maxR = Math.max(...real.map(m => m.round))
-            const final = real.find(m => m.round === maxR && m.matchNumber === 1)
-            champPosId = final?.winnerId ?? null
-          } else {
-            const solo = b.matches.find(m => m.position1Id && !m.position2Id && m.winnerId)
-            champPosId = solo?.winnerId ?? null
-          }
-          if (!champPosId && b.positions.length === 1) champPosId = b.positions[0].id
-          if (!champPosId) return null
-          const pos = b.positions.find(p => p.id === champPosId)
-          if (!pos?.registration) return null
-          const name = pos.registration.athlete?.user.name ?? pos.registration.guestName ?? "Atleta"
-          return { registrationId: pos.registration.id, name, prizePix: pos.registration.prizePix ?? null }
-        }
-
-        // Usa a grande final se existir no grupo, senão usa a chave principal
-        const absoluteBracketForPix = bracket.isAbsolute
-          ? (bracketsToShow.find(b => b.isGrandFinal) ?? (bracketsToShow.find(b => b.isAbsolute) ?? null))
-          : null
-        const champInfo = absoluteBracketForPix ? findChampionFromBracket(absoluteBracketForPix) : null
-
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -2435,32 +2511,12 @@ export default function EventoDetailPage() {
             >
               <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
                 <span className="text-sm font-semibold text-white">{modalTitle}</span>
-                <div className="flex items-center gap-2">
-                  {champInfo && absoluteBracketForPix && (
-                    <button
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"
-                      style={{ backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40" }}
-                      onClick={() => {
-                        setPixAdminModal({
-                          bracketId: absoluteBracketForPix.id,
-                          registrationId: champInfo.registrationId,
-                          champName: champInfo.name,
-                          currentPix: champInfo.prizePix ?? "",
-                        })
-                        setPixAdminValue(champInfo.prizePix ?? "")
-                      }}
-                    >
-                      <span>📱</span>
-                      PIX do Campeão
-                    </button>
-                  )}
-                  <button
-                    className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"
-                    onClick={() => setSelectedBracketId(null)}
-                  >
-                    ✕
-                  </button>
-                </div>
+                <button
+                  className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"
+                  onClick={() => setSelectedBracketId(null)}
+                >
+                  ✕
+                </button>
               </div>
               <div className="p-4 space-y-6">
                 {bracketsToShow.map(b => (
@@ -2470,10 +2526,7 @@ export default function EventoDetailPage() {
                         {b.isGrandFinal ? `🏆 Grande Final (#${b.bracketNumber})` : `Sub-chave #${b.bracketNumber} — ${b.positions.length} atleta(s)`}
                       </p>
                     )}
-                    <BracketView
-                      bracket={b}
-                      onPositionCardClick={(info) => handleBracketCardClick({ ...info, bracketId: b.id })}
-                    />
+                    <BracketView bracket={b} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
                   </div>
                 ))}
               </div>
@@ -2481,58 +2534,6 @@ export default function EventoDetailPage() {
           </div>
         )
       })()}
-
-      {/* Modal de PIX do Campeão (admin) */}
-      {pixAdminModal && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
-          onClick={() => setPixAdminModal(null)}
-        >
-          <div
-            className="rounded-2xl border p-6 w-full max-w-sm space-y-4"
-            style={{ backgroundColor: "var(--card)", borderColor: "#16a34a40" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <p className="text-xs text-[#6b7280] font-semibold uppercase tracking-wider mb-1">PIX — 1° Lugar Absoluto</p>
-              <p className="font-bold text-base" style={{ color: "var(--foreground)" }}>{pixAdminModal.champName}</p>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold" style={{ color: "#9ca3af" }}>
-                Chave PIX <span className="font-normal text-[#6b7280]">(opcional)</span>
-              </label>
-              <input
-                type="text"
-                value={pixAdminValue}
-                onChange={(e) => setPixAdminValue(e.target.value)}
-                placeholder="CPF, e-mail, telefone ou chave aleatória"
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && !pixAdminSaving && handleSavePixAdmin()}
-                className="rounded-xl px-4 py-3 text-sm outline-none w-full"
-                style={{ backgroundColor: "#1a1a1a", color: "#ffffff", border: "1px solid #374151" }}
-              />
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => setPixAdminModal(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                style={{ backgroundColor: "#374151", color: "#d1d5db" }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSavePixAdmin}
-                disabled={pixAdminSaving}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
-                style={{ backgroundColor: "#16a34a", color: "#ffffff", opacity: pixAdminSaving ? 0.6 : 1 }}
-              >
-                {pixAdminSaving ? "Salvando..." : "Salvar PIX"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Gerenciar Atleta Modal */}
       {gerenciarId && (
@@ -2546,120 +2547,6 @@ export default function EventoDetailPage() {
             setGerenciarId(null)
           }}
         />
-      )}
-
-      {/* Modal de ação ao clicar em atleta na chave */}
-      {cardAction && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-          onClick={() => setCardAction(null)}
-        >
-          <div
-            className="rounded-xl border p-5 w-72 space-y-3"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div>
-              <p className="text-sm font-bold text-white">{cardAction.name}</p>
-              <p className="text-xs mt-0.5" style={{ color: "#6b7280" }}>Posição {cardAction.positionNum} na chave</p>
-            </div>
-            <div className="space-y-2">
-              <button
-                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors hover:brightness-110"
-                style={{ backgroundColor: "#1e3a5f", color: "#93c5fd" }}
-                onClick={() => { setGerenciarId(cardAction.registrationId); setCardAction(null) }}
-              >
-                Gerenciar atleta →
-              </button>
-              {(cardAction.bracketStatus === "PENDENTE" || cardAction.bracketStatus === "DESIGNADA") && (
-                <button
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors hover:brightness-110"
-                  style={{ backgroundColor: "#1e293b", color: "#94a3b8" }}
-                  onClick={() => {
-                    const bracket = brackets.find(b => b.id === cardAction.bracketId)
-                    setSwapModal({
-                      fromPosId: cardAction.positionId,
-                      fromPosNum: cardAction.positionNum,
-                      fromName: cardAction.name,
-                      bracketId: cardAction.bracketId,
-                      allPositions: (bracket?.positions ?? []).map(p => ({
-                        id: p.id,
-                        position: p.position,
-                        name: p.registration?.athlete?.user.name ?? p.registration?.guestName ?? "(vazio)",
-                      })),
-                    })
-                    setCardAction(null)
-                  }}
-                >
-                  Trocar posição na chave ↕
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de troca de posição */}
-      {swapModal && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-          onClick={() => !swapSaving && setSwapModal(null)}
-        >
-          <div
-            className="rounded-xl border flex flex-col"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)", width: 320, maxHeight: "70vh" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
-              <div>
-                <p className="text-sm font-bold text-white">Trocar posição</p>
-                <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
-                  {swapModal.fromName} — posição atual: {swapModal.fromPosNum}
-                </p>
-              </div>
-              <button
-                onClick={() => setSwapModal(null)}
-                className="text-[#6b7280] hover:text-white text-lg leading-none ml-3"
-                disabled={swapSaving}
-              >✕</button>
-            </div>
-            <div className="overflow-auto flex-1 p-2">
-              {[...swapModal.allPositions].sort((a, b) => a.position - b.position).map(pos => {
-                const isCurrent = pos.id === swapModal.fromPosId
-                return (
-                  <button
-                    key={pos.id}
-                    disabled={isCurrent || swapSaving}
-                    onClick={() => handleSwapPosition(pos.id)}
-                    className="w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-all"
-                    style={{
-                      backgroundColor: isCurrent ? "#1e3a5f" : "var(--card-alt)",
-                      opacity: isCurrent ? 0.5 : 1,
-                      cursor: isCurrent ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    <span className="text-xs font-bold mr-2" style={{ color: "#6b7280" }}>
-                      {pos.position}
-                    </span>
-                    <span className="text-sm font-semibold" style={{ color: isCurrent ? "#60a5fa" : "var(--foreground)" }}>
-                      {pos.name}
-                    </span>
-                    {isCurrent && (
-                      <span className="text-xs ml-2" style={{ color: "#6b7280" }}>(posição atual)</span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-            <div className="px-4 py-2 border-t" style={{ borderColor: "var(--border)" }}>
-              <p className="text-xs" style={{ color: "#6b7280" }}>
-                {swapSaving ? "Trocando..." : "Clique em uma posição para trocar"}
-              </p>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Modal de consulta — cronograma e tabela de peso */}

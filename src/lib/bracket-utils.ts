@@ -85,8 +85,13 @@ export async function propagateBracket(bracketId: string): Promise<boolean> {
 
       if (nextRoundMatches.some((m) => m.matchNumber === nextMN)) continue
 
-      const m1 = sorted[i]
-      const m2 = sorted[j]
+      // Busca pelo matchNumber esperado, não pelo índice no array.
+      // Se nem todas as partidas do round existem ainda (ex.: R2M1 ainda
+      // não foi criada mas R2M2 e R2M3 já existem), sorted[i] aponta para
+      // a partida errada. Usando find(matchNumber === i+1) garantimos que
+      // cada slot da chave é encontrado pelo seu número real.
+      const m1 = sorted.find(m => m.matchNumber === i + 1)
+      const m2 = sorted.find(m => m.matchNumber === j + 1)
       if (!m1 || !m2) continue // partida ainda não existe
       if (!isMatchResolved(m1) || !isMatchResolved(m2)) continue // ainda pendente
 

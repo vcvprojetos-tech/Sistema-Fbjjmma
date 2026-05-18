@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[#dc2626] text-white hover:bg-[#b91c1c] active:bg-[#991b1b]",
+          "bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b]",
         destructive:
-          "bg-[#dc2626] text-white hover:bg-[#b91c1c]",
+          "bg-[#dc2626] hover:bg-[#b91c1c]",
         outline:
-          "border border-[var(--border-alt)] bg-transparent text-white hover:bg-[var(--card-alt)]",
+          "border border-[var(--border-alt)] bg-transparent text-[color:var(--foreground)] hover:bg-[var(--card-alt)]",
         secondary:
-          "bg-[var(--card-alt)] text-white hover:bg-[var(--border)]",
+          "bg-[var(--card-alt)] text-[color:var(--foreground)] hover:bg-[var(--border)]",
         ghost:
-          "bg-transparent text-white hover:bg-[var(--card-alt)]",
+          "bg-transparent hover:bg-[var(--card-alt)]",
         link:
           "text-[#dc2626] underline-offset-4 hover:underline bg-transparent p-0 h-auto",
       },
@@ -42,11 +42,22 @@ export interface ButtonProps
   asChild?: boolean
 }
 
+const VARIANT_COLORS: Record<string, string> = {
+  default:     "#ffffff",
+  destructive: "#ffffff",
+  outline:     "var(--foreground)",
+  secondary:   "var(--foreground)",
+  ghost:       "var(--muted-foreground)",
+  link:        "#dc2626",
+}
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, style, ...props }, ref) => {
+    const variantColor = VARIANT_COLORS[variant ?? "default"]
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
+        style={{ color: variantColor, ...style }}
         ref={ref}
         {...props}
       />

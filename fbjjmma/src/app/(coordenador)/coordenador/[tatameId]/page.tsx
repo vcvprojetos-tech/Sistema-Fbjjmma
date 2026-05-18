@@ -85,7 +85,6 @@ interface TatameData {
   event: { id: string; name: string; status: string; schedule: string | null; pesoDoc: string | null }
   brackets: BracketData[]
   operations: { user: { name: string }; startedAt: string }[]
-  panelActive?: boolean
 }
 
 interface ConsultaResult {
@@ -141,7 +140,9 @@ function sortByStarted(list: BracketData[]) {
 }
 
 function sortByDesignated(list: BracketData[]) {
-  return [...list].sort((a, b) => a.bracketNumber - b.bracketNumber)
+  return [...list].sort((a, b) =>
+    new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+  )
 }
 
 // Deve coincidir com CALL_INTERVAL_MS na rota chamada/route.ts
@@ -200,23 +201,14 @@ export default function TatamePage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [optimisticCheckins, setOptimisticCheckins] = useState<Record<string, boolean>>({})
   const [error, setError] = useState("")
-  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string; absenteeName?: string; presenceName?: string; absentPosition?: "p1" | "p2" | null } | null>(null)
+  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string } | null>(null)
   const [pesoStep, setPesoStep] = useState(false)
   const [pesoInput, setPesoInput] = useState("")
   const [callLoading, setCallLoading] = useState<string | null>(null)
   const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
-  const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; presenceName: string; absentPosition: "p1" | "p2" | null } | null>(null)
-  const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string; presenceName?: string; absentPosition?: "p1" | "p2" | null } | null>(null)
+  const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
+  const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
-  const [bDecModal, setBDecModal] = useState<{
-    matchId: string; bracketId: string
-    aName: string; bName: string; bPosId: string
-    aIsPos1: boolean; aWoType: "AUSENCIA" | "PESO" | "DESCLASSIFICACAO"
-    aWeight?: string; aReason?: string
-  } | null>(null)
-  const [bDecPeso, setBDecPeso] = useState("")
-  const [bDecReason, setBDecReason] = useState("")
-  const [bDecStep, setBDecStep] = useState<"choice" | "peso">("choice")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [consultaOpen, setConsultaOpen] = useState(false)
@@ -503,60 +495,6 @@ export default function TatamePage() {
     }
   }, [load, getPin])
 
-  const submitBDecision = useCallback(async (decision: "WINNER" | "PESO" | "AUSENCIA" | "DESCL") => {
-    if (!bDecModal) return
-    setActionLoading(true)
-    setError("")
-    try {
-      let payload: Record<string, unknown>
-      if (decision === "WINNER") {
-        payload = {
-          winnerId: bDecModal.bPosId,
-          isWO: true,
-          woType: bDecModal.aWoType,
-          ...(bDecModal.aWeight ? { woWeight: parseFloat(bDecModal.aWeight) } : {}),
-          ...(bDecModal.aReason ? { woReason: bDecModal.aReason } : {}),
-        }
-      } else if (decision === "PESO") {
-        const w1 = bDecModal.aIsPos1 ? parseFloat(bDecModal.aWeight || "0") : parseFloat(bDecPeso)
-        const w2 = bDecModal.aIsPos1 ? parseFloat(bDecPeso) : parseFloat(bDecModal.aWeight || "0")
-        payload = { winnerId: null, isWO: true, woType: "PESO", woWeight1: w1, woWeight2: w2 }
-      } else if (decision === "AUSENCIA") {
-        // Preserva o tipo e peso do atleta A — B está ausente mas A pode ter sido DQ por peso
-        const wA = bDecModal.aWoType === "PESO" ? parseFloat(bDecModal.aWeight || "") : undefined
-        const w1 = bDecModal.aIsPos1 ? wA : undefined
-        const w2 = !bDecModal.aIsPos1 ? wA : undefined
-        payload = {
-          winnerId: null, isWO: true,
-          woType: bDecModal.aWoType,
-          ...(w1 != null && !isNaN(w1) && { woWeight1: w1 }),
-          ...(w2 != null && !isNaN(w2) && { woWeight2: w2 }),
-          ...(bDecModal.aReason ? { woReason: bDecModal.aReason } : {}),
-        }
-      } else {
-        payload = { winnerId: null, isWO: true, woType: "DESCLASSIFICACAO", woReason: bDecReason.trim() || bDecModal.aReason }
-      }
-      const res = await fetch(`/api/coordenador/chave/${bDecModal.bracketId}/matches/${bDecModal.matchId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (!res.ok) setError(data.error || "Erro ao registrar resultado.")
-      else {
-        setBDecModal(null)
-        await load(true)
-      }
-    } catch {
-      setError("Erro de conexão.")
-    } finally {
-      setActionLoading(false)
-      setBDecPeso("")
-      setBDecReason("")
-      setBDecStep("choice")
-    }
-  }, [bDecModal, bDecPeso, bDecReason, getPin, load])
-
   const fetchConsulta = useCallback(async () => {
     if (!tatame) return
     setConsultaLoading(true)
@@ -691,16 +629,9 @@ export default function TatamePage() {
           ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
           : null)
     : null
-  // 2° lugar: perdedor da final.
-  // Suprimido se: não há campeão, a final foi solo (position2Id=null), a final foi W.O.,
-  // ou podiumLastMatch não é a partida final de facto (round máximo considerando todas as partidas).
-  const allBracketMatchesMaxRound = (podiumBracket?.matches ?? []).length > 0
-    ? Math.max(...(podiumBracket?.matches ?? []).map(m => m.round))
-    : 0
-  const runnerUp = champion && podiumLastMatch && podiumLastMatch.winnerId && podiumLastMatch.position2Id
-    && podiumLastMatch.round === allBracketMatchesMaxRound
-    && !podiumLastMatch.isWO
-    ? podiumBracket!.positions.find(p =>
+  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
+  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch && !podiumLastMatch.isWO
+    ? podiumBracket.positions.find(p =>
         p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
       ) ?? null
     : null
@@ -848,9 +779,7 @@ export default function TatamePage() {
       {/* Overlay de entrada em tela cheia */}
       {showOverlay && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 80, height: 80, overflow: "hidden", marginBottom: 24 }}>
-            <ThemeLogo className="w-full h-full" />
-          </div>
+          <ThemeLogo style={{ width: 260, height: "auto", marginBottom: 24 }} />
           <div style={{ color: "var(--foreground)", fontSize: "1.4rem", fontWeight: 900, marginBottom: 6 }}>
             {tatame.name}
           </div>
@@ -1064,7 +993,7 @@ export default function TatamePage() {
                             ↩ Desfazer
                           </button>
                         )}
-                        {bracket.status === "EM_ANDAMENTO" && tatame.panelActive && !bracket.inPanel && (
+                        {bracket.status === "EM_ANDAMENTO" && !bracket.matches.some(m => (m.callTimes ?? []).some((c: CallTime) => c.call === 1 && c.pos === null)) && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ backgroundColor: "#450a0a", color: "#f87171", border: "1px solid #7f1d1d" }}>
                             Fora do Painel
                           </span>
@@ -1180,7 +1109,7 @@ export default function TatamePage() {
                           )}
                           {callMenu?.matchId !== match.id && (
                             <button
-                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, presenceName: "", absentPosition: "p1" })}
+                              onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: "", absenteeName: p1Name, absentPosition: "p1" })}
                               disabled={actionLoading}
                               className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors btn-wo-solo"
                             >
@@ -1425,11 +1354,11 @@ export default function TatamePage() {
                                 {callMenu?.matchId !== match.id ? (
                                   <>
                                     <div className="flex gap-2">
-                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p2.id, absenteeName: p1Name, presenceName: p2Name, absentPosition: "p1" })} disabled={actionLoading}
+                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p2.id, absenteeName: p1Name, absentPosition: "p1" })} disabled={actionLoading}
                                         className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors btn-opcoes">
                                         Opções — {p1Name.split(" ")[0]}
                                       </button>
-                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p1.id, absenteeName: p2Name, presenceName: p1Name, absentPosition: "p2" })} disabled={actionLoading}
+                                      <button onClick={() => setCallMenu({ matchId: match.id, bracketId: match._bracketId, winnerId: p1.id, absenteeName: p2Name, absentPosition: "p2" })} disabled={actionLoading}
                                         className="flex-1 py-3 rounded-lg text-sm font-semibold transition-colors btn-opcoes">
                                         Opções — {p2Name.split(" ")[0]}
                                       </button>
@@ -1472,16 +1401,7 @@ export default function TatamePage() {
                                             </>
                                           ) : (
                                             <button
-                                              onClick={() => {
-                                                setBDecModal({
-                                                  matchId: callMenu.matchId, bracketId: callMenu.bracketId,
-                                                  aName: callMenu.absenteeName, bName: callMenu.presenceName,
-                                                  bPosId: callMenu.winnerId, aIsPos1: callMenu.absentPosition === "p1",
-                                                  aWoType: "AUSENCIA",
-                                                })
-                                                setBDecStep("choice")
-                                                setCallMenu(null)
-                                              }}
+                                              onClick={() => aplicarWOAusencia(match.id, match._bracketId, callMenu.winnerId)}
                                               disabled={actionLoading}
                                               className="w-full py-2 rounded-lg text-sm font-bold text-white"
                                               style={{ backgroundColor: "#dc2626" }}
@@ -1502,7 +1422,7 @@ export default function TatamePage() {
                                       )
                                     })()}
                                     <button
-                                      onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId, absenteeName: callMenu.absenteeName, presenceName: callMenu.presenceName, absentPosition: callMenu.absentPosition }); setPesoStep(true); setCallMenu(null) }}
+                                      onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
                                       disabled={actionLoading}
                                       className="w-full py-3 rounded-lg text-sm font-semibold"
                                       style={{ backgroundColor: "#78350f", color: "#ffffff" }}
@@ -1510,7 +1430,7 @@ export default function TatamePage() {
                                       Desclassificação por Peso
                                     </button>
                                     <button
-                                      onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: callMenu.winnerId, loserName: callMenu.absenteeName, presenceName: callMenu.presenceName, absentPosition: callMenu.absentPosition }); setDesclReason(""); setCallMenu(null) }}
+                                      onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: callMenu.winnerId, loserName: callMenu.absenteeName }); setDesclReason(""); setCallMenu(null) }}
                                       disabled={actionLoading}
                                       className="w-full py-3 rounded-lg text-sm font-semibold"
                                       style={{ backgroundColor: "#7c3aed", color: "#ffffff" }}
@@ -1794,20 +1714,7 @@ export default function TatamePage() {
                   autoFocus
                 />
                 <button
-                  onClick={() => {
-                    if (woModal.winnerId !== "" && woModal.absentPosition) {
-                      setBDecModal({
-                        matchId: woModal.matchId, bracketId: woModal.bracketId,
-                        aName: woModal.absenteeName ?? "Atleta", bName: woModal.presenceName ?? "Atleta",
-                        bPosId: woModal.winnerId, aIsPos1: woModal.absentPosition === "p1",
-                        aWoType: "PESO", aWeight: pesoInput,
-                      })
-                      setBDecStep("choice")
-                      setWoModal(null); setPesoStep(false); setPesoInput("")
-                    } else {
-                      declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO", pesoInput)
-                    }
-                  }}
+                  onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO", pesoInput)}
                   disabled={actionLoading || !pesoInput}
                   className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
                   style={{ backgroundColor: "#dc2626" }}
@@ -1816,101 +1723,6 @@ export default function TatamePage() {
                 </button>
                 <button
                   onClick={() => setPesoStep(false)}
-                  className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
-                  style={{ backgroundColor: "var(--card)" }}
-                >
-                  Voltar
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Modal de decisão do atleta B após WO/DQ do atleta A */}
-      {bDecModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
-            {bDecStep === "choice" ? (
-              <>
-                <div>
-                  <p className="text-[#f87171] font-bold text-sm uppercase tracking-wide">
-                    {bDecModal.aWoType === "PESO" ? "Desclassificado por Peso" : bDecModal.aWoType === "AUSENCIA" ? "W.O. — Ausente" : "Desclassificado"}
-                  </p>
-                  <p className="text-white font-bold text-lg mt-0.5">{bDecModal.aName.split(" ").slice(0, 2).join(" ")}</p>
-                  {bDecModal.aWoType === "PESO" && bDecModal.aWeight && (
-                    <p className="text-[#9ca3af] text-sm">Peso aferido: {bDecModal.aWeight}kg</p>
-                  )}
-                  {bDecModal.aWoType === "DESCLASSIFICACAO" && bDecModal.aReason && (
-                    <p className="text-[#9ca3af] text-sm">Motivo: {bDecModal.aReason}</p>
-                  )}
-                </div>
-                <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
-                  <p className="text-[#9ca3af] text-sm mb-3">O que acontece com <span className="text-white font-semibold">{bDecModal.bName.split(" ").slice(0, 2).join(" ")}</span>?</p>
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => submitBDecision("WINNER")}
-                      disabled={actionLoading}
-                      className="w-full py-4 rounded-xl font-bold text-white text-sm"
-                      style={{ backgroundColor: "#15803d" }}
-                    >
-                      {actionLoading ? "..." : `✓ Declarar ${bDecModal.bName.split(" ")[0]} como Vencedor`}
-                    </button>
-                    {bDecModal.aWoType === "PESO" && (
-                      <button
-                        onClick={() => { setBDecStep("peso"); setBDecPeso("") }}
-                        disabled={actionLoading}
-                        className="w-full py-3 rounded-xl font-semibold text-white text-sm"
-                        style={{ backgroundColor: "#78350f" }}
-                      >
-                        {bDecModal.bName.split(" ")[0]} também está acima do peso
-                      </button>
-                    )}
-                    <button
-                      onClick={() => submitBDecision("AUSENCIA")}
-                      disabled={actionLoading}
-                      className="w-full py-3 rounded-xl font-semibold text-white text-sm"
-                      style={{ backgroundColor: "#1e3a5f" }}
-                    >
-                      {bDecModal.bName.split(" ")[0]} também está ausente
-                    </button>
-                    <button
-                      onClick={() => setBDecModal(null)}
-                      className="w-full py-2 rounded-xl text-[#6b7280] text-sm"
-                      style={{ backgroundColor: "var(--card)" }}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <p className="text-white font-bold text-lg">Peso de {bDecModal.bName.split(" ")[0]}</p>
-                  <p className="text-[#9ca3af] text-sm mt-1">Informe o peso aferido (kg)</p>
-                </div>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  placeholder="Ex: 77.3"
-                  value={bDecPeso}
-                  onChange={e => setBDecPeso(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
-                  style={{ backgroundColor: "var(--card)", borderColor: bDecPeso ? "#dc2626" : "var(--border)" }}
-                  autoFocus
-                />
-                <button
-                  onClick={() => submitBDecision("PESO")}
-                  disabled={actionLoading || !bDecPeso}
-                  className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
-                  style={{ backgroundColor: "#dc2626" }}
-                >
-                  {actionLoading ? "Confirmando..." : "Confirmar — Ambos Desclassificados"}
-                </button>
-                <button
-                  onClick={() => setBDecStep("choice")}
                   className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
                   style={{ backgroundColor: "var(--card)" }}
                 >
@@ -2095,19 +1907,9 @@ export default function TatamePage() {
             <button
               onClick={async () => {
                 if (!desclReason.trim()) return
-                if (desclModal.winnerId !== "" && desclModal.absentPosition) {
-                  setBDecModal({
-                    matchId: desclModal.matchId, bracketId: desclModal.bracketId,
-                    aName: desclModal.loserName, bName: desclModal.presenceName ?? "Atleta",
-                    bPosId: desclModal.winnerId, aIsPos1: desclModal.absentPosition === "p1",
-                    aWoType: "DESCLASSIFICACAO", aReason: desclReason.trim(),
-                  })
-                  setBDecStep("choice")
-                  setDesclModal(null); setDesclReason("")
-                } else {
-                  await declararVencedor(desclModal.bracketId, desclModal.matchId, desclModal.winnerId, true, "DESCLASSIFICACAO", undefined, desclReason.trim())
-                  setDesclModal(null); setDesclReason("")
-                }
+                await declararVencedor(desclModal.bracketId, desclModal.matchId, desclModal.winnerId, true, "DESCLASSIFICACAO", undefined, desclReason.trim())
+                setDesclModal(null)
+                setDesclReason("")
               }}
               disabled={actionLoading || !desclReason.trim()}
               className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
