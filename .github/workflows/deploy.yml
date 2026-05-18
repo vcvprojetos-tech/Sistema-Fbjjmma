@@ -23,6 +23,7 @@ jobs:
             git pull origin main
             echo "==> Aplicando migrations..."
             cd fbjjmma
+            rm -f prisma.config.ts prisma.config.js
             for env_file in .env .env.local .env.production .env.production.local; do
               if [ -f "$env_file" ]; then
                 echo "Carregando $env_file"
