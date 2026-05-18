@@ -23,6 +23,11 @@ jobs:
             git pull origin main
             echo "==> Aplicando migrations..."
             cd fbjjmma
+            if [ -f .env ]; then
+              set -o allexport
+              source .env
+              set +o allexport
+            fi
             npx prisma migrate deploy
             echo "==> Compilando..."
             rm -rf .next
