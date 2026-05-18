@@ -379,11 +379,6 @@ export default function EventoDetailPage() {
   const [pixAdminValue, setPixAdminValue] = useState("")
   const [pixAdminSaving, setPixAdminSaving] = useState(false)
 
-  // Finalizar / Reabrir evento
-  const [encerrarModal, setEncerrarModal] = useState(false)
-  const [encerrarLoading, setEncerrarLoading] = useState(false)
-  const [reabrirLoading, setReabrirLoading] = useState(false)
-
   // Tatames
   const [tatames, setTatames] = useState<Tatame[]>([])
   const [tatamesLoading, setTatamesLoading] = useState(false)
@@ -899,35 +894,6 @@ export default function EventoDetailPage() {
     setSelectionMode(false)
   }
 
-  const handleEncerrarEvento = async () => {
-    setEncerrarLoading(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}/encerrar`, { method: "POST" })
-      if (!res.ok) { const d = await res.json(); alert(d.error || "Erro ao encerrar evento."); return }
-      setEncerrarModal(false)
-      const res2 = await fetch(`/api/admin/eventos/${id}`)
-      const data = await res2.json()
-      if (data.id) setEvent(data)
-      await loadTatames()
-    } finally {
-      setEncerrarLoading(false)
-    }
-  }
-
-  const handleReabrirEvento = async () => {
-    if (!confirm("Reabrir o evento? Os coordenadores poderão voltar a se conectar.")) return
-    setReabrirLoading(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}/reabrir`, { method: "POST" })
-      if (!res.ok) { const d = await res.json(); alert(d.error || "Erro ao reabrir evento."); return }
-      const res2 = await fetch(`/api/admin/eventos/${id}`)
-      const data = await res2.json()
-      if (data.id) setEvent(data)
-    } finally {
-      setReabrirLoading(false)
-    }
-  }
-
   const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
     PENDENTE: { bg: "#92400e30", text: "#fbbf24" },
     APROVADO: { bg: "#14532d30", text: "#4ade80" },
@@ -1023,75 +989,8 @@ export default function EventoDetailPage() {
           >
             ⚖️ Tabela de Peso
           </button>
-          {event?.status === "EM_ANDAMENTO" && (
-            <button
-              onClick={() => setEncerrarModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border"
-              style={{ backgroundColor: "#7f1d1d30", color: "#f87171", borderColor: "#dc262640" }}
-            >
-              🔒 Finalizar Evento
-            </button>
-          )}
-          {event?.status === "ENCERRADO" && (
-            <button
-              onClick={handleReabrirEvento}
-              disabled={reabrirLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border"
-              style={{ backgroundColor: "#1f293730", color: "#9ca3af", borderColor: "#37415140" }}
-            >
-              🔓 {reabrirLoading ? "Reabrindo..." : "Reabrir Evento"}
-            </button>
-          )}
         </div>
       </div>
-
-      {/* Modal: Finalizar Evento */}
-      {encerrarModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-          onClick={() => !encerrarLoading && setEncerrarModal(false)}
-        >
-          <div
-            className="rounded-2xl p-6 w-full max-w-md mx-4 space-y-4"
-            style={{ backgroundColor: "var(--card)", border: "1px solid #dc262640" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <p className="text-base font-bold" style={{ color: "var(--foreground)" }}>🔒 Finalizar Evento</p>
-              <p className="text-sm text-[#9ca3af] mt-1">
-                Isso encerrará todas as sessões ativas dos coordenadores de tatame. Os tatames continuarão visíveis no painel como finalizados.
-              </p>
-            </div>
-            {brackets.filter(b => b.status !== "FINALIZADA" && b.status !== "PREMIADA").length > 0 && (
-              <div className="rounded-lg p-3" style={{ backgroundColor: "#78350f20", border: "1px solid #d9770640" }}>
-                <p className="text-xs font-semibold text-[#fbbf24]">
-                  ⚠️ {brackets.filter(b => b.status !== "FINALIZADA" && b.status !== "PREMIADA").length} chave(s) ainda não foram finalizadas.
-                </p>
-                <p className="text-xs text-[#9ca3af] mt-0.5">Você pode confirmar mesmo assim.</p>
-              </div>
-            )}
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => setEncerrarModal(false)}
-                disabled={encerrarLoading}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
-                style={{ backgroundColor: "var(--card-alt)", color: "var(--muted)" }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleEncerrarEvento}
-                disabled={encerrarLoading}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold"
-                style={{ backgroundColor: "#dc2626", color: "#fff" }}
-              >
-                {encerrarLoading ? "Encerrando..." : "Confirmar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-lg overflow-x-auto" style={{ backgroundColor: "var(--card-alt)" }}>
@@ -2085,18 +1984,13 @@ export default function EventoDetailPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
-                  const eventoEncerrado = event?.status === "ENCERRADO"
                   const emEspera = !operador
-                  const borderColor = eventoEncerrado
-                    ? (isDark ? "#37415160" : "#d1d5db60")
-                    : emEspera
-                      ? (isDark ? "#78350f60" : "#d9770660")
-                      : (isDark ? "#16a34a40" : "#16a34a50")
-                  const bgColor = eventoEncerrado
-                    ? (isDark ? "#111827" : "#f9fafb")
-                    : emEspera
-                      ? (isDark ? "#1c1200" : "#fffbeb")
-                      : (isDark ? "#0d1f0d" : "#f0fdf4")
+                  const borderColor = emEspera
+                    ? (isDark ? "#78350f60" : "#d9770660")
+                    : (isDark ? "#16a34a40" : "#16a34a50")
+                  const bgColor = emEspera
+                    ? (isDark ? "#1c1200" : "#fffbeb")
+                    : (isDark ? "#0d1f0d" : "#f0fdf4")
                   return (
                     <div
                       key={tatame.id}
@@ -2113,18 +2007,18 @@ export default function EventoDetailPage() {
                             return (
                               <>
                                 {prefix && <span className="text-[10px] block truncate" style={{ color: isDark ? "#9ca3af" : "#6b7280" }}>{prefix}</span>}
-                                <span className="font-bold text-sm block" style={{ color: eventoEncerrado ? (isDark ? "#9ca3af" : "#6b7280") : (isDark ? "#ffffff" : "#111827") }}>{tataLabel}</span>
+                                <span className="font-bold text-sm block" style={{ color: isDark ? "#ffffff" : "#111827" }}>{tataLabel}</span>
                               </>
                             )
                           })()}
                           <span
                             className="text-[10px] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5"
                             style={{
-                              backgroundColor: eventoEncerrado ? "#374151" : emEspera ? "#d97706" : "#16a34a",
+                              backgroundColor: emEspera ? "#d97706" : "#16a34a",
                               color: "#ffffff",
                             }}
                           >
-                            {eventoEncerrado ? "ENCERRADO" : emEspera ? "AGUARDANDO" : "ATIVO"}
+                            {emEspera ? "AGUARDANDO" : "ATIVO"}
                           </span>
                         </div>
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-[#dc2626] flex-shrink-0" onClick={() => excluirTatame(tatame.id)}>
@@ -2133,16 +2027,14 @@ export default function EventoDetailPage() {
                       </div>
                       {/* Stats em grid 2 colunas */}
                       <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] mb-1.5">
-                        <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>Atribuídas: <span style={{ color: eventoEncerrado ? (isDark ? "#6b7280" : "#9ca3af") : (isDark ? "#ffffff" : "#111827"), fontWeight: 600 }}>{tatame.brackets.length}</span></span>
-                        <span style={{ color: eventoEncerrado ? (isDark ? "#4b5563" : "#9ca3af") : (isDark ? "#60a5fa" : "#1d4ed8") }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
-                        <span style={{ color: eventoEncerrado ? (isDark ? "#4b5563" : "#9ca3af") : (isDark ? "#fbbf24" : "#b45309") }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
-                        <span style={{ color: eventoEncerrado ? (isDark ? "#6b7280" : "#9ca3af") : (isDark ? "#4ade80" : "#15803d") }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
+                        <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>Atribuídas: <span style={{ color: isDark ? "#ffffff" : "#111827", fontWeight: 600 }}>{tatame.brackets.length}</span></span>
+                        <span style={{ color: isDark ? "#60a5fa" : "#1d4ed8" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
+                        <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
+                        <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
                       </div>
                       {/* Operador */}
                       <div className="text-[11px]">
-                        {eventoEncerrado ? (
-                          <span style={{ color: isDark ? "#4b5563" : "#9ca3af" }}>Evento encerrado</span>
-                        ) : operador ? (
+                        {operador ? (
                           <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>
                             {operador.user.name} desde {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </span>

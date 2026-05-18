@@ -845,27 +845,8 @@ export default function TatamePage() {
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]" style={{ backgroundColor: "var(--page-surface)" }}>
 
-      {/* Overlay: Evento Encerrado */}
-      {tatame.event.status === "ENCERRADO" && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0 }}>
-          <div style={{ width: 72, height: 72, overflow: "hidden", marginBottom: 20, opacity: 0.4 }}>
-            <ThemeLogo className="w-full h-full" />
-          </div>
-          <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>🔒</div>
-          <div style={{ color: "var(--foreground)", fontSize: "1.3rem", fontWeight: 900, marginBottom: 6 }}>Evento Encerrado</div>
-          <div style={{ color: "var(--muted)", fontSize: "0.9rem", marginBottom: 4 }}>{tatame.event.name}</div>
-          <div style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: 32 }}>{tatame.name}</div>
-          <Link
-            href="/coordenador"
-            style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 28px", color: "var(--muted)", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer", textDecoration: "none" }}
-          >
-            ← Voltar
-          </Link>
-        </div>
-      )}
-
       {/* Overlay de entrada em tela cheia */}
-      {showOverlay && tatame.event.status !== "ENCERRADO" && (
+      {showOverlay && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 80, height: 80, overflow: "hidden", marginBottom: 24 }}>
             <ThemeLogo className="w-full h-full" />
