@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "matches" ADD COLUMN "p1CheckedIn" BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE "matches" ADD COLUMN "p2CheckedIn" BOOLEAN NOT NULL DEFAULT false;
