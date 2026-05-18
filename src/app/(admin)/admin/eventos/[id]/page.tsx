@@ -1,7 +1,6 @@
 ﻿"use client"
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
-import { useTheme } from "next-themes"
 import { useParams } from "next/navigation"
 import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -86,14 +85,12 @@ interface Event {
   isVisible: boolean
   banner: string | null
   schedule: string | null
-  pesoDoc: string | null
   about: string | null
   paymentInfo: string | null
   prize: string | null
   weighInInfo: string | null
   imageRights: string | null
   physicalIntegrity: string | null
-  status: string
 }
 
 interface CategoryValue {
@@ -157,7 +154,6 @@ interface Bracket {
       athlete: { user: { name: string } } | null
       guestName: string | null
       team: { name: string } | null
-      prizePix: string | null
     } | null
   }[]
   matches: {
@@ -318,8 +314,6 @@ const FiltersBar = React.memo(function FiltersBar({
 
 export default function EventoDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme !== "light"
   const [tab, setTab] = useState<Tab>("evento")
   const [event, setEvent] = useState<Event | null>(null)
   const [eventLoading, setEventLoading] = useState(true)
@@ -358,36 +352,13 @@ export default function EventoDetailPage() {
   const [chavesLoading, setChavesLoading] = useState(false)
   const [chavesGenerating, setChavesGenerating] = useState(false)
 
-  // Troca de posição na chave
-  const [cardAction, setCardAction] = useState<{
-    registrationId: string; positionId: string; positionNum: number
-    bracketId: string; name: string; bracketStatus: string
-  } | null>(null)
-  const [swapModal, setSwapModal] = useState<{
-    fromPosId: string; fromPosNum: number; fromName: string; bracketId: string
-    allPositions: Array<{ id: string; position: number; name: string }>
-  } | null>(null)
-  const [swapSaving, setSwapSaving] = useState(false)
-
-  // PIX do campeão (edição pelo admin)
-  const [pixAdminModal, setPixAdminModal] = useState<{
-    bracketId: string
-    registrationId: string
-    champName: string
-    currentPix: string
-  } | null>(null)
-  const [pixAdminValue, setPixAdminValue] = useState("")
-  const [pixAdminSaving, setPixAdminSaving] = useState(false)
-
   // Tatames
   const [tatames, setTatames] = useState<Tatame[]>([])
   const [tatamesLoading, setTatamesLoading] = useState(false)
   const [novoTatameNome, setNovoTatameNome] = useState("")
   const [novoTatameSaving, setNovoTatameSaving] = useState(false)
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
-  const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
-  const [tatamesChaveTab, setTatamesChaveTab] = useState<"pendentes" | "finalizadas" | "premiadas">("pendentes")
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedBrackets, setSelectedBrackets] = useState<Set<string>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
@@ -566,55 +537,6 @@ export default function EventoDetailPage() {
     }
   }, [id])
 
-  const handleBracketCardClick = useCallback((info: { registrationId: string; positionId: string; positionNum: number; bracketId: string }) => {
-    const bracket = brackets.find(b => b.id === info.bracketId)
-    const regInPos = bracket?.positions.find(p => p.id === info.positionId)?.registration
-    const name = regInPos?.athlete?.user.name ?? regInPos?.guestName ?? `Posição ${info.positionNum}`
-    setCardAction({ ...info, name, bracketStatus: bracket?.status ?? "" })
-  }, [brackets])
-
-  const handleSwapPosition = useCallback(async (toPosId: string) => {
-    if (!swapModal) return
-    setSwapSaving(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}/chaves/${swapModal.bracketId}/swap`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fromPosId: swapModal.fromPosId, toPosId }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        alert(data.error || "Erro ao trocar posições.")
-        return
-      }
-      setSwapModal(null)
-      await loadAllChaves()
-    } finally {
-      setSwapSaving(false)
-    }
-  }, [swapModal, id, loadAllChaves])
-
-  const handleSavePixAdmin = useCallback(async () => {
-    if (!pixAdminModal) return
-    setPixAdminSaving(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}/chaves/${pixAdminModal.bracketId}/pix`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prizePix: pixAdminValue.trim() || null }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        alert(data.error || "Erro ao salvar PIX.")
-        return
-      }
-      setPixAdminModal(null)
-      await loadAllChaves()
-    } finally {
-      setPixAdminSaving(false)
-    }
-  }, [pixAdminModal, pixAdminValue, id, loadAllChaves])
-
   const loadTatames = useCallback(async () => {
     setTatamesLoading(true)
     try {
@@ -658,16 +580,11 @@ export default function EventoDetailPage() {
   }, [id, loadTatames])
 
   const excluirTatame = useCallback(async (tatameId: string) => {
-    const tatame = tatames.find(t => t.id === tatameId)
-    const qtdChaves = tatame?.brackets.length ?? 0
-    const aviso = qtdChaves > 0
-      ? `Excluir este tatame? As ${qtdChaves} chave(s) atribuídas a ele voltarão para "Sem tatame".\n\nSe o coordenador desconectou temporariamente, aguarde a reconexão em vez de excluir.`
-      : "Excluir este tatame?"
-    if (!confirm(aviso)) return
+    if (!confirm("Excluir este tatame?")) return
     await fetch(`/api/admin/eventos/${id}/tatames/${tatameId}`, { method: "DELETE" })
     await loadTatames()
     await loadAllChaves()
-  }, [id, tatames, loadTatames, loadAllChaves])
+  }, [id, loadTatames, loadAllChaves])
 
   const atribuirTatame = useCallback(async (bracketId: string, tatameId: string | null) => {
     // Atualização otimista — sem loading
@@ -766,19 +683,6 @@ export default function EventoDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, loadResultado])
 
-  // Atualiza status de conexão dos tatames a cada 30s enquanto a aba está ativa
-  useEffect(() => {
-    if (tab !== "tatames") return
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/admin/eventos/${id}/tatames`)
-        const data = await res.json()
-        if (Array.isArray(data)) setTatames(data)
-      } catch { /* silencioso */ }
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [tab, id])
-
   useEffect(() => {
     // Reseta filtros do FiltersBar e os aplicados sempre que muda de aba
     setFilterResetKey(k => k + 1)
@@ -787,9 +691,6 @@ export default function EventoDetailPage() {
     if (tab === "tatames") {
       loadTatames()
       loadAllChaves()
-    }
-    if (tab === "chaves") {
-      loadTatames()
     }
   }, [tab, loadTatames, loadAllChaves])
 
@@ -940,55 +841,23 @@ export default function EventoDetailPage() {
         physicalIntegrity: event.physicalIntegrity || "",
         banner: event.banner || "",
         schedule: event.schedule || "",
-        pesoDoc: event.pesoDoc || "",
       }
     : undefined
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <Link href="/admin/eventos">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold truncate" style={{ color: "var(--foreground)" }}>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
             {eventLoading ? "Carregando..." : event?.name || "Evento"}
           </h1>
           <p className="text-[#6b7280] text-sm mt-0.5">Gerenciamento do evento</p>
-        </div>
-        {/* Botões de consulta rápida + ações do evento */}
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          <button
-            onClick={() => event?.schedule && setDocModal({ title: "📅 Cronograma do Evento", url: event.schedule })}
-            disabled={!event?.schedule}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
-            style={{
-              backgroundColor: "var(--card-alt)",
-              color: event?.schedule ? "var(--foreground)" : "var(--muted)",
-              borderColor: "var(--border-alt)",
-              opacity: event?.schedule ? 1 : 0.45,
-              cursor: event?.schedule ? "pointer" : "not-allowed",
-            }}
-          >
-            📅 Cronograma
-          </button>
-          <button
-            onClick={() => event?.pesoDoc && setDocModal({ title: "⚖️ Tabela de Peso", url: event.pesoDoc })}
-            disabled={!event?.pesoDoc}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
-            style={{
-              backgroundColor: "var(--card-alt)",
-              color: event?.pesoDoc ? "var(--foreground)" : "var(--muted)",
-              borderColor: "var(--border-alt)",
-              opacity: event?.pesoDoc ? 1 : 0.45,
-              cursor: event?.pesoDoc ? "pointer" : "not-allowed",
-            }}
-          >
-            ⚖️ Tabela de Peso
-          </button>
         </div>
       </div>
 
@@ -1641,11 +1510,11 @@ export default function EventoDetailPage() {
             <div className="space-y-3">
               {(() => {
                 const statusColors: Record<string, { bg: string; text: string }> = {
-                  PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
-                  DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
-                  EM_ANDAMENTO: { bg: "#b45309", text: "#ffffff" },
-                  FINALIZADA:   { bg: "#166534", text: "#ffffff" },
-                  PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
+                  PENDENTE: { bg: "#7f1d1d30", text: "#dc2626" },
+                  DESIGNADA: { bg: "#1e3a5f40", text: "#60a5fa" },
+                  EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
+                  FINALIZADA: { bg: "#14532d40", text: "#4ade80" },
+                  PREMIADA: { bg: "#4a1d9640", text: "#a78bfa" },
                 }
                 const getBracketLabel = (bracket: Bracket) => [
                   bracket.weightCategory.sex === "MASCULINO" ? "M" : "F",
@@ -1680,7 +1549,7 @@ export default function EventoDetailPage() {
                     const groupTatameId = group[0].tatameId || ""
                     rendered.push(
                       <div key={bracket.bracketGroupId} className="rounded-lg border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "#f59e0b50" }}>
-                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--card-alt)" }}>
+                        <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)", backgroundColor: "#1a1000" }}>
                           <span className="text-xs font-bold text-[#f59e0b]">GRUPO</span>
                           <button
                             className="text-sm font-medium flex-1 min-w-0 truncate text-left hover:text-[#f59e0b] transition-colors" style={{ color: "var(--foreground)" }}
@@ -1981,66 +1850,49 @@ export default function EventoDetailPage() {
             {tatames.length === 0 ? (
               <p className="text-sm text-[#6b7280] py-4">Nenhum coordenador conectado. Os tatames aparecem aqui quando os coordenadores acessam a tela de controle.</p>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
                   const emEspera = !operador
-                  const borderColor = emEspera
-                    ? (isDark ? "#78350f60" : "#d9770660")
-                    : (isDark ? "#16a34a40" : "#16a34a50")
-                  const bgColor = emEspera
-                    ? (isDark ? "#1c1200" : "#fffbeb")
-                    : (isDark ? "#0d1f0d" : "#f0fdf4")
                   return (
                     <div
                       key={tatame.id}
-                      className="rounded-lg border p-3"
-                      style={{ borderColor, backgroundColor: bgColor }}
+                      className="rounded-lg border p-4 space-y-3"
+                      style={{
+                        borderColor: emEspera ? "#78350f40" : "#16a34a40",
+                        backgroundColor: emEspera ? "#1c1200" : "#0d1f0d",
+                      }}
                     >
-                      {/* Header: nome + badge + lixeira */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0 flex-1">
-                          {(() => {
-                            const dashIdx = tatame.name.lastIndexOf(" - ")
-                            const tataLabel = dashIdx >= 0 ? tatame.name.slice(dashIdx + 3) : tatame.name
-                            const prefix = dashIdx >= 0 ? tatame.name.slice(0, dashIdx) : null
-                            return (
-                              <>
-                                {prefix && <span className="text-[10px] block truncate" style={{ color: isDark ? "#9ca3af" : "#6b7280" }}>{prefix}</span>}
-                                <span className="font-bold text-sm block" style={{ color: isDark ? "#ffffff" : "#111827" }}>{tataLabel}</span>
-                              </>
-                            )
-                          })()}
-                          <span
-                            className="text-[10px] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5"
-                            style={{
-                              backgroundColor: emEspera ? "#d97706" : "#16a34a",
-                              color: "#ffffff",
-                            }}
-                          >
-                            {emEspera ? "AGUARDANDO" : "ATIVO"}
-                          </span>
-                        </div>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-[#dc2626] flex-shrink-0" onClick={() => excluirTatame(tatame.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-white">{tatame.name}</span>
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{
+                            backgroundColor: emEspera ? "#78350f40" : "#14532d40",
+                            color: emEspera ? "#fbbf24" : "#4ade80",
+                          }}
+                        >
+                          {emEspera ? "AGUARDANDO" : "ATIVO"}
+                        </span>
                       </div>
-                      {/* Stats em grid 2 colunas */}
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] mb-1.5">
-                        <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>Atribuídas: <span style={{ color: isDark ? "#ffffff" : "#111827", fontWeight: 600 }}>{tatame.brackets.length}</span></span>
-                        <span style={{ color: isDark ? "#60a5fa" : "#1d4ed8" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
-                        <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
-                        <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
-                      </div>
-                      {/* Operador */}
-                      <div className="text-[11px]">
+                      <div className="text-xs text-[#6b7280] space-y-1">
+                        <p>Chaves atribuídas: {tatame.brackets.length}</p>
+                        <p style={{ color: "#60a5fa" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</p>
+                        <p style={{ color: "#fbbf24" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</p>
+                        <p style={{ color: "#4ade80" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</p>
                         {operador ? (
-                          <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>
-                            {operador.user.name} desde {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
+                          <p className="text-[#4ade80]">
+                            Operando: {operador.user.name} desde{" "}
+                            {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
                         ) : (
-                          <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Aguardando reconexão...</span>
+                          <p className="text-[#fbbf24]">Aguardando reconexão...</p>
                         )}
+                      </div>
+                      <div className="flex justify-end">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-[#dc2626]" onClick={() => excluirTatame(tatame.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   )
@@ -2059,11 +1911,11 @@ export default function EventoDetailPage() {
             </div>
             {/* Barra de ações em lote */}
             {selectionMode && selectedBrackets.size > 0 && (
-              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
-                <span className="text-xs font-semibold" style={{ color: "#3b82f6" }}>{selectedBrackets.size} selecionada(s)</span>
+              <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "#60a5fa40", backgroundColor: "#0d1a2e" }}>
+                <span className="text-xs text-[#60a5fa] font-semibold">{selectedBrackets.size} selecionada(s)</span>
                 <select
                   className="text-xs rounded border px-2 py-1"
-                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)" }}
+                  style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
                   defaultValue=""
                   onChange={(e) => { if (e.target.value !== "") { bulkAtribuir(e.target.value === "__none__" ? null : e.target.value); e.target.value = "" } }}
                   disabled={bulkLoading}
@@ -2072,10 +1924,10 @@ export default function EventoDetailPage() {
                   <option value="__none__">Sem tatame</option>
                   {tatames.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
-                <Button size="sm" onClick={bulkReiniciar} disabled={bulkLoading} style={{ backgroundColor: "#d97706", color: "#ffffff", border: "none" }}>
+                <Button size="sm" variant="outline" onClick={bulkReiniciar} disabled={bulkLoading} className="text-[#fbbf24] border-[#fbbf2440] hover:bg-[#fbbf2410]">
                   <RotateCcw className="h-3 w-3 mr-1" /> Reiniciar
                 </Button>
-                <Button size="sm" onClick={bulkExcluir} disabled={bulkLoading} style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none" }}>
+                <Button size="sm" variant="outline" onClick={bulkExcluir} disabled={bulkLoading} className="text-[#f87171] border-[#f8717140] hover:bg-[#f8717110]">
                   <Trash2 className="h-3 w-3 mr-1" /> Excluir
                 </Button>
               </div>
@@ -2099,17 +1951,18 @@ export default function EventoDetailPage() {
               <p className="text-[#6b7280] text-sm py-4">Carregando chaves...</p>
             ) : brackets.length === 0 ? (
               <p className="text-[#6b7280] text-sm py-4">Nenhuma chave gerada. Vá até a aba CHAVES e clique em "Gerar Chaves".</p>
+            ) : tatamesFilteredBrackets.length === 0 ? (
+              <p className="text-[#6b7280] text-sm py-4">Nenhuma chave encontrada com os filtros aplicados.</p>
             ) : (() => {
               const pendentes = tatamesFilteredBrackets.filter(b => b.status !== "FINALIZADA" && b.status !== "PREMIADA")
-              const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA")
-              const premiadas = tatamesFilteredBrackets.filter(b => b.status === "PREMIADA")
+              const finalizadas = tatamesFilteredBrackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA")
 
               const statusColors: Record<string, { bg: string; text: string }> = {
-                PENDENTE:     { bg: "#dc2626", text: "#ffffff" },
-                DESIGNADA:    { bg: "#1e3a8a", text: "#ffffff" },
-                EM_ANDAMENTO: { bg: "#b45309", text: "#ffffff" },
-                FINALIZADA:   { bg: "#166534", text: "#ffffff" },
-                PREMIADA:     { bg: "#5b21b6", text: "#ffffff" },
+                PENDENTE:     { bg: "#7f1d1d30",  text: "#dc2626" },
+                DESIGNADA:    { bg: "#1e3a5f40", text: "#60a5fa" },
+                EM_ANDAMENTO: { bg: "#78350f40", text: "#fbbf24" },
+                FINALIZADA:   { bg: "#14532d40", text: "#4ade80" },
+                PREMIADA:     { bg: "#4a1d9640", text: "#a78bfa" },
               }
 
               const getBracketLabel = (bracket: typeof tatamesFilteredBrackets[0]) => [
@@ -2173,7 +2026,7 @@ export default function EventoDetailPage() {
                   } else if (!bracket.bracketGroupId) {
                     const catLabel = `${getBracketLabel(bracket)} | Chave: ${bracket.bracketNumber}`
                     const isSoloWO = bracket.positions.length === 1 && bracket.matches.some(m => m.position1Id !== null && m.position2Id === null && m.isWO)
-                    const sc = isSoloWO ? { bg: "#92400e", text: "#ffffff" } : (statusColors[bracket.status] || statusColors.PENDENTE)
+                    const sc = isSoloWO ? { bg: "#78350f40", text: "#f97316" } : (statusColors[bracket.status] || statusColors.PENDENTE)
                     const statusLabel = isSoloWO ? "W.O." : bracket.status
                     rows.push(
                       <div
@@ -2231,70 +2084,52 @@ export default function EventoDetailPage() {
                 return rows
               }
 
-              const tabList = tatamesChaveTab === "pendentes" ? pendentes
-                : tatamesChaveTab === "finalizadas" ? finalizadas
-                : premiadas
-              const isSelectable = tatamesChaveTab === "pendentes"
-
-              const allTabIds = tabList.flatMap(b =>
+              // IDs de todas as pendentes selecionáveis
+              const allPendentesIds = pendentes.flatMap(b =>
                 b.bracketGroupId && !b.isGrandFinal ? [] : [b.id]
               ).concat(
-                tabList.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
-                  const group = tabList.filter(x => x.bracketGroupId === b.bracketGroupId)
+                pendentes.filter(b => b.bracketGroupId && !b.isGrandFinal).flatMap(b => {
+                  const group = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
                   const gf = brackets.find(x => x.bracketGroupId === b.bracketGroupId && x.isGrandFinal)
                   return [...group, ...(gf ? [gf] : [])].map(x => x.id)
                 })
               )
-              const allTabSelected = allTabIds.length > 0 && allTabIds.every(bid => selectedBrackets.has(bid))
-
-              const tabColor = tatamesChaveTab === "pendentes" ? "#b45309"
-                : tatamesChaveTab === "finalizadas" ? "#166534"
-                : "#5b21b6"
+              const allPendentesSelected = allPendentesIds.length > 0 && allPendentesIds.every(bid => selectedBrackets.has(bid))
 
               return (
-                <div className="space-y-0">
-                  {/* Abas */}
-                  <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
-                    {([
-                      { key: "pendentes", label: "Pendentes", count: pendentes.length, color: "#b45309" },
-                      { key: "finalizadas", label: "Finalizadas", count: finalizadas.length, color: "#166534" },
-                      { key: "premiadas", label: "Premiadas", count: premiadas.length, color: "#5b21b6" },
-                    ] as const).map(t => (
-                      <button
-                        key={t.key}
-                        onClick={() => setTatamesChaveTab(t.key)}
-                        className="px-4 py-2.5 text-xs font-bold transition-colors whitespace-nowrap"
-                        style={{
-                          color: tatamesChaveTab === t.key ? t.color : "var(--muted)",
-                          borderBottom: tatamesChaveTab === t.key ? `2px solid ${t.color}` : "2px solid transparent",
-                          backgroundColor: "transparent",
-                        }}
-                      >
-                        {t.label} ({t.count})
-                      </button>
-                    ))}
-                    {/* Selecionar todas (só na aba pendentes com modo seleção ativo) */}
-                    {selectionMode && isSelectable && tabList.length > 0 && (
-                      <button
-                        className="ml-auto px-4 py-2.5 text-xs text-[#60a5fa] hover:text-white transition-colors"
-                        onClick={() => setSelectedBrackets(prev => {
-                          const next = new Set(prev)
-                          allTabIds.forEach(bid => allTabSelected ? next.delete(bid) : next.add(bid))
-                          return next
-                        })}
-                      >
-                        {allTabSelected ? "Desmarcar todas" : "Selecionar todas"}
-                      </button>
-                    )}
-                  </div>
-                  {/* Conteúdo */}
-                  {tatamesFilteredBrackets.length === 0 ? (
-                    <p className="text-[#6b7280] text-sm py-4">Nenhuma chave encontrada com os filtros aplicados.</p>
-                  ) : tabList.length === 0 ? (
-                    <p className="text-[#6b7280] text-sm py-4">Nenhuma chave {tatamesChaveTab}.</p>
-                  ) : (
-                    <div className="rounded-b-lg border border-t-0 overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                      {renderGroupedList(tabList, isSelectable)}
+                <div className="space-y-4">
+                  {pendentes.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Pendentes</span>
+                        <span className="text-xs text-[#6b7280]">({pendentes.length})</span>
+                        {selectionMode && (
+                          <button
+                            className="text-xs text-[#60a5fa] hover:text-white transition-colors ml-1"
+                            onClick={() => setSelectedBrackets(prev => {
+                              const next = new Set(prev)
+                              allPendentesIds.forEach(bid => allPendentesSelected ? next.delete(bid) : next.add(bid))
+                              return next
+                            })}
+                          >
+                            {allPendentesSelected ? "Desmarcar todas" : "Selecionar todas"}
+                          </button>
+                        )}
+                      </div>
+                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                        {renderGroupedList(pendentes, true)}
+                      </div>
+                    </div>
+                  )}
+                  {finalizadas.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#4ade80" }}>Finalizadas</span>
+                        <span className="text-xs text-[#6b7280]">({finalizadas.length})</span>
+                      </div>
+                      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                        {renderGroupedList(finalizadas, false)}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2306,80 +2141,98 @@ export default function EventoDetailPage() {
 
       {/* TAB: OPERAÇÕES */}
       {tab === "operacoes" && (
-        <div style={{ margin: "-1.5rem -1.5rem -1.5rem", padding: "1.5rem", backgroundColor: "var(--card-alt)", minHeight: 400 }}>
-          <div className="space-y-4 max-w-3xl">
+        <div className="space-y-6">
 
           {/* Painel de Chamadas */}
-          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
-            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>📺 Painel de Chamadas</p>
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-white font-semibold text-sm">Painel de Chamadas</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV para os atletas acompanharem as chamadas. O painel divide os tatames automaticamente pela metade.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 flex-wrap">
               <a href={`/painel/${id}?painel=1`} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#dc2626", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: "#dc2626" }}>
                 Abrir Painel 1 (1ª metade)
               </a>
               <a href={`/painel/${id}?painel=2`} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#dc2626", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: "#b91c1c" }}>
                 Abrir Painel 2 (2ª metade)
               </a>
               <a href={`/painel/${id}`} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#374151", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                className="px-4 py-2 rounded-lg text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
                 Painel Completo
               </a>
             </div>
           </div>
 
           {/* Painel de Premiação */}
-          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
-            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>🏆 Painel de Premiação</p>
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-white font-semibold text-sm">Painel de Premiação</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">Abra em uma TV na área de premiação. Exibe os atletas aguardando medalhas conforme as chaves são finalizadas.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 flex-wrap">
               <a href={`/painel-premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#5b21b6", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: "#92400e" }}>
                 Abrir Painel de Premiação
               </a>
             </div>
           </div>
 
           {/* Backup das Chaves Finalizadas */}
-          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid var(--border)" }}>
-            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>💾 Backup das Chaves Finalizadas</p>
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "0.5rem 1rem", backgroundColor: "#0f766e", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
-                <Download className="w-4 h-4" />
-                Ver / Imprimir Chaves
-              </a>
-              <a href={`/api/admin/eventos/${id}/backup`} download
-                style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#374151", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
-                Exportar JSON
-              </a>
+          <div className="rounded-lg border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-semibold text-sm">Backup das Chaves Finalizadas</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">
+                  Exporta um arquivo JSON com todas as chaves finalizadas e premiadas — resultados, partidas e atletas.
+                </p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <a href={`/admin/eventos/${id}/backup-visual`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: "#0f766e" }}>
+                  <Download className="w-4 h-4" />
+                  Ver / Imprimir Chaves
+                </a>
+                <a href={`/api/admin/eventos/${id}/backup`} download
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>
+                  JSON
+                </a>
+              </div>
             </div>
           </div>
 
-          {/* Coordenador de Premiação */}
-          <div style={{ backgroundColor: "var(--card)", borderRadius: 10, padding: "1.25rem", border: "1px solid #5b21b6" }}>
-            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--foreground)", marginBottom: "0.375rem" }}>🎖️ Coordenador de Premiação</p>
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 8, border: "1px solid var(--border-alt)", backgroundColor: "var(--card-alt)", padding: "0.5rem 0.75rem", marginBottom: "0.75rem" }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace" }}>
-                {typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}
-              </span>
+          {/* Link Coordenador de Premiação */}
+          <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#4a1d9640", backgroundColor: "var(--background)" }}>
+            <div className="flex items-center gap-2">
+              <span className="text-[#a78bfa] text-sm font-bold uppercase tracking-wider">🏆 Coordenador de Premiação</span>
+            </div>
+            <p className="text-xs text-[#6b7280]">Compartilhe o link abaixo com o coordenador responsável pela entrega de medalhas.</p>
+            <div className="flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: "var(--border-alt)", backgroundColor: "var(--card)" }}>
+              <span className="text-xs text-[#9ca3af] flex-1 truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/premiacao/${id}` : `/premiacao/${id}`}</span>
               <button
-                style={{ fontSize: "0.75rem", color: "#ffffff", backgroundColor: "#5b21b6", border: "none", borderRadius: 6, padding: "0.25rem 0.625rem", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+                className="text-xs text-[#a78bfa] hover:text-white font-semibold shrink-0 transition-colors"
                 onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/premiacao/${id}`)}
               >
                 Copiar
               </button>
             </div>
             <a href={`/premiacao/${id}`} target="_blank" rel="noopener noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", padding: "0.5rem 1rem", backgroundColor: "#5b21b6", color: "#ffffff", borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600, textDecoration: "none" }}>
+              className="inline-block text-xs text-[#a78bfa] underline hover:text-white">
               Abrir página de premiação →
             </a>
           </div>
 
-          </div>
         </div>
       )}
 
@@ -2399,33 +2252,6 @@ export default function EventoDetailPage() {
           bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
           bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
         ].filter(Boolean).join(" | ")
-
-        // Para chaves absolutas: encontra o campeão para o botão de PIX
-        const findChampionFromBracket = (b: Bracket): { registrationId: string; name: string; prizePix: string | null } | null => {
-          const real = b.matches.filter(m => m.position1Id && m.position2Id)
-          let champPosId: string | null = null
-          if (real.length > 0) {
-            const maxR = Math.max(...real.map(m => m.round))
-            const final = real.find(m => m.round === maxR && m.matchNumber === 1)
-            champPosId = final?.winnerId ?? null
-          } else {
-            const solo = b.matches.find(m => m.position1Id && !m.position2Id && m.winnerId)
-            champPosId = solo?.winnerId ?? null
-          }
-          if (!champPosId && b.positions.length === 1) champPosId = b.positions[0].id
-          if (!champPosId) return null
-          const pos = b.positions.find(p => p.id === champPosId)
-          if (!pos?.registration) return null
-          const name = pos.registration.athlete?.user.name ?? pos.registration.guestName ?? "Atleta"
-          return { registrationId: pos.registration.id, name, prizePix: pos.registration.prizePix ?? null }
-        }
-
-        // Usa a grande final se existir no grupo, senão usa a chave principal
-        const absoluteBracketForPix = bracket.isAbsolute
-          ? (bracketsToShow.find(b => b.isGrandFinal) ?? (bracketsToShow.find(b => b.isAbsolute) ?? null))
-          : null
-        const champInfo = absoluteBracketForPix ? findChampionFromBracket(absoluteBracketForPix) : null
-
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -2439,32 +2265,12 @@ export default function EventoDetailPage() {
             >
               <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 z-10" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
                 <span className="text-sm font-semibold text-white">{modalTitle}</span>
-                <div className="flex items-center gap-2">
-                  {champInfo && absoluteBracketForPix && (
-                    <button
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"
-                      style={{ backgroundColor: "#16a34a20", color: "#4ade80", border: "1px solid #16a34a40" }}
-                      onClick={() => {
-                        setPixAdminModal({
-                          bracketId: absoluteBracketForPix.id,
-                          registrationId: champInfo.registrationId,
-                          champName: champInfo.name,
-                          currentPix: champInfo.prizePix ?? "",
-                        })
-                        setPixAdminValue(champInfo.prizePix ?? "")
-                      }}
-                    >
-                      <span>📱</span>
-                      PIX do Campeão
-                    </button>
-                  )}
-                  <button
-                    className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"
-                    onClick={() => setSelectedBracketId(null)}
-                  >
-                    ✕
-                  </button>
-                </div>
+                <button
+                  className="text-[#6b7280] hover:text-white transition-colors text-lg leading-none"
+                  onClick={() => setSelectedBracketId(null)}
+                >
+                  ✕
+                </button>
               </div>
               <div className="p-4 space-y-6">
                 {bracketsToShow.map(b => (
@@ -2474,10 +2280,7 @@ export default function EventoDetailPage() {
                         {b.isGrandFinal ? `🏆 Grande Final (#${b.bracketNumber})` : `Sub-chave #${b.bracketNumber} — ${b.positions.length} atleta(s)`}
                       </p>
                     )}
-                    <BracketView
-                      bracket={b}
-                      onPositionCardClick={(info) => handleBracketCardClick({ ...info, bracketId: b.id })}
-                    />
+                    <BracketView bracket={b} onAthleteClick={(registrationId) => setGerenciarId(registrationId)} />
                   </div>
                 ))}
               </div>
@@ -2485,58 +2288,6 @@ export default function EventoDetailPage() {
           </div>
         )
       })()}
-
-      {/* Modal de PIX do Campeão (admin) */}
-      {pixAdminModal && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
-          onClick={() => setPixAdminModal(null)}
-        >
-          <div
-            className="rounded-2xl border p-6 w-full max-w-sm space-y-4"
-            style={{ backgroundColor: "var(--card)", borderColor: "#16a34a40" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <p className="text-xs text-[#6b7280] font-semibold uppercase tracking-wider mb-1">PIX — 1° Lugar Absoluto</p>
-              <p className="font-bold text-base" style={{ color: "var(--foreground)" }}>{pixAdminModal.champName}</p>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold" style={{ color: "#9ca3af" }}>
-                Chave PIX <span className="font-normal text-[#6b7280]">(opcional)</span>
-              </label>
-              <input
-                type="text"
-                value={pixAdminValue}
-                onChange={(e) => setPixAdminValue(e.target.value)}
-                placeholder="CPF, e-mail, telefone ou chave aleatória"
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && !pixAdminSaving && handleSavePixAdmin()}
-                className="rounded-xl px-4 py-3 text-sm outline-none w-full"
-                style={{ backgroundColor: "#1a1a1a", color: "#ffffff", border: "1px solid #374151" }}
-              />
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => setPixAdminModal(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                style={{ backgroundColor: "#374151", color: "#d1d5db" }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSavePixAdmin}
-                disabled={pixAdminSaving}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors"
-                style={{ backgroundColor: "#16a34a", color: "#ffffff", opacity: pixAdminSaving ? 0.6 : 1 }}
-              >
-                {pixAdminSaving ? "Salvando..." : "Salvar PIX"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Gerenciar Atleta Modal */}
       {gerenciarId && (
@@ -2550,149 +2301,6 @@ export default function EventoDetailPage() {
             setGerenciarId(null)
           }}
         />
-      )}
-
-      {/* Modal de ação ao clicar em atleta na chave */}
-      {cardAction && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-          onClick={() => setCardAction(null)}
-        >
-          <div
-            className="rounded-xl border p-5 w-72 space-y-3"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div>
-              <p className="text-sm font-bold text-white">{cardAction.name}</p>
-              <p className="text-xs mt-0.5" style={{ color: "#6b7280" }}>Posição {cardAction.positionNum} na chave</p>
-            </div>
-            <div className="space-y-2">
-              <button
-                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors hover:brightness-110"
-                style={{ backgroundColor: "#1e3a5f", color: "#93c5fd" }}
-                onClick={() => { setGerenciarId(cardAction.registrationId); setCardAction(null) }}
-              >
-                Gerenciar atleta →
-              </button>
-              {(cardAction.bracketStatus === "PENDENTE" || cardAction.bracketStatus === "DESIGNADA") && (
-                <button
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors hover:brightness-110"
-                  style={{ backgroundColor: "#1e293b", color: "#94a3b8" }}
-                  onClick={() => {
-                    const bracket = brackets.find(b => b.id === cardAction.bracketId)
-                    setSwapModal({
-                      fromPosId: cardAction.positionId,
-                      fromPosNum: cardAction.positionNum,
-                      fromName: cardAction.name,
-                      bracketId: cardAction.bracketId,
-                      allPositions: (bracket?.positions ?? []).map(p => ({
-                        id: p.id,
-                        position: p.position,
-                        name: p.registration?.athlete?.user.name ?? p.registration?.guestName ?? "(vazio)",
-                      })),
-                    })
-                    setCardAction(null)
-                  }}
-                >
-                  Trocar posição na chave ↕
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de troca de posição */}
-      {swapModal && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-          onClick={() => !swapSaving && setSwapModal(null)}
-        >
-          <div
-            className="rounded-xl border flex flex-col"
-            style={{ backgroundColor: "var(--card)", borderColor: "var(--border-alt)", width: 320, maxHeight: "70vh" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
-              <div>
-                <p className="text-sm font-bold text-white">Trocar posição</p>
-                <p className="text-xs mt-0.5" style={{ color: "#9ca3af" }}>
-                  {swapModal.fromName} — posição atual: {swapModal.fromPosNum}
-                </p>
-              </div>
-              <button
-                onClick={() => setSwapModal(null)}
-                className="text-[#6b7280] hover:text-white text-lg leading-none ml-3"
-                disabled={swapSaving}
-              >✕</button>
-            </div>
-            <div className="overflow-auto flex-1 p-2">
-              {[...swapModal.allPositions].sort((a, b) => a.position - b.position).map(pos => {
-                const isCurrent = pos.id === swapModal.fromPosId
-                return (
-                  <button
-                    key={pos.id}
-                    disabled={isCurrent || swapSaving}
-                    onClick={() => handleSwapPosition(pos.id)}
-                    className="w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-all"
-                    style={{
-                      backgroundColor: isCurrent ? "#1e3a5f" : "var(--card-alt)",
-                      opacity: isCurrent ? 0.5 : 1,
-                      cursor: isCurrent ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    <span className="text-xs font-bold mr-2" style={{ color: "#6b7280" }}>
-                      {pos.position}
-                    </span>
-                    <span className="text-sm font-semibold" style={{ color: isCurrent ? "#60a5fa" : "var(--foreground)" }}>
-                      {pos.name}
-                    </span>
-                    {isCurrent && (
-                      <span className="text-xs ml-2" style={{ color: "#6b7280" }}>(posição atual)</span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-            <div className="px-4 py-2 border-t" style={{ borderColor: "var(--border)" }}>
-              <p className="text-xs" style={{ color: "#6b7280" }}>
-                {swapSaving ? "Trocando..." : "Clique em uma posição para trocar"}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de consulta — cronograma e tabela de peso */}
-      {docModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-          onClick={() => setDocModal(null)}
-        >
-          <div
-            className="relative rounded-xl overflow-hidden shadow-2xl"
-            style={{ maxWidth: "min(90vw, 800px)", maxHeight: "90vh" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
-              <span className="text-white font-semibold text-sm">{docModal.title}</span>
-              <button
-                onClick={() => setDocModal(null)}
-                className="text-[#9ca3af] hover:text-white text-lg leading-none ml-4"
-              >✕</button>
-            </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={docModal.url}
-              alt={docModal.title}
-              style={{ display: "block", maxWidth: "min(90vw, 800px)", maxHeight: "80vh", width: "auto", height: "auto" }}
-            />
-          </div>
-        </div>
       )}
     </div>
   )

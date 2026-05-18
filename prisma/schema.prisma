@@ -214,7 +214,6 @@ model Event {
   isVisible            Boolean     @default(false)
   banner               String?
   schedule             String?
-  pesoDoc              String?
   about                String?
   paymentInfo          String?
   prize                String?
@@ -302,15 +301,13 @@ model Registration {
 // ─── TATAMES E COORDENADORES ─────────────────────────────────────────────────
 
 model Tatame {
-  id                String    @id @default(cuid())
-  eventId           String
-  event             Event     @relation(fields: [eventId], references: [id])
-  name              String
-  pin               String
-  isActive          Boolean   @default(false)
-  panelBracketIds   String[]  @default([])
-  panelUpdatedAt    DateTime?
-  createdAt         DateTime  @default(now())
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  name      String
+  pin       String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   brackets   Bracket[]
   operations TatameOperation[]
@@ -371,7 +368,6 @@ model Bracket {
   // Após ambas finalizarem, uma "grande final" (isGrandFinal=true) é criada automaticamente.
   bracketGroupId   String?
   isGrandFinal     Boolean        @default(false)
-  startedAt        DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -401,7 +397,6 @@ model BracketPosition {
 enum WOType {
   PESO
   AUSENCIA
-  DESCLASSIFICACAO
 }
 
 model Match {
@@ -420,10 +415,7 @@ model Match {
   woType      WOType?
   woWeight1   Float?
   woWeight2   Float?
-  woReason    String?
   callTimes   Json?
-  p1CheckedIn Boolean          @default(false)
-  p2CheckedIn Boolean          @default(false)
   startedAt   DateTime?
   endedAt     DateTime?
   createdAt   DateTime         @default(now())

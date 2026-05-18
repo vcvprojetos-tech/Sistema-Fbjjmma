@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   CalendarDays,
@@ -11,9 +11,10 @@ import {
   Weight,
   UserCog,
   LogOut,
-  ChevronRight,
+  Menu,
+  X,
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { ThemeLogo } from "@/components/ThemeLogo"
@@ -40,18 +41,9 @@ export default function AdminShell({
 }: {
   children: React.ReactNode
 }) {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const pathname = usePathname()
-  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  useEffect(() => {
-    if (status === "loading") return
-    const role = session?.user?.role
-    if (!role || (role !== "PRESIDENTE" && role !== "COORDENADOR_GERAL")) {
-      router.replace("/login")
-    }
-  }, [session, status, router])
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href
@@ -60,25 +52,21 @@ export default function AdminShell({
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--background)" }}>
-
-      {/* Overlay escuro quando gaveta aberta */}
+      {/* Sidebar overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30"
+          className="fixed inset-0 z-20 bg-black/60 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Gaveta lateral */}
+      {/* Sidebar */}
       <aside
-        className="fixed inset-y-0 left-0 z-40 w-64 flex flex-col border-r"
-        style={{
-          backgroundColor: "var(--sidebar-surface)",
-          borderColor: "var(--border)",
-          transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-          transition: "transform 220ms cubic-bezier(0.4,0,0.2,1)",
-          boxShadow: sidebarOpen ? "4px 0 24px rgba(0,0,0,0.18)" : "none",
-        }}
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 w-64 flex flex-col border-r transition-transform duration-200 lg:static lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+        style={{ backgroundColor: "var(--sidebar-surface)", borderColor: "var(--border)" }}
       >
         {/* Acento vermelho no topo */}
         <div style={{ height: 3, backgroundColor: "#dc2626", flexShrink: 0 }} />
@@ -128,15 +116,15 @@ export default function AdminShell({
           </div>
         </nav>
 
-        {/* Usuário no rodapé */}
+        {/* User info at bottom */}
         <div
           className="px-3 py-3 border-t"
           style={{ borderColor: "var(--border)" }}
         >
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg" style={{ backgroundColor: "var(--card-alt)" }}>
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-              style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
+              style={{ backgroundColor: "#dc2626" }}
             >
               {session?.user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
@@ -160,71 +148,29 @@ export default function AdminShell({
         </div>
       </aside>
 
-      {/* Lingueta — fica na borda esquerda, acompanha a gaveta */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label={sidebarOpen ? "Fechar menu" : "Abrir menu"}
-        style={{
-          position: "fixed",
-          left: sidebarOpen ? 256 : 0,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 50,
-          backgroundColor: "#dc2626",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "0 8px 8px 0",
-          width: 22,
-          height: 64,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          transition: "left 220ms cubic-bezier(0.4,0,0.2,1)",
-          boxShadow: "2px 0 8px rgba(0,0,0,0.25)",
-          padding: 0,
-        }}
-      >
-        <ChevronRight
-          size={14}
-          style={{
-            color: "#ffffff",
-            transition: "transform 220ms cubic-bezier(0.4,0,0.2,1)",
-            transform: sidebarOpen ? "rotate(180deg)" : "rotate(0deg)",
-            strokeWidth: 3,
-          }}
-        />
-      </button>
-
-      {/* Conteúdo principal — ocupa toda a largura */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
         <header
-          className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0"
+          className="flex items-center justify-between px-4 lg:px-6 h-12 border-b flex-shrink-0"
           style={{ backgroundColor: "var(--sidebar-surface)", borderColor: "var(--border)" }}
         >
-          {/* Esquerda: logo + nome da federação */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden transition-colors p-1 rounded"
+            style={{ color: "var(--muted)" }}
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          <div className="hidden lg:block" />
+
           <div className="flex items-center gap-2">
-            <div style={{ width: 38, height: 38, overflow: "hidden", flexShrink: 0 }}>
-              <ThemeLogo className="w-full h-full" />
-            </div>
-            <div>
-              <p className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>FBJJMMA</p>
-              <p className="text-[10px] leading-tight" style={{ color: "var(--muted)" }}>Painel Administrativo</p>
-            </div>
-          </div>
-          {/* Direita: nome do operador + tema */}
-          <div className="flex items-center gap-2">
-            {session?.user && (
-              <span className="text-xs hidden sm:inline" style={{ color: "var(--muted-foreground)" }}>
-                {session.user.name}
-              </span>
-            )}
             <ThemeToggle />
           </div>
         </header>
 
-        {/* Conteúdo da página */}
+        {/* Page content */}
         <main className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--background)" }}>
           {children}
         </main>
