@@ -21,6 +21,11 @@ jobs:
             echo "==> Atualizando código..."
             cd /var/www/fbjjmma
             git pull origin main
+            echo "==> Migrando uploads antigos para a raiz..."
+            mkdir -p /var/www/fbjjmma/public/uploads/eventos
+            if [ -d /var/www/fbjjmma/fbjjmma/public/uploads ]; then
+              cp -rn /var/www/fbjjmma/fbjjmma/public/uploads/. /var/www/fbjjmma/public/uploads/ 2>/dev/null || true
+            fi
             echo "==> Gerando cliente Prisma..."
             npx prisma generate
             echo "==> Compilando..."
