@@ -44,7 +44,7 @@ export async function POST(
           position2Id: null,
         },
       })
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
       if (bracket.tatameId) notifyTatame(bracket.tatameId)
       return NextResponse.json({ message: "Chave iniciada." })
     }
@@ -73,7 +73,7 @@ export async function POST(
           position2Id: null,
         },
       })
-      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
       if (bracket.tatameId) notifyTatame(bracket.tatameId)
       return NextResponse.json({ message: "Chave iniciada." })
     }
@@ -103,12 +103,11 @@ export async function POST(
           matchNumber: matchNumber++,
           position1Id: pos1?.id ?? null,
           position2Id: pos2?.id ?? null,
-          // Posição BYE cria partida solo pendente — coordenador confirma pesagem antes de avançar
         },
       })
     }
 
-    await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+    await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO", startedAt: new Date() } })
 
     // Propaga W.O.s: cria partidas das rodadas seguintes que já têm ambos atletas definidos
     await propagateBracket(bracketId)

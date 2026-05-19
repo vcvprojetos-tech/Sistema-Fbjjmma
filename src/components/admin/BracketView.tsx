@@ -1,26 +1,6 @@
 ﻿"use client"
 
-import React, { useMemo, useRef, useState, useEffect } from "react"
-
-function useContainerScale(totalWidth: number, totalHeight: number) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const update = () => {
-      const w = el.clientWidth
-      if (w <= 0) return
-      // Nunca cresce além do tamanho natural — apenas encolhe em telas estreitas
-      setScale(Math.min(1, w / totalWidth))
-    }
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [totalWidth, totalHeight])
-  return { ref, scale }
-}
+import React, { useMemo } from "react"
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
 const ATHLETE_H = 44
@@ -36,6 +16,21 @@ const GROUP_GAP = 8   // vertical gap between match pairs in athlete column
 const PADDING = 10
 const POS_LABEL_W = 16 // space for position number label beside athlete card
 const LINE_COLOR = "#555"
+
+// ThreeAthleteBracket — constantes de layout no nível de módulo (evita inline components)
+const T3_PAD = 22
+const T3_CW = 140
+const T3_CH = 44
+const T3_VG = 6
+const T3_DROP_GAP = 60
+const T3_BLX = T3_PAD + T3_CW          // = 162
+const T3_RBX = T3_BLX + 10              // = 172
+const T3_RBW = 32
+const T3_RBH = 20
+const T3_PBLX = T3_RBX + T3_RBW + 8    // = 212
+const T3_FX = T3_PBLX + 8               // = 220
+const T3_FBW = 80
+const T3_FBH = 44
 
 const AGE_GROUP_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
@@ -451,15 +446,14 @@ function ThreeAthleteBracket({
   ].filter(Boolean).join(" | ")
 
   const loserLabel = m1LoserPos ? String(m1LoserPos.position) : "?"
-  const { ref: containerRef3, scale: scale3 } = useContainerScale(TOTAL_W, TOTAL_H)
-
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
+    <div style={{ marginBottom: 16, overflowX: "auto" }}>
+      <div style={{ width: TOTAL_W, margin: "0 auto", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)" }}>
       <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{bracketTitle}</p>
       </div>
-      <div ref={containerRef3} style={{ overflow: "hidden", width: "100%", height: Math.round(TOTAL_H * scale3) }}>
-        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H, transform: `scale(${scale3})`, transformOrigin: "top left" }}>
+      <div style={{ overflow: "hidden", width: TOTAL_W, height: TOTAL_H }}>
+        <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H }}>
           <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={TOTAL_W} height={TOTAL_H}>
             {/* M1: pos1 & pos3 bracket lines */}
             <line x1={BLX} y1={pos1CY} x2={BLX} y2={pos3CY} stroke={LINE_COLOR} strokeWidth={1} />
@@ -543,6 +537,7 @@ function ThreeAthleteBracket({
         </div>
       )}
       <WOHistory matches={matches} posIdMap={posIdMap3} />
+      </div>
     </div>
   )
 }
@@ -901,7 +896,12 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
   const thirdPlaceReg = (() => {
     if (!finalMatch?.winnerId || maxRealRound < 2) return null
     const semiRound = maxRealRound - 1
-    const champSemi = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId && !m.isWO)
+    const champSemiAny = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
+    // Campeão ganhou a semi por qualquer W.O. — sem 3° lugar
+    if (champSemiAny?.isWO) return null
+    // Sem partida 2x2 na semi: verificar W.O. solo na mesma rodada (adversário eliminado antes da partida)
+    if (!champSemiAny && matches.some(m => m.round === semiRound && m.isWO)) return null
+    const champSemi = champSemiAny ?? null
     const runnerUpSemi = realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
     const semi = champSemi ?? runnerUpSemi
     if (!semi) return null
@@ -976,7 +976,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
       <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
       {secondPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
     </div>,
-    <div key="final-3" style={{
+    ...((!allMatchesDone || thirdPlaceReg) ? [<div key="final-3" style={{
       position: "absolute", left: centerX,
       top: finalCenterY + finalBoxH + 9,
       width: CENTER_W, height: finalBoxH,
@@ -986,7 +986,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     }}>
       <span style={{ fontSize: 7, color: "#cd7c2f", fontWeight: 600, lineHeight: 1.2 }}>3° Lugar</span>
       {thirdPlaceReg && <span style={{ fontSize: 7, color: "#d1d5db", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>}
-    </div>
+    </div>] : [])
   )
 
   // ── Placements ─────────────────────────────────────────────────────────────
@@ -1018,36 +1018,36 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     `Chave: ${bracketNumber}`,
   ].filter(Boolean).join(" | ")
 
-  const { ref: containerRef, scale } = useContainerScale(totalWidth, totalHeight)
-
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)", marginBottom: 16 }}>
-      <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
-      </div>
-      <div ref={containerRef} style={{ overflow: "hidden", width: "100%", height: Math.round(totalHeight * scale) }}>
-        <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
-            {lines}
-          </svg>
-          {cards}
+    <div style={{ marginBottom: 16, overflowX: "auto" }}>
+      <div style={{ width: totalWidth, margin: "0 auto", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--background)" }}>
+        <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", margin: 0 }}>{title}</p>
         </div>
-      </div>
-      {(primeiro || segundo) && (
-        <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--card-alt)", backgroundColor: "var(--card)", flexWrap: "wrap" }}>
-          {placements.map(({ label, color, reg }) => reg && (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
-              <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
-              {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
-              {label === "1° Lugar" && isAbsolute && reg.prizePix && (
-                <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
-              )}
-            </div>
-          ))}
+        <div style={{ overflow: "hidden", width: totalWidth, height: totalHeight }}>
+          <div style={{ position: "relative", width: totalWidth, height: totalHeight, minHeight: 80 }}>
+            <svg style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }} width={totalWidth} height={totalHeight}>
+              {lines}
+            </svg>
+            {cards}
+          </div>
         </div>
-      )}
-      <WOHistory matches={matches} posIdMap={posIdMap} />
+        {(primeiro || segundo) && (
+          <div style={{ display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--card-alt)", backgroundColor: "var(--card)", flexWrap: "wrap" }}>
+            {placements.map(({ label, color, reg }) => reg && (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--card-alt)", borderRadius: 6, padding: "5px 10px" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color }}>{label}</span>
+                <span style={{ fontSize: 10, color: "#ffffff", fontWeight: 600 }}>{getRegName(reg)}</span>
+                {reg.team && <span style={{ fontSize: 9, color: "var(--muted)" }}>({reg.team.name})</span>}
+                {label === "1° Lugar" && isAbsolute && reg.prizePix && (
+                  <span style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>· PIX: {reg.prizePix}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <WOHistory matches={matches} posIdMap={posIdMap} />
+      </div>
     </div>
   )
 }

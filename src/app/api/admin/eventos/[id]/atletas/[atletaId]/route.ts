@@ -147,7 +147,7 @@ export async function PUT(
       },
     })
 
-    // Reposicionar nas chaves se algum campo relevante mudou
+    // Reposicionar nas chaves EXISTENTES quando o atleta já tem posições e os campos mudaram
     if (bracketFieldsChanged && registration.bracketPositions.length > 0) {
       for (const pos of registration.bracketPositions) {
         const bracket = pos.bracket
@@ -182,13 +182,13 @@ export async function PUT(
           })
 
           if (!destBracket) {
-            // Criar nova chave absoluta
             const wc = await prisma.weightCategory.findFirst({
               where: { sex: newSex as "MASCULINO" | "FEMININO", ageGroup: newAgeGroup as never },
             })
             if (wc) {
+              const aggAbs = await prisma.bracket.aggregate({ where: { eventId: id }, _max: { bracketNumber: true } })
               destBracket = await prisma.bracket.create({
-                data: { eventId: id, weightCategoryId: wc.id, belt: newBelt as never, isAbsolute: true, bracketNumber: 0 },
+                data: { eventId: id, weightCategoryId: wc.id, belt: newBelt as never, isAbsolute: true, bracketNumber: (aggAbs._max.bracketNumber ?? 0) + 1 },
                 select: { id: true, status: true },
               })
             }
@@ -201,9 +201,9 @@ export async function PUT(
           })
 
           if (!destBracket) {
-            // Criar nova chave de peso
+            const aggPeso = await prisma.bracket.aggregate({ where: { eventId: id }, _max: { bracketNumber: true } })
             destBracket = await prisma.bracket.create({
-              data: { eventId: id, weightCategoryId: newWeightCategoryId, belt: newBelt as never, isAbsolute: false, bracketNumber: 0 },
+              data: { eventId: id, weightCategoryId: newWeightCategoryId, belt: newBelt as never, isAbsolute: false, bracketNumber: (aggPeso._max.bracketNumber ?? 0) + 1 },
               select: { id: true, status: true },
             })
           }
@@ -225,45 +225,48 @@ export async function PUT(
           data: { bracketId: destBracket.id, registrationId: atletaId, position: nextPos },
         })
       }
+    }
 
-      // Se isAbsolute mudou de false → true, adicionar na chave absoluta
-      if (newIsAbsolute && !registration.isAbsolute) {
-        const absPos = registration.bracketPositions.find(p => p.bracket.isAbsolute)
-        if (!absPos) {
-          let absBracket: { id: string; status: string } | null = await prisma.bracket.findFirst({
-            where: {
-              eventId: id,
-              isAbsolute: true,
-              belt: newBelt,
-              weightCategory: { sex: newSex as "MASCULINO" | "FEMININO", ageGroup: newAgeGroup as never },
-            },
-            select: { id: true, status: true },
+    // Adicionar à chave absoluta quando isAbsolute muda de false → true.
+    // Roda independente de o atleta já ter posições em outras chaves ou não
+    // (caso comum: atleta adicionado ao evento após a geração das chaves).
+    if (newIsAbsolute && !registration.isAbsolute) {
+      const jaNoAbsoluto = registration.bracketPositions.some(p => p.bracket.isAbsolute)
+      if (!jaNoAbsoluto) {
+        let absBracket: { id: string; status: string } | null = await prisma.bracket.findFirst({
+          where: {
+            eventId: id,
+            isAbsolute: true,
+            belt: newBelt,
+            weightCategory: { sex: newSex as "MASCULINO" | "FEMININO", ageGroup: newAgeGroup as never },
+          },
+          select: { id: true, status: true },
+        })
+
+        if (!absBracket) {
+          const wc = await prisma.weightCategory.findFirst({
+            where: { sex: newSex as "MASCULINO" | "FEMININO", ageGroup: newAgeGroup as never },
           })
-
-          if (!absBracket) {
-            const wc = await prisma.weightCategory.findFirst({
-              where: { sex: newSex as "MASCULINO" | "FEMININO", ageGroup: newAgeGroup as never },
-            })
-            if (wc) {
-              absBracket = await prisma.bracket.create({
-                data: { eventId: id, weightCategoryId: wc.id, belt: newBelt as never, isAbsolute: true, bracketNumber: 0 },
-                select: { id: true, status: true },
-              })
-            }
-          }
-
-          if (absBracket) {
-            if (absBracket.status !== "PENDENTE" && absBracket.status !== "DESIGNADA") {
-              return NextResponse.json(
-                { error: "A chave absoluta de destino já está em andamento." },
-                { status: 400 }
-              )
-            }
-            const nextPos = (await prisma.bracketPosition.count({ where: { bracketId: absBracket.id } })) + 1
-            await prisma.bracketPosition.create({
-              data: { bracketId: absBracket.id, registrationId: atletaId, position: nextPos },
+          if (wc) {
+            const agg = await prisma.bracket.aggregate({ where: { eventId: id }, _max: { bracketNumber: true } })
+            absBracket = await prisma.bracket.create({
+              data: { eventId: id, weightCategoryId: wc.id, belt: newBelt as never, isAbsolute: true, bracketNumber: (agg._max.bracketNumber ?? 0) + 1 },
+              select: { id: true, status: true },
             })
           }
+        }
+
+        if (absBracket) {
+          if (absBracket.status !== "PENDENTE" && absBracket.status !== "DESIGNADA") {
+            return NextResponse.json(
+              { error: "A chave absoluta de destino já está em andamento. Não é possível adicionar atleta." },
+              { status: 400 }
+            )
+          }
+          const nextPos = (await prisma.bracketPosition.count({ where: { bracketId: absBracket.id } })) + 1
+          await prisma.bracketPosition.create({
+            data: { bracketId: absBracket.id, registrationId: atletaId, position: nextPos },
+          })
         }
       }
     }
