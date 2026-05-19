@@ -26,7 +26,16 @@ export async function GET(
         take: 1,
       },
     },
-    orderBy: { name: "asc" },
+  })
+
+  const extractNum = (name: string) => {
+    const label = name.includes(" - ") ? name.slice(name.lastIndexOf(" - ") + 3) : name
+    const m = label.match(/(\d+)/)
+    return m ? parseInt(m[1], 10) : Infinity
+  }
+  tatames.sort((a, b) => {
+    const diff = extractNum(a.name) - extractNum(b.name)
+    return diff !== 0 ? diff : a.name.localeCompare(b.name, "pt-BR")
   })
 
   return NextResponse.json(tatames)
