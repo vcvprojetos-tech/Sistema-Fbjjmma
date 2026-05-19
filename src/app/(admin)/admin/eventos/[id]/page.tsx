@@ -394,42 +394,6 @@ export default function EventoDetailPage() {
   const [resultadoEdits, setResultadoEdits] = useState<Record<string, Partial<Registration>>>({})
   const [resultadoSaving, setResultadoSaving] = useState(false)
 
-  // Finalizar evento
-  const [finalizarLoading, setFinalizarLoading] = useState(false)
-
-  const finalizarEvento = useCallback(async () => {
-    if (!confirm("Finalizar este evento? Coordenadores não poderão mais criar tatames para ele.")) return
-    setFinalizarLoading(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "ENCERRADO" }),
-      })
-      if (res.ok) {
-        const updated = await res.json()
-        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
-      }
-    } catch { /* silencioso */ }
-    finally { setFinalizarLoading(false) }
-  }, [id])
-
-  const reabrirEvento = useCallback(async () => {
-    setFinalizarLoading(true)
-    try {
-      const res = await fetch(`/api/admin/eventos/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "EM_ANDAMENTO" }),
-      })
-      if (res.ok) {
-        const updated = await res.json()
-        setEvent(prev => prev ? { ...prev, status: updated.status } : prev)
-      }
-    } catch { /* silencioso */ }
-    finally { setFinalizarLoading(false) }
-  }, [id])
-
   // Modal inscrição
   const [inscreverOpen, setInscreverOpen] = useState(false)
 
@@ -933,9 +897,6 @@ export default function EventoDetailPage() {
             <p className="admin-page-title">
               {eventLoading ? "Carregando..." : event?.name || "Evento"}
             </p>
-            {event?.status === "ENCERRADO" && (
-              <span className="admin-badge admin-badge-red">ENCERRADO</span>
-            )}
           </div>
           <p className="admin-page-subtitle">Gerenciamento do evento</p>
         </div>
@@ -957,26 +918,6 @@ export default function EventoDetailPage() {
           >
             ⚖️ Tabela de Peso
           </button>
-          {event && (
-            event.status === "ENCERRADO" ? (
-              <button
-                onClick={reabrirEvento}
-                disabled={finalizarLoading}
-                className="admin-btn admin-btn-ghost text-xs"
-              >
-                {finalizarLoading ? "..." : "Reabrir Evento"}
-              </button>
-            ) : (
-              <button
-                onClick={finalizarEvento}
-                disabled={finalizarLoading}
-                className="admin-btn text-xs font-bold"
-                style={{ backgroundColor: "#7f1d1d", color: "#fca5a5", border: "1px solid #dc2626" }}
-              >
-                {finalizarLoading ? "..." : "Finalizar Evento"}
-              </button>
-            )
-          )}
         </div>
       </div>
 
