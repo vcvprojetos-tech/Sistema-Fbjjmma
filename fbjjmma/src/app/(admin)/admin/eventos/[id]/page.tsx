@@ -569,6 +569,9 @@ export default function EventoDetailPage() {
     })
   }, [])
 
+  // Versão sempre ordenada de tatames usada em todos os renders
+  const tatamesSorted = useMemo(() => sortTatames(tatames), [tatames, sortTatames])
+
   const loadAllChaves = useCallback(async () => {
     setChavesLoading(true)
     try {
@@ -1769,7 +1772,7 @@ export default function EventoDetailPage() {
                             onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
                           >
                             <option value="">Sem tatame</option>
-                            {tatames.map((t) => (
+                            {tatamesSorted.map((t) => (
                               <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                           </select>
@@ -1800,7 +1803,7 @@ export default function EventoDetailPage() {
                             onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
                           >
                             <option value="">Sem tatame</option>
-                            {tatames.map((t) => (
+                            {tatamesSorted.map((t) => (
                               <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                           </select>
@@ -2053,7 +2056,7 @@ export default function EventoDetailPage() {
               <p className="text-sm text-[#6b7280] py-4">Nenhum coordenador conectado. Os tatames aparecem aqui quando os coordenadores acessam a tela de controle.</p>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {tatames.map((tatame) => {
+                {tatamesSorted.map((tatame) => {
                   const operador = tatame.operations[0]
                   const encerrado = event?.status === "ENCERRADO"
                   const emEspera = !operador && !encerrado
@@ -2147,7 +2150,7 @@ export default function EventoDetailPage() {
                 >
                   <option value="" disabled>Atribuir tatame...</option>
                   <option value="__none__">Sem tatame</option>
-                  {tatames.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  {tatamesSorted.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
                 <Button size="sm" onClick={bulkReiniciar} disabled={bulkLoading} style={{ backgroundColor: "#d97706", color: "#ffffff", border: "none" }}>
                   <RotateCcw className="h-3 w-3 mr-1" /> Reiniciar
@@ -2241,7 +2244,7 @@ export default function EventoDetailPage() {
                           onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
                         >
                           <option value="">Sem tatame</option>
-                          {tatames.map((t) => (
+                          {tatamesSorted.map((t) => (
                             <option key={t.id} value={t.id}>{t.name}</option>
                           ))}
                         </select>
@@ -2281,7 +2284,7 @@ export default function EventoDetailPage() {
                           onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
                         >
                           <option value="">Sem tatame</option>
-                          {tatames.map((t) => (
+                          {tatamesSorted.map((t) => (
                             <option key={t.id} value={t.id}>{t.name}</option>
                           ))}
                         </select>
@@ -2791,7 +2794,7 @@ export default function EventoDetailPage() {
 
             {/* Lista de tatames compactos */}
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-              {tatames.map((tatame) => {
+              {tatamesSorted.map((tatame) => {
                 const operador = tatame.operations[0]
                 const encerrado = event?.status === "ENCERRADO"
                 const emEspera = !operador && !encerrado

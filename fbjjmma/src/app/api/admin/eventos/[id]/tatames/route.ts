@@ -38,7 +38,9 @@ export async function GET(
     return diff !== 0 ? diff : a.name.localeCompare(b.name, "pt-BR")
   })
 
-  return NextResponse.json(tatames)
+  return NextResponse.json(tatames, {
+    headers: { "Cache-Control": "no-store" },
+  })
 }
 
 export async function POST(
