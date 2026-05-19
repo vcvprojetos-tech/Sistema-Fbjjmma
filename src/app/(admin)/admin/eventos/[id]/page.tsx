@@ -82,6 +82,7 @@ interface Event {
   value: number
   hasAbsolute: boolean
   absoluteValue: number | null
+  status: string
   registrationOpen: boolean
   isVisible: boolean
   banner: string | null
@@ -385,6 +386,7 @@ export default function EventoDetailPage() {
   const [novoTatameSaving, setNovoTatameSaving] = useState(false)
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
+  const [encerrarLoading, setEncerrarLoading] = useState(false)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
   const [tatamesChaveTab, setTatamesChaveTab] = useState<"pendentes" | "finalizadas" | "premiadas">("pendentes")
   const [selectionMode, setSelectionMode] = useState(false)
@@ -613,6 +615,20 @@ export default function EventoDetailPage() {
       setPixAdminSaving(false)
     }
   }, [pixAdminModal, pixAdminValue, id, loadAllChaves])
+
+  const encerrarEvento = useCallback(async () => {
+    if (!confirm("Encerrar o evento? Os tatames ficarão marcados como finalizados.")) return
+    setEncerrarLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/encerrar`, { method: "PATCH" })
+      if (res.ok) {
+        const updated = await res.json()
+        setEvent(updated)
+      }
+    } finally {
+      setEncerrarLoading(false)
+    }
+  }, [id])
 
   const loadTatames = useCallback(async () => {
     setTatamesLoading(true)
@@ -960,6 +976,27 @@ export default function EventoDetailPage() {
         </div>
         {/* Botões de consulta rápida */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {event && event.status !== "ENCERRADO" && (
+            <button
+              onClick={encerrarEvento}
+              disabled={encerrarLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
+              style={{
+                backgroundColor: "#dc262610",
+                color: "#dc2626",
+                borderColor: "#dc262640",
+                cursor: encerrarLoading ? "not-allowed" : "pointer",
+                opacity: encerrarLoading ? 0.6 : 1,
+              }}
+            >
+              {encerrarLoading ? "Encerrando..." : "⏹ Encerrar Evento"}
+            </button>
+          )}
+          {event?.status === "ENCERRADO" && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border" style={{ backgroundColor: "#6b728010", color: "#6b7280", borderColor: "#6b728040" }}>
+              ⏹ Evento Encerrado
+            </span>
+          )}
           <button
             onClick={() => event?.schedule && setDocModal({ title: "📅 Cronograma do Evento", url: event.schedule })}
             disabled={!event?.schedule}
@@ -1973,7 +2010,9 @@ export default function EventoDetailPage() {
           {/* Tatame cards */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>Tatames Ativos</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>
+                {event?.status === "ENCERRADO" ? "Tatames (Evento Encerrado)" : "Tatames Ativos"}
+              </h3>
               {tatamesLoading && <span className="text-xs text-[#6b7280]">Carregando...</span>}
             </div>
 
@@ -1983,21 +2022,31 @@ export default function EventoDetailPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {tatames.map((tatame) => {
                   const operador = tatame.operations[0]
-                  const emEspera = !operador
+                  const encerrado = event?.status === "ENCERRADO"
+                  const emEspera = !operador && !encerrado
+                  const cardBorderColor = encerrado
+                    ? (isDark ? "#4b556360" : "#9ca3af60")
+                    : emEspera
+                      ? (isDark ? "#78350f60" : "#d9770660")
+                      : (isDark ? "#16a34a40" : "#16a34a50")
+                  const cardBgColor = encerrado
+                    ? (isDark ? "#1a1a1a" : "#f3f4f6")
+                    : emEspera
+                      ? (isDark ? "#1c1200" : "#fffbeb")
+                      : (isDark ? "#0d1f0d" : "#f0fdf4")
                   return (
                     <div
                       key={tatame.id}
                       className="rounded-lg border p-3"
-                      style={{
-                        borderColor: emEspera ? (isDark ? "#78350f60" : "#d9770660") : (isDark ? "#16a34a40" : "#16a34a50"),
-                        backgroundColor: emEspera ? (isDark ? "#1c1200" : "#fffbeb") : (isDark ? "#0d1f0d" : "#f0fdf4"),
-                      }}
+                      style={{ borderColor: cardBorderColor, backgroundColor: cardBgColor }}
                     >
                       {/* Header: nome + badge + lixeira */}
                       {(() => {
                         const dashIdx = tatame.name.lastIndexOf(" - ")
                         const tataLabel = dashIdx >= 0 ? tatame.name.slice(dashIdx + 3) : tatame.name
                         const prefix = dashIdx >= 0 ? tatame.name.slice(0, dashIdx) : null
+                        const badgeBg = encerrado ? "#6b7280" : emEspera ? "#d97706" : "#16a34a"
+                        const badgeLabel = encerrado ? "ENCERRADO" : emEspera ? "AGUARDANDO" : "ATIVO"
                         return (
                           <>
                             <div className="flex items-center justify-between gap-2 mb-1">
@@ -2005,29 +2054,31 @@ export default function EventoDetailPage() {
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 <span
                                   className="text-[10px] px-2 py-0.5 rounded-full font-bold"
-                                  style={{ backgroundColor: emEspera ? "#d97706" : "#16a34a", color: "#ffffff" }}
+                                  style={{ backgroundColor: badgeBg, color: "#ffffff" }}
                                 >
-                                  {emEspera ? "AGUARDANDO" : "ATIVO"}
+                                  {badgeLabel}
                                 </span>
                                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-[#dc2626] flex-shrink-0" onClick={() => excluirTatame(tatame.id)}>
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
-                            <span className="font-bold text-sm block mb-1.5" style={{ color: isDark ? "#ffffff" : "#111827" }}>{tataLabel}</span>
+                            <span className="font-bold text-sm block mb-1.5" style={{ color: encerrado ? (isDark ? "#9ca3af" : "#6b7280") : (isDark ? "#ffffff" : "#111827") }}>{tataLabel}</span>
                           </>
                         )
                       })()}
                       {/* Stats em grid 2 colunas */}
                       <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] mb-1.5">
-                        <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>Atribuídas: <span style={{ color: isDark ? "#ffffff" : "#111827", fontWeight: 600 }}>{tatame.brackets.length}</span></span>
-                        <span style={{ color: isDark ? "#60a5fa" : "#1d4ed8" }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
-                        <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
-                        <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
+                        <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>Atribuídas: <span style={{ color: encerrado ? "#6b7280" : (isDark ? "#ffffff" : "#111827"), fontWeight: 600 }}>{tatame.brackets.length}</span></span>
+                        <span style={{ color: encerrado ? "#9ca3af" : (isDark ? "#60a5fa" : "#1d4ed8") }}>Aguardando: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}</span>
+                        <span style={{ color: encerrado ? "#9ca3af" : (isDark ? "#fbbf24" : "#b45309") }}>Em andamento: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}</span>
+                        <span style={{ color: encerrado ? "#9ca3af" : (isDark ? "#4ade80" : "#15803d") }}>Finalizadas: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}</span>
                       </div>
                       {/* Operador */}
                       <div className="text-[11px]">
-                        {operador ? (
+                        {encerrado ? (
+                          <span style={{ color: isDark ? "#6b7280" : "#9ca3af" }}>Evento encerrado</span>
+                        ) : operador ? (
                           <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>
                             {operador.user.name} desde {new Date(operador.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </span>
