@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useTheme } from "next-themes"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw } from "lucide-react"
+import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -387,6 +387,9 @@ export default function EventoDetailPage() {
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [encerrarLoading, setEncerrarLoading] = useState(false)
+  const [tatamaGavetaOpen, setTatamaGavetaOpen] = useState(false)
+  const [tatamesSectionVisible, setTatamesSectionVisible] = useState(true)
+  const tatamesSectionRef = useRef<HTMLDivElement>(null)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
   const [tatamesChaveTab, setTatamesChaveTab] = useState<"pendentes" | "finalizadas" | "premiadas">("pendentes")
   const [selectionMode, setSelectionMode] = useState(false)
@@ -839,6 +842,24 @@ export default function EventoDetailPage() {
   useEffect(() => {
     if (tab === "atletas") loadAtletas()
   }, [atletasTab, loadAtletas, tab])
+
+  // Observa se a seção de tatames está visível (para mostrar/ocultar gaveta direita)
+  useEffect(() => {
+    if (tab !== "tatames") return
+    const el = tatamesSectionRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setTatamesSectionVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [tab, tatames])
+
+  // Fecha gaveta quando tatames voltam a ficar visíveis
+  useEffect(() => {
+    if (tatamesSectionVisible) setTatamaGavetaOpen(false)
+  }, [tatamesSectionVisible])
 
   // Stats for atletas
   const totalAtletas = registrations.length
@@ -2019,7 +2040,7 @@ export default function EventoDetailPage() {
           )}
 
           {/* Tatame cards */}
-          <div className="space-y-3">
+          <div className="space-y-3" ref={tatamesSectionRef}>
             <div className="flex items-center gap-3">
               <h3 className="text-sm font-semibold uppercase tracking-wider flex-1" style={{ color: "var(--foreground)" }}>
                 {event?.status === "ENCERRADO" ? "Tatames (Evento Encerrado)" : "Tatames Ativos"}
@@ -2722,6 +2743,167 @@ export default function EventoDetailPage() {
       )}
 
       {/* Modal de consulta — cronograma e tabela de peso */}
+      {/* Gaveta direita — tatames em modo compacto, aparece quando rola além dos cards */}
+      {tab === "tatames" && tatames.length > 0 && !tatamesSectionVisible && (
+        <>
+          {/* Overlay */}
+          {tatamaGavetaOpen && (
+            <div
+              className="fixed inset-0 z-30"
+              style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
+              onClick={() => setTatamaGavetaOpen(false)}
+            />
+          )}
+
+          {/* Gaveta */}
+          <aside
+            style={{
+              position: "fixed",
+              top: 0,
+              bottom: 0,
+              right: 0,
+              zIndex: 40,
+              width: 260,
+              display: "flex",
+              flexDirection: "column",
+              borderLeft: `1px solid var(--border)`,
+              backgroundColor: "var(--background)",
+              transform: tatamaGavetaOpen ? "translateX(0)" : "translateX(100%)",
+              transition: "transform 220ms cubic-bezier(0.4,0,0.2,1)",
+              boxShadow: tatamaGavetaOpen ? "-4px 0 24px rgba(0,0,0,0.18)" : "none",
+            }}
+          >
+            {/* Cabeçalho da gaveta */}
+            <div
+              className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--foreground)" }}>
+                {event?.status === "ENCERRADO" ? "Tatames (Encerrado)" : "Tatames Ativos"}
+              </span>
+              <button
+                onClick={() => setTatamaGavetaOpen(false)}
+                className="text-[#6b7280] hover:text-[var(--foreground)] text-lg leading-none"
+                style={{ background: "none", border: "none", cursor: "pointer" }}
+              >✕</button>
+            </div>
+
+            {/* Lista de tatames compactos */}
+            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+              {tatames.map((tatame) => {
+                const operador = tatame.operations[0]
+                const encerrado = event?.status === "ENCERRADO"
+                const emEspera = !operador && !encerrado
+                const dashIdx = tatame.name.lastIndexOf(" - ")
+                const tataLabel = dashIdx >= 0 ? tatame.name.slice(dashIdx + 3) : tatame.name
+                const prefix = dashIdx >= 0 ? tatame.name.slice(0, dashIdx) : null
+                const badgeBg = encerrado ? "#6b7280" : emEspera ? "#d97706" : "#16a34a"
+                const badgeLabel = encerrado ? "ENC." : emEspera ? "AGU." : "ATIVO"
+                const cardBg = encerrado
+                  ? (isDark ? "#1a1a1a" : "#f3f4f6")
+                  : emEspera
+                    ? (isDark ? "#1c1200" : "#fffbeb")
+                    : (isDark ? "#0d1f0d" : "#f0fdf4")
+                const cardBorder = encerrado
+                  ? (isDark ? "#4b556340" : "#9ca3af40")
+                  : emEspera
+                    ? (isDark ? "#78350f40" : "#d9770640")
+                    : (isDark ? "#16a34a30" : "#16a34a40")
+                return (
+                  <div
+                    key={tatame.id}
+                    className="rounded-lg border p-2.5"
+                    style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                  >
+                    {/* Linha 1: prefix + badge */}
+                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                      <span className="text-[10px] truncate" style={{ color: isDark ? "#9ca3af" : "#6b7280" }}>{prefix ?? ""}</span>
+                      <span
+                        className="text-[9px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0"
+                        style={{ backgroundColor: badgeBg, color: "#ffffff" }}
+                      >
+                        {badgeLabel}
+                      </span>
+                    </div>
+                    {/* Linha 2: nome do tatame */}
+                    <span
+                      className="font-bold text-xs block mb-1.5"
+                      style={{ color: encerrado ? (isDark ? "#9ca3af" : "#6b7280") : (isDark ? "#ffffff" : "#111827") }}
+                    >
+                      {tataLabel}
+                    </span>
+                    {/* Stats em 2 colunas */}
+                    <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[10px]">
+                      <span style={{ color: isDark ? "#9ca3af" : "#374151" }}>
+                        Atr.: <strong>{tatame.brackets.length}</strong>
+                      </span>
+                      <span style={{ color: encerrado ? "#9ca3af" : (isDark ? "#60a5fa" : "#1d4ed8") }}>
+                        Agu.: {tatame.brackets.filter(b => b.status === "DESIGNADA" || b.status === "PENDENTE").length}
+                      </span>
+                      <span style={{ color: encerrado ? "#9ca3af" : (isDark ? "#fbbf24" : "#b45309") }}>
+                        And.: {tatame.brackets.filter(b => b.status === "EM_ANDAMENTO").length}
+                      </span>
+                      <span style={{ color: encerrado ? "#9ca3af" : (isDark ? "#4ade80" : "#15803d") }}>
+                        Fin.: {tatame.brackets.filter(b => b.status === "FINALIZADA" || b.status === "PREMIADA").length}
+                      </span>
+                    </div>
+                    {/* Operador */}
+                    {!encerrado && (
+                      <div className="text-[10px] mt-1">
+                        {operador ? (
+                          <span style={{ color: isDark ? "#4ade80" : "#15803d" }}>
+                            {operador.user.name.split(" ")[0]}
+                          </span>
+                        ) : (
+                          <span style={{ color: isDark ? "#fbbf24" : "#b45309" }}>Aguardando...</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </aside>
+
+          {/* Lingueta da gaveta direita */}
+          <button
+            onClick={() => setTatamaGavetaOpen(o => !o)}
+            aria-label={tatamaGavetaOpen ? "Fechar tatames" : "Ver tatames"}
+            style={{
+              position: "fixed",
+              right: tatamaGavetaOpen ? 260 : 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 50,
+              backgroundColor: "#dc2626",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "8px 0 0 8px",
+              width: 22,
+              height: 80,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "right 220ms cubic-bezier(0.4,0,0.2,1)",
+              boxShadow: "-2px 0 8px rgba(0,0,0,0.25)",
+              padding: 0,
+              writingMode: "vertical-rl",
+            }}
+          >
+            <ChevronLeft
+              size={14}
+              style={{
+                color: "#ffffff",
+                transition: "transform 220ms cubic-bezier(0.4,0,0.2,1)",
+                transform: tatamaGavetaOpen ? "rotate(180deg)" : "rotate(0deg)",
+                strokeWidth: 3,
+              }}
+            />
+          </button>
+        </>
+      )}
+
       {docModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
