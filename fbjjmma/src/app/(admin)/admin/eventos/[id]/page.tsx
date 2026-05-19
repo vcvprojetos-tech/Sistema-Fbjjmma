@@ -558,13 +558,12 @@ export default function EventoDetailPage() {
   }, [id, buildAtletasParams])
 
   const sortTatames = useCallback(<T extends { name: string }>(arr: T[]): T[] => {
-    const extractNum = (name: string) => {
-      const label = name.includes(" - ") ? name.slice(name.lastIndexOf(" - ") + 3) : name
-      const m = label.match(/(\d+)/)
+    const getTatameNum = (name: string) => {
+      const m = name.match(/Tatame\s+(\d+)/i)
       return m ? parseInt(m[1], 10) : Infinity
     }
     return [...arr].sort((a, b) => {
-      const diff = extractNum(a.name) - extractNum(b.name)
+      const diff = getTatameNum(a.name) - getTatameNum(b.name)
       return diff !== 0 ? diff : a.name.localeCompare(b.name, "pt-BR")
     })
   }, [])
