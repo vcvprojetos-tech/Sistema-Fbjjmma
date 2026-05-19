@@ -26,10 +26,14 @@ export async function GET(
         take: 1,
       },
     },
-    orderBy: { name: "asc" },
   })
 
-  return NextResponse.json(tatames)
+  const getN = (s: string) => { const m = s.match(/(\d+)\D*$/); return m ? parseInt(m[1], 10) : 9999 }
+  tatames.sort((a, b) => getN(a.name) - getN(b.name) || a.name.localeCompare(b.name, "pt-BR"))
+
+  return NextResponse.json(tatames, {
+    headers: { "Cache-Control": "no-store" },
+  })
 }
 
 export async function POST(
