@@ -1,16 +1,13 @@
-﻿import { prisma } from "@/lib/db"
-import { CalendarDays, Users, Trophy } from "lucide-react"
+import { prisma } from "@/lib/db"
+import { CalendarDays, Users, Trophy, TrendingUp } from "lucide-react"
+import Link from "next/link"
 
 async function getStats() {
   const [totalAthletes, totalEvents, upcomingEvents] = await Promise.all([
     prisma.athlete.count(),
     prisma.event.count({ where: { deletedAt: null } }),
     prisma.event.count({
-      where: {
-        deletedAt: null,
-        date: { gte: new Date() },
-        isVisible: true,
-      },
+      where: { deletedAt: null, date: { gte: new Date() }, isVisible: true },
     }),
   ])
   return { totalAthletes, totalEvents, upcomingEvents }
@@ -20,9 +17,17 @@ async function getRecentEvents() {
   return prisma.event.findMany({
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
-    take: 5,
+    take: 6,
     include: { type: true },
   })
+}
+
+const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  RASCUNHO:    { label: "Rascunho",    cls: "admin-badge admin-badge-gray" },
+  ABERTO:      { label: "Aberto",      cls: "admin-badge admin-badge-green" },
+  ENCERRADO:   { label: "Encerrado",   cls: "admin-badge admin-badge-amber" },
+  EM_ANDAMENTO:{ label: "Em Andamento",cls: "admin-badge admin-badge-blue" },
+  FINALIZADO:  { label: "Finalizado",  cls: "admin-badge admin-badge-gray" },
 }
 
 export default async function DashboardPage() {
@@ -30,105 +35,94 @@ export default async function DashboardPage() {
   const recentEvents = await getRecentEvents()
 
   const cards = [
-    {
-      label: "Total de Atletas",
-      value: stats.totalAthletes,
-      icon: Users,
-      color: "#dc2626",
-    },
-    {
-      label: "Total de Eventos",
-      value: stats.totalEvents,
-      icon: CalendarDays,
-      color: "#2563eb",
-    },
-    {
-      label: "Próximos Eventos",
-      value: stats.upcomingEvents,
-      icon: Trophy,
-      color: "#16a34a",
-    },
+    { label: "Total de Atletas",  value: stats.totalAthletes, icon: Users,        color: "#dc2626", link: "/admin/atletas" },
+    { label: "Total de Eventos",  value: stats.totalEvents,   icon: CalendarDays, color: "#2563eb", link: "/admin/eventos" },
+    { label: "Próximos Eventos",  value: stats.upcomingEvents,icon: Trophy,        color: "#fbbf24", link: "/admin/eventos" },
   ]
 
   return (
-    <div className="p-6 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-[#6b7280] text-sm mt-1">
-          Visão geral do sistema FBJJMMA
-        </p>
+    <div className="p-6 space-y-6 max-w-6xl">
+
+      <div className="admin-page-header" style={{ padding: 0, border: "none", marginBottom: 0 }}>
+        <p className="admin-page-title">Dashboard</p>
+        <p className="admin-page-subtitle">Visão geral do sistema FBJJMMA</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {cards.map((card) => {
           const Icon = card.icon
           return (
-            <div
-              key={card.label}
-              className="rounded-lg border p-6 flex items-center gap-4"
-              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+            <Link key={card.label} href={card.link}
+              className="admin-stat-card group hover:opacity-90 transition-opacity"
+              style={{ borderLeftColor: card.color }}
             >
-              <div
-                className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${card.color}20` }}
-              >
-                <Icon className="h-6 w-6" style={{ color: card.color }} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "var(--card-alt)" }}>
+                <Icon className="h-5 w-5" style={{ color: card.color }} />
               </div>
               <div>
-                <p className="text-3xl font-bold text-white">{card.value}</p>
-                <p className="text-sm text-[#6b7280]">{card.label}</p>
+                <p className="text-2xl font-black tabular-nums" style={{ color: "var(--foreground)" }}>{card.value}</p>
+                <p className="text-xs font-medium" style={{ color: "var(--muted)" }}>{card.label}</p>
               </div>
-            </div>
+            </Link>
           )
         })}
       </div>
 
-      {/* Recent Events */}
-      <div
-        className="rounded-lg border"
-        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
-      >
-        <div
-          className="px-6 py-4 border-b"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <h2 className="text-base font-semibold text-white">
-            Eventos Recentes
-          </h2>
+      {/* Eventos Recentes */}
+      <div className="admin-card">
+        <div className="admin-card-header">
+          <span>Eventos Recentes</span>
+          <Link href="/admin/eventos" className="text-xs font-semibold" style={{ color: "#dc2626" }}>
+            Ver todos →
+          </Link>
         </div>
-        <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-          {recentEvents.length === 0 ? (
-            <p className="px-6 py-8 text-center text-[#6b7280] text-sm">
-              Nenhum evento cadastrado ainda.
-            </p>
-          ) : (
-            recentEvents.map((event: (typeof recentEvents)[0]) => (
-              <div
-                key={event.id}
-                className="px-6 py-4 flex items-center justify-between gap-4"
-              >
-                <div>
-                  <p className="text-white font-medium text-sm">{event.name}</p>
-                  <p className="text-[#6b7280] text-xs mt-0.5">
-                    {event.type.name} &bull;{" "}
-                    {event.city}, {event.state} &bull;{" "}
-                    {new Date(event.date).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-                <span
-                  className="text-xs px-2 py-1 rounded-full flex-shrink-0"
-                  style={{
-                    backgroundColor: event.isVisible ? "#16a34a20" : "#6b728020",
-                    color: event.isVisible ? "#4ade80" : "#9ca3af",
-                  }}
-                >
-                  {event.isVisible ? "Visível" : "Oculto"}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
+        {recentEvents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2">
+            <TrendingUp className="h-8 w-8" style={{ color: "var(--muted)" }} />
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Nenhum evento cadastrado ainda.</p>
+          </div>
+        ) : (
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Tipo</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Visível</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentEvents.map((event) => {
+                const st = STATUS_CONFIG[event.status] ?? { label: event.status, cls: "admin-badge admin-badge-gray" }
+                return (
+                  <tr key={event.id}>
+                    <td>
+                      <Link href={`/admin/eventos/${event.id}`} className="font-semibold hover:text-[#dc2626] transition-colors">
+                        {event.name}
+                      </Link>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--muted)" }}>
+                        {event.city}, {event.state}
+                      </p>
+                    </td>
+                    <td style={{ color: "var(--muted)" }}>{event.type.name}</td>
+                    <td className="tabular-nums" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+                      {new Date(event.date).toLocaleDateString("pt-BR")}
+                    </td>
+                    <td><span className={st.cls}>{st.label}</span></td>
+                    <td>
+                      <span className={event.isVisible ? "admin-badge admin-badge-green" : "admin-badge admin-badge-gray"}>
+                        {event.isVisible ? "Visível" : "Oculto"}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )

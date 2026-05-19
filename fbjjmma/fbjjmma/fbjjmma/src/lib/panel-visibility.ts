@@ -1,6 +1,3 @@
-// Singleton em memória: tatameId → { bracketIds visíveis agora, timestamp }
-// Atualizado pelo painel a cada ciclo de poll (~5s). Expira em 30s se painel fechar.
-
 const store = new Map<string, { ids: Set<string>; ts: number }>()
 
 export function setPanelVisible(tatameId: string, bracketIds: string[]): void {

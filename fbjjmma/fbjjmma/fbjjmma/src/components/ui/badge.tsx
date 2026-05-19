@@ -14,13 +14,13 @@ const badgeVariants = cva(
         secondary:
           "bg-[var(--card-alt)] text-[var(--foreground)] border border-[var(--border-alt)]",
         destructive:
-          "bg-[#dc2626]/20 text-[#dc2626] border border-[#dc2626]/30",
+          "bg-[#dc2626] text-white",
         outline:
           "border border-[var(--border-alt)] text-[var(--foreground)]",
         success:
-          "bg-green-900/30 text-green-400 border border-green-800",
+          "bg-[#166534] text-white",
         warning:
-          "bg-yellow-900/30 text-yellow-400 border border-yellow-800",
+          "bg-[#92400e] text-white",
       },
     },
     defaultVariants: {

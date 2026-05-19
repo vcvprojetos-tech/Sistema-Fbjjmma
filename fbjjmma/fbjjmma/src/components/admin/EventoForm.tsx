@@ -267,7 +267,7 @@ export default function EventoForm({ initialData, eventId }: EventoFormProps) {
 
             {/* Schedule/Programação */}
             <div className="space-y-2">
-              <Label>Programação (imagem)</Label>
+              <Label>Programação / Cronograma (imagem)</Label>
               <div
                 className="relative border-2 border-dashed rounded-lg overflow-hidden cursor-pointer hover:border-[#dc2626] transition-colors"
                 style={{ borderColor: "var(--border-alt)", minHeight: "120px" }}

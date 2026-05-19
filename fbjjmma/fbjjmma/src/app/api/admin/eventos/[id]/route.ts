@@ -120,10 +120,8 @@ export async function PUT(
     }
 
     if (data.banner) updateData.banner = data.banner
-    if (data.removeSchedule === "true") updateData.schedule = null
-    else if (data.schedule) updateData.schedule = data.schedule
-    if (data.removePesoDoc === "true") updateData.pesoDoc = null
-    else if (data.pesoDoc) updateData.pesoDoc = data.pesoDoc
+    if (data.schedule) updateData.schedule = data.schedule
+    if (data.pesoDoc) updateData.pesoDoc = data.pesoDoc
 
     const event = await prisma.event.update({
       where: { id },
@@ -138,33 +136,6 @@ export async function PUT(
       { error: "Erro ao atualizar evento." },
       { status: 500 }
     )
-  }
-}
-
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth()
-  if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
-
-  const { id } = await params
-
-  try {
-    const { status } = await req.json()
-    const validStatuses = ["RASCUNHO", "INSCRICOES_ABERTAS", "INSCRICOES_ENCERRADAS", "EM_ANDAMENTO", "ENCERRADO"]
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json({ error: "Status inválido." }, { status: 400 })
-    }
-
-    const event = await prisma.event.update({
-      where: { id },
-      data: { status },
-    })
-    return NextResponse.json(event)
-  } catch (error) {
-    console.error("[EVENTOS PATCH ERROR]", error)
-    return NextResponse.json({ error: "Erro ao atualizar status." }, { status: 500 })
   }
 }
 

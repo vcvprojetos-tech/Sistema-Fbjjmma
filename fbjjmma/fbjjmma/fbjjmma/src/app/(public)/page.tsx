@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { CalendarDays, MapPin, ChevronRight, Trophy } from "lucide-react"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 interface Event {
   id: string
@@ -65,7 +66,7 @@ export default function HomePage() {
         />
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <img src="/logo2.png" alt="FBJJMMA" className="w-16 h-16 mx-auto mb-6 object-contain" />
+          <ThemeLogo className="w-16 h-16 mx-auto mb-6 object-contain" />
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
             Federação Baiana de
             <br />
@@ -156,7 +157,7 @@ export default function HomePage() {
                         background: "linear-gradient(135deg, #1a0000 0%, var(--card) 100%)",
                       }}
                     >
-                      <img src="/logo2.png" alt="FBJJMMA" className="w-12 h-12 object-contain opacity-30" />
+                      <ThemeLogo className="w-12 h-12 object-contain opacity-30" />
                     </div>
                   )}
 

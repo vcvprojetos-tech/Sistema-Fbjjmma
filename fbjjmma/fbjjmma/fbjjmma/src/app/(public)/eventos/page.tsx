@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { CalendarDays, MapPin, Search, Trophy } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { ThemeLogo } from "@/components/ThemeLogo"
 
 interface Event {
   id: string
@@ -154,7 +155,7 @@ export default function EventosPage() {
                     className="w-full h-44 flex items-center justify-center"
                     style={{ background: "linear-gradient(135deg, #1a0000 0%, var(--card) 100%)" }}
                   >
-                    <img src="/logo2.png" alt="FBJJMMA" className="w-14 h-14 object-contain opacity-30" />
+                    <ThemeLogo className="w-14 h-14 object-contain opacity-30" />
                   </div>
                 )}
 

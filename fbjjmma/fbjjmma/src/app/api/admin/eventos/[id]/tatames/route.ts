@@ -20,7 +20,7 @@ export async function GET(
       },
       operations: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        where: { endedAt: null, lastHeartbeat: { gte: new Date(Date.now() - 3 * 60 * 1000) } } as any,
+        where: { endedAt: null, lastHeartbeat: { gte: new Date(Date.now() - 2 * 60 * 1000) } } as any,
         include: { user: { select: { id: true, name: true } } },
         orderBy: { startedAt: "desc" },
         take: 1,
@@ -28,10 +28,6 @@ export async function GET(
     },
     orderBy: { name: "asc" },
   })
-
-  // Ordenar pelo número do tatame (ex: "Dudu Muniz - Tatame 3" → 3)
-  const getTatameNum = (name: string) => parseInt(name.match(/Tatame\s+(\d+)/i)?.[1] ?? "999")
-  tatames.sort((a: { name: string }, b: { name: string }) => getTatameNum(a.name) - getTatameNum(b.name))
 
   return NextResponse.json(tatames)
 }

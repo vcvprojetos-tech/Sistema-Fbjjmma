@@ -4,16 +4,18 @@ import type { NextRequest } from "next/server"
 export function middleware(req: NextRequest) {
   const { nextUrl } = req
 
-  const isAdminRoute = nextUrl.pathname.startsWith("/admin")
+  const isAdminRoute = nextUrl.pathname === "/admin" || nextUrl.pathname.startsWith("/admin/")
   const isApiAdminRoute = nextUrl.pathname.startsWith("/api/admin")
 
-  const sessionToken =
-    req.cookies.get("authjs.session-token")?.value ||
-    req.cookies.get("__Secure-authjs.session-token")?.value
+  if (!isAdminRoute && !isApiAdminRoute) {
+    return NextResponse.next()
+  }
 
-  const isLoggedIn = !!sessionToken
+  const hasSession =
+    req.cookies.has("authjs.session-token") ||
+    req.cookies.has("__Secure-authjs.session-token")
 
-  if ((isAdminRoute || isApiAdminRoute) && !isLoggedIn) {
+  if (!hasSession) {
     const loginUrl = new URL("/login", nextUrl.origin)
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
