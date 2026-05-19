@@ -2667,23 +2667,41 @@ export default function EventoDetailPage() {
           onClick={() => setDocModal(null)}
         >
           <div
-            className="relative rounded-xl overflow-hidden shadow-2xl"
-            style={{ maxWidth: "min(90vw, 800px)", maxHeight: "90vh" }}
+            className="relative rounded-xl overflow-hidden shadow-2xl flex flex-col"
+            style={{ width: "min(95vw, 900px)", height: "90vh" }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
+            <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0" style={{ backgroundColor: "rgba(0,0,0,0.85)" }}>
               <span className="text-white font-semibold text-sm">{docModal.title}</span>
-              <button
-                onClick={() => setDocModal(null)}
-                className="text-[#9ca3af] hover:text-white text-lg leading-none ml-4"
-              >✕</button>
+              <div className="flex items-center gap-3">
+                <a
+                  href={docModal.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#60a5fa] hover:text-white text-xs underline"
+                >
+                  Abrir em nova aba
+                </a>
+                <button
+                  onClick={() => setDocModal(null)}
+                  className="text-[#9ca3af] hover:text-white text-lg leading-none"
+                >✕</button>
+              </div>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={docModal.url}
-              alt={docModal.title}
-              style={{ display: "block", maxWidth: "min(90vw, 800px)", maxHeight: "80vh", width: "auto", height: "auto" }}
-            />
+            {docModal.url.toLowerCase().includes(".pdf") ? (
+              <iframe
+                src={docModal.url}
+                title={docModal.title}
+                style={{ flex: 1, border: "none", backgroundColor: "#fff" }}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={docModal.url}
+                alt={docModal.title}
+                style={{ flex: 1, objectFit: "contain", backgroundColor: "#111", maxHeight: "100%" }}
+              />
+            )}
           </div>
         </div>
       )}
