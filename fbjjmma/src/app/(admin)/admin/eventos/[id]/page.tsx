@@ -316,6 +316,13 @@ const FiltersBar = React.memo(function FiltersBar({
   )
 })
 
+function sortByTatameNum<T extends { name: string }>(arr: T[]): T[] {
+  return [...arr].sort((a, b) => {
+    const getN = (s: string) => { const m = s.match(/Tatame[\s-]*(\d+)/i); return m ? parseInt(m[1], 10) : 9999 }
+    return getN(a.name) - getN(b.name) || a.name.localeCompare(b.name, "pt-BR")
+  })
+}
+
 export default function EventoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { resolvedTheme } = useTheme()
@@ -557,19 +564,8 @@ export default function EventoDetailPage() {
     }
   }, [id, buildAtletasParams])
 
-  const sortTatames = useCallback(<T extends { name: string }>(arr: T[]): T[] => {
-    const getTatameNum = (name: string) => {
-      const m = name.match(/Tatame\s+(\d+)/i)
-      return m ? parseInt(m[1], 10) : Infinity
-    }
-    return [...arr].sort((a, b) => {
-      const diff = getTatameNum(a.name) - getTatameNum(b.name)
-      return diff !== 0 ? diff : a.name.localeCompare(b.name, "pt-BR")
-    })
-  }, [])
-
   // Versão sempre ordenada de tatames usada em todos os renders
-  const tatamesSorted = useMemo(() => sortTatames(tatames), [tatames, sortTatames])
+  const tatamesSorted = useMemo(() => sortByTatameNum(tatames), [tatames])
 
   const loadAllChaves = useCallback(async () => {
     setChavesLoading(true)
@@ -652,13 +648,13 @@ export default function EventoDetailPage() {
     try {
       const res = await fetch(`/api/admin/eventos/${id}/tatames`)
       const data = await res.json()
-      if (Array.isArray(data)) setTatames(sortTatames(data))
+      if (Array.isArray(data)) setTatames(sortByTatameNum(data))
     } catch {
       console.error("Erro ao carregar tatames")
     } finally {
       setTatamesLoading(false)
     }
-  }, [id, sortTatames])
+  }, [id])
 
   const criarTatame = useCallback(async () => {
     if (!novoTatameNome.trim()) return
@@ -713,7 +709,7 @@ export default function EventoDetailPage() {
     try {
       const res = await fetch(`/api/admin/eventos/${id}/tatames`)
       const data = await res.json()
-      if (Array.isArray(data)) setTatames(sortTatames(data))
+      if (Array.isArray(data)) setTatames(sortByTatameNum(data))
     } catch { /* silencioso */ }
   }, [id])
 
@@ -805,7 +801,7 @@ export default function EventoDetailPage() {
       try {
         const res = await fetch(`/api/admin/eventos/${id}/tatames`)
         const data = await res.json()
-        if (Array.isArray(data)) setTatames(sortTatames(data))
+        if (Array.isArray(data)) setTatames(sortByTatameNum(data))
       } catch { /* silencioso */ }
     }, 30000)
     return () => clearInterval(interval)
@@ -836,7 +832,7 @@ export default function EventoDetailPage() {
         ])
         const [chavesData, tatamesData] = await Promise.all([chavesRes.json(), tatamesRes.json()])
         if (Array.isArray(chavesData)) setBrackets(chavesData)
-        if (Array.isArray(tatamesData)) setTatames(sortTatames(tatamesData))
+        if (Array.isArray(tatamesData)) setTatames(sortByTatameNum(tatamesData))
       } catch { /* silencioso */ }
     }, 5000)
     return () => clearInterval(interval)

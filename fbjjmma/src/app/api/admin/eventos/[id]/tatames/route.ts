@@ -28,14 +28,8 @@ export async function GET(
     },
   })
 
-  const getTatameNum = (name: string) => {
-    const m = name.match(/Tatame\s+(\d+)/i)
-    return m ? parseInt(m[1], 10) : Infinity
-  }
-  tatames.sort((a, b) => {
-    const diff = getTatameNum(a.name) - getTatameNum(b.name)
-    return diff !== 0 ? diff : a.name.localeCompare(b.name, "pt-BR")
-  })
+  const getN = (s: string) => { const m = s.match(/Tatame[\s-]*(\d+)/i); return m ? parseInt(m[1], 10) : 9999 }
+  tatames.sort((a, b) => getN(a.name) - getN(b.name) || a.name.localeCompare(b.name, "pt-BR"))
 
   return NextResponse.json(tatames, {
     headers: { "Cache-Control": "no-store" },
