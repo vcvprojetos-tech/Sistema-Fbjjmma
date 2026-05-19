@@ -557,6 +557,18 @@ export default function EventoDetailPage() {
     }
   }, [id, buildAtletasParams])
 
+  const sortTatames = useCallback(<T extends { name: string }>(arr: T[]): T[] => {
+    const extractNum = (name: string) => {
+      const label = name.includes(" - ") ? name.slice(name.lastIndexOf(" - ") + 3) : name
+      const m = label.match(/(\d+)/)
+      return m ? parseInt(m[1], 10) : Infinity
+    }
+    return [...arr].sort((a, b) => {
+      const diff = extractNum(a.name) - extractNum(b.name)
+      return diff !== 0 ? diff : a.name.localeCompare(b.name, "pt-BR")
+    })
+  }, [])
+
   const loadAllChaves = useCallback(async () => {
     setChavesLoading(true)
     try {
@@ -638,24 +650,13 @@ export default function EventoDetailPage() {
     try {
       const res = await fetch(`/api/admin/eventos/${id}/tatames`)
       const data = await res.json()
-      if (Array.isArray(data)) {
-        const extractNum = (name: string) => {
-          const label = name.includes(" - ") ? name.slice(name.lastIndexOf(" - ") + 3) : name
-          const m = label.match(/(\d+)/)
-          return m ? parseInt(m[1], 10) : Infinity
-        }
-        data.sort((a: { name: string }, b: { name: string }) => {
-          const diff = extractNum(a.name) - extractNum(b.name)
-          return diff !== 0 ? diff : a.name.localeCompare(b.name, "pt-BR")
-        })
-        setTatames(data)
-      }
+      if (Array.isArray(data)) setTatames(sortTatames(data))
     } catch {
       console.error("Erro ao carregar tatames")
     } finally {
       setTatamesLoading(false)
     }
-  }, [id])
+  }, [id, sortTatames])
 
   const criarTatame = useCallback(async () => {
     if (!novoTatameNome.trim()) return
@@ -710,7 +711,7 @@ export default function EventoDetailPage() {
     try {
       const res = await fetch(`/api/admin/eventos/${id}/tatames`)
       const data = await res.json()
-      if (Array.isArray(data)) setTatames(data)
+      if (Array.isArray(data)) setTatames(sortTatames(data))
     } catch { /* silencioso */ }
   }, [id])
 
@@ -802,7 +803,7 @@ export default function EventoDetailPage() {
       try {
         const res = await fetch(`/api/admin/eventos/${id}/tatames`)
         const data = await res.json()
-        if (Array.isArray(data)) setTatames(data)
+        if (Array.isArray(data)) setTatames(sortTatames(data))
       } catch { /* silencioso */ }
     }, 30000)
     return () => clearInterval(interval)
@@ -833,7 +834,7 @@ export default function EventoDetailPage() {
         ])
         const [chavesData, tatamesData] = await Promise.all([chavesRes.json(), tatamesRes.json()])
         if (Array.isArray(chavesData)) setBrackets(chavesData)
-        if (Array.isArray(tatamesData)) setTatames(tatamesData)
+        if (Array.isArray(tatamesData)) setTatames(sortTatames(tatamesData))
       } catch { /* silencioso */ }
     }, 5000)
     return () => clearInterval(interval)
