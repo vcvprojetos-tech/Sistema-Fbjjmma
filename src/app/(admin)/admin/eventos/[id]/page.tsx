@@ -1944,15 +1944,24 @@ export default function EventoDetailPage() {
                             )
                           })()}
                         </div>
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
-                          style={{
-                            backgroundColor: emEspera ? "#ca8a04" : "#16a34a",
-                            color: "#ffffff",
-                          }}
-                        >
-                          {emEspera ? "AGUARDANDO" : "ATIVO"}
-                        </span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full font-medium"
+                            style={{
+                              backgroundColor: emEspera ? "#ca8a04" : "#16a34a",
+                              color: "#ffffff",
+                            }}
+                          >
+                            {emEspera ? "AGUARDANDO" : "ATIVO"}
+                          </span>
+                          <button
+                            className="h-6 w-6 p-0 flex items-center justify-center rounded hover:text-[#dc2626] transition-colors"
+                            style={{ color: baseText, backgroundColor: "transparent", border: "none" }}
+                            onClick={() => excluirTatame(tatame.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                       <div className="text-xs space-y-1" style={{ color: baseText }}>
                         <p>Chaves atribuídas: {tatame.brackets.length}</p>
@@ -1967,15 +1976,6 @@ export default function EventoDetailPage() {
                         ) : (
                           <p style={{ color: reconexaoColor }}>Aguardando reconexão...</p>
                         )}
-                      </div>
-                      <div className="flex justify-end">
-                        <button
-                          className="h-8 w-8 p-0 flex items-center justify-center rounded hover:text-[#dc2626] transition-colors"
-                          style={{ color: baseText, backgroundColor: "transparent", border: "none" }}
-                          onClick={() => excluirTatame(tatame.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
                       </div>
                     </div>
                   )
