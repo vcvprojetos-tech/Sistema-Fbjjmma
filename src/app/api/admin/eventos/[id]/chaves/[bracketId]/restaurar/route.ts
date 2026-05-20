@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, ensureBracketDeletedAt } from "@/lib/db"
 
 export async function POST(
   _req: NextRequest,
@@ -12,6 +12,7 @@ export async function POST(
   const { id, bracketId } = await params
 
   try {
+    await ensureBracketDeletedAt()
     const bracket = await prisma.bracket.findFirst({
       where: { id: bracketId, eventId: id, deletedAt: { not: null } },
     })
