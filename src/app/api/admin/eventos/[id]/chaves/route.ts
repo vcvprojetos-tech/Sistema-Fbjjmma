@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Belt, Sex, AgeGroup } from "@prisma/client"
 import { auth } from "@/lib/auth"
-import { prisma, ensureBracketDeletedAt } from "@/lib/db"
+import { prisma } from "@/lib/db"
 
 export async function GET(
   req: NextRequest,
@@ -20,10 +20,6 @@ export async function GET(
   const faixa = searchParams.get("faixa") || ""
   const pesoNome = searchParams.get("pesoNome") || ""
   const absoluto = searchParams.get("absoluto") === "1"
-  const trash = searchParams.get("trash") === "1"
-
-  // Garante que a coluna deletedAt existe no banco (via pg puro, idempotente)
-  await ensureBracketDeletedAt()
 
   const event = await prisma.event.findUnique({ where: { id } })
   if (!event) {
@@ -35,10 +31,7 @@ export async function GET(
   if (categoria) whereCategory.ageGroup = categoria
   if (pesoNome) whereCategory.name = { equals: pesoNome, mode: "insensitive" }
 
-  const whereBracket: Record<string, unknown> = {
-    eventId: id,
-    deletedAt: trash ? { not: null } : null,
-  }
+  const whereBracket: Record<string, unknown> = { eventId: id }
   if (faixa) whereBracket.belt = faixa
   if (absoluto) whereBracket.isAbsolute = true
   if (Object.keys(whereCategory).length > 0) whereBracket.weightCategory = whereCategory

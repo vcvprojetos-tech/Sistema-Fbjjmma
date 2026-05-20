@@ -372,7 +372,6 @@ model Bracket {
   bracketGroupId   String?
   isGrandFinal     Boolean        @default(false)
   startedAt        DateTime?
-  deletedAt        DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
