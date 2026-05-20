@@ -31,7 +31,11 @@ export async function GET(
   if (categoria) whereCategory.ageGroup = categoria
   if (pesoNome) whereCategory.name = { equals: pesoNome, mode: "insensitive" }
 
-  const whereBracket: Record<string, unknown> = { eventId: id }
+  const trash = searchParams.get("trash") === "1"
+  const whereBracket: Record<string, unknown> = {
+    eventId: id,
+    deletedAt: trash ? { not: null } : null,
+  }
   if (faixa) whereBracket.belt = faixa
   if (absoluto) whereBracket.isAbsolute = true
   if (Object.keys(whereCategory).length > 0) whereBracket.weightCategory = whereCategory

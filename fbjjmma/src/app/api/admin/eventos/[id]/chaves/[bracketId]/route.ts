@@ -167,13 +167,14 @@ export async function DELETE(
     const bracket = await prisma.bracket.findFirst({ where: { id: bracketId, eventId: id } })
     if (!bracket) return NextResponse.json({ error: "Chave não encontrada." }, { status: 404 })
 
-    await prisma.match.deleteMany({ where: { bracketId } })
-    await prisma.bracketPosition.deleteMany({ where: { bracketId } })
-    await prisma.bracket.delete({ where: { id: bracketId } })
+    const updated = await prisma.bracket.update({
+      where: { id: bracketId },
+      data: { deletedAt: new Date(), tatameId: null },
+    })
 
     if (bracket.tatameId) notifyTatame(bracket.tatameId)
 
-    return NextResponse.json({ message: "Chave removida." })
+    return NextResponse.json(updated)
   } catch (error) {
     console.error("[BRACKET DELETE ERROR]", error)
     return NextResponse.json({ error: "Erro ao remover chave." }, { status: 500 })
