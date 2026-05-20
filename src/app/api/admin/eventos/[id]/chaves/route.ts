@@ -32,6 +32,11 @@ export async function GET(
   if (categoria) whereCategory.ageGroup = categoria
   if (pesoNome) whereCategory.name = { equals: pesoNome, mode: "insensitive" }
 
+  // Garante que a coluna deletedAt existe — idempotente com IF NOT EXISTS
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma.$executeRawUnsafe as any)('ALTER TABLE brackets ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)')
+    .catch(() => {})
+
   const whereBracket: Record<string, unknown> = {
     eventId: id,
     deletedAt: trash ? { not: null } : null,
@@ -40,33 +45,22 @@ export async function GET(
   if (absoluto) whereBracket.isAbsolute = true
   if (Object.keys(whereCategory).length > 0) whereBracket.weightCategory = whereCategory
 
-  const bracketQuery = {
-    include: {
-      weightCategory: true,
-      positions: {
-        include: {
-          registration: {
-            include: {
-              athlete: { include: { user: { select: { id: true, name: true } } } },
-              team: { select: { id: true, name: true } },
-            },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const brackets = await prisma.bracket.findMany({ where: whereBracket as any, include: {
+    weightCategory: true,
+    positions: {
+      include: {
+        registration: {
+          include: {
+            athlete: { include: { user: { select: { id: true, name: true } } } },
+            team: { select: { id: true, name: true } },
           },
         },
-        orderBy: { position: "asc" },
       },
-      matches: { orderBy: [{ round: "asc" }, { matchNumber: "asc" }] },
+      orderBy: { position: "asc" },
     },
-    orderBy: { bracketNumber: "asc" },
-  }
-
-  let brackets
-  try {
-    brackets = await prisma.bracket.findMany({ where: whereBracket, ...bracketQuery })
-  } catch {
-    // Fallback: coluna deletedAt ainda não existe no banco (migration pendente)
-    const { deletedAt: _d, ...whereFallback } = whereBracket as Record<string, unknown>
-    brackets = await prisma.bracket.findMany({ where: whereFallback as Parameters<typeof prisma.bracket.findMany>[0]["where"], ...bracketQuery })
-  }
+    matches: { orderBy: [{ round: "asc" }, { matchNumber: "asc" }] },
+  }, orderBy: { bracketNumber: "asc" } })
 
   return NextResponse.json(brackets)
 }
