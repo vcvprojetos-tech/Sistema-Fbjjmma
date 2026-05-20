@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db"
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { cpf, tatameNum } = body
+  const { cpf, tatameNum, eventId } = body
 
   if (!cpf || !tatameNum) {
     return NextResponse.json({ error: "CPF e número do tatame são obrigatórios." }, { status: 400 })
@@ -19,24 +19,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "CPF não encontrado ou sem permissão de acesso." }, { status: 403 })
   }
 
-  // Pega o evento mais próximo de hoje (próximo futuro ou o mais recente passado)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  let event = await prisma.event.findFirst({
-    where: { deletedAt: null, date: { gte: today } },
-    orderBy: { date: "asc" },
-  })
-
-  if (!event) {
+  let event
+  if (eventId) {
     event = await prisma.event.findFirst({
-      where: { deletedAt: null },
-      orderBy: { date: "desc" },
+      where: { id: eventId, deletedAt: null, status: { not: "ENCERRADO" } },
     })
-  }
-
-  if (!event) {
-    return NextResponse.json({ error: "Nenhum evento encontrado." }, { status: 404 })
+    if (!event) {
+      return NextResponse.json({ error: "Evento não encontrado ou já encerrado." }, { status: 404 })
+    }
+  } else {
+    // Fallback: pega o evento mais próximo de hoje
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    event = await prisma.event.findFirst({
+      where: { deletedAt: null, date: { gte: today }, status: { not: "ENCERRADO" } },
+      orderBy: { date: "asc" },
+    })
+    if (!event) {
+      event = await prisma.event.findFirst({
+        where: { deletedAt: null, status: { not: "ENCERRADO" } },
+        orderBy: { date: "desc" },
+      })
+    }
+    if (!event) {
+      return NextResponse.json({ error: "Nenhum evento ativo encontrado." }, { status: 404 })
+    }
   }
 
   // Verifica se o número do tatame já está sendo operado por outro coordenador
