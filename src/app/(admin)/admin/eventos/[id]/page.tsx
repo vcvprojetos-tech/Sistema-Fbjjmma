@@ -398,10 +398,12 @@ export default function EventoDetailPage() {
   const [tatamesSectionVisible, setTatamesSectionVisible] = useState(true)
   const tatamesSectionRef = useRef<HTMLDivElement>(null)
   const [tatamesApplied, setTatamesApplied] = useState({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
-  const [tatamesChaveTab, setTatamesChaveTab] = useState<"pendentes" | "finalizadas" | "premiadas">("pendentes")
+  const [tatamesChaveTab, setTatamesChaveTab] = useState<"pendentes" | "finalizadas" | "premiadas" | "excluidas">("pendentes")
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedBrackets, setSelectedBrackets] = useState<Set<string>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
+  const [deletedBrackets, setDeletedBrackets] = useState<Bracket[]>([])
+  const [deletedBracketsLoading, setDeletedBracketsLoading] = useState(false)
 
   // Resultado
   const [resultadoData, setResultadoData] = useState<Registration[]>([])
@@ -570,9 +572,14 @@ export default function EventoDetailPage() {
   const loadAllChaves = useCallback(async () => {
     setChavesLoading(true)
     try {
-      const res = await fetch(`/api/admin/eventos/${id}/chaves`)
+      const [res, resTrash] = await Promise.all([
+        fetch(`/api/admin/eventos/${id}/chaves`),
+        fetch(`/api/admin/eventos/${id}/chaves?trash=1`),
+      ])
       const data = await res.json()
+      const dataTrash = await resTrash.json()
       if (Array.isArray(data)) setBrackets(data)
+      if (Array.isArray(dataTrash)) setDeletedBrackets(dataTrash)
     } catch {
       console.error("Erro ao carregar chaves")
     } finally {
@@ -714,9 +721,23 @@ export default function EventoDetailPage() {
   }, [id])
 
   const excluirChave = useCallback(async (bracketId: string) => {
-    if (!confirm("Excluir esta chave? Esta ação não pode ser desfeita.")) return
+    if (!confirm("Mover esta chave para a lixeira? Ela poderá ser restaurada depois.")) return
+    const bracket = brackets.find(b => b.id === bracketId)
     setBrackets(prev => prev.filter(b => b.id !== bracketId))
+    if (bracket) setDeletedBrackets(prev => [{ ...bracket, tatameId: null }, ...prev])
     await fetch(`/api/admin/eventos/${id}/chaves/${bracketId}`, { method: "DELETE" })
+  }, [id, brackets])
+
+  const restaurarChave = useCallback(async (bracketId: string) => {
+    setDeletedBracketsLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/chaves/${bracketId}/restaurar`, { method: "POST" })
+      if (!res.ok) { alert("Erro ao restaurar chave."); return }
+      const restored = await res.json()
+      setDeletedBrackets(prev => prev.filter(b => b.id !== bracketId))
+      setBrackets(prev => [...prev, restored])
+    } catch { alert("Erro ao restaurar chave.") }
+    finally { setDeletedBracketsLoading(false) }
   }, [id])
 
   const reiniciarChave = useCallback(async (bracketId: string) => {
@@ -2308,7 +2329,8 @@ export default function EventoDetailPage() {
 
               const tabList = tatamesChaveTab === "pendentes" ? pendentes
                 : tatamesChaveTab === "finalizadas" ? finalizadas
-                : premiadas
+                : tatamesChaveTab === "premiadas" ? premiadas
+                : []
               const isSelectable = tatamesChaveTab === "pendentes"
 
               const allTabIds = tabList.flatMap(b =>
@@ -2324,7 +2346,8 @@ export default function EventoDetailPage() {
 
               const tabColor = tatamesChaveTab === "pendentes" ? "#b45309"
                 : tatamesChaveTab === "finalizadas" ? "#166534"
-                : "#5b21b6"
+                : tatamesChaveTab === "premiadas" ? "#5b21b6"
+                : "#6b7280"
 
               return (
                 <div className="space-y-0">
@@ -2334,6 +2357,7 @@ export default function EventoDetailPage() {
                       { key: "pendentes", label: "Pendentes", count: pendentes.length, color: "#b45309" },
                       { key: "finalizadas", label: "Finalizadas", count: finalizadas.length, color: "#166534" },
                       { key: "premiadas", label: "Premiadas", count: premiadas.length, color: "#5b21b6" },
+                      { key: "excluidas", label: "Excluídas", count: deletedBrackets.length, color: "#6b7280" },
                     ] as const).map(t => (
                       <button
                         key={t.key}
@@ -2363,7 +2387,39 @@ export default function EventoDetailPage() {
                     )}
                   </div>
                   {/* Conteúdo */}
-                  {tatamesFilteredBrackets.length === 0 ? (
+                  {tatamesChaveTab === "excluidas" ? (
+                    deletedBrackets.length === 0 ? (
+                      <p className="text-[#6b7280] text-sm py-4">Nenhuma chave na lixeira.</p>
+                    ) : (
+                      <div className="rounded-b-lg border border-t-0 overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                        {deletedBrackets.map(bracket => {
+                          const label = [
+                            bracket.weightCategory.sex === "MASCULINO" ? "Masc" : "Fem",
+                            AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
+                            BELT_LABELS[bracket.belt] || bracket.belt,
+                            bracket.isAbsolute ? "Absoluto" : `Até ${bracket.weightCategory.maxWeight}kg`,
+                          ].join(" | ")
+                          const athletes = bracket.positions.filter(p => p.registration).length
+                          return (
+                            <div key={bracket.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
+                              <div>
+                                <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Chave #{bracket.bracketNumber}</p>
+                                <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>{label} &bull; {athletes} atleta{athletes !== 1 ? "s" : ""}</p>
+                              </div>
+                              <button
+                                onClick={() => restaurarChave(bracket.id)}
+                                disabled={deletedBracketsLoading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-40"
+                                style={{ borderColor: "#16a34a", color: "#16a34a", backgroundColor: "transparent" }}
+                              >
+                                <RotateCcw className="h-3 w-3" /> Restaurar
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  ) : tatamesFilteredBrackets.length === 0 ? (
                     <p className="text-[#6b7280] text-sm py-4">Nenhuma chave encontrada com os filtros aplicados.</p>
                   ) : tabList.length === 0 ? (
                     <p className="text-[#6b7280] text-sm py-4">Nenhuma chave {tatamesChaveTab}.</p>

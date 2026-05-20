@@ -20,6 +20,7 @@ export async function GET(
   const faixa = searchParams.get("faixa") || ""
   const pesoNome = searchParams.get("pesoNome") || ""
   const absoluto = searchParams.get("absoluto") === "1"
+  const trash = searchParams.get("trash") === "1"
 
   const event = await prisma.event.findUnique({ where: { id } })
   if (!event) {
@@ -31,7 +32,10 @@ export async function GET(
   if (categoria) whereCategory.ageGroup = categoria
   if (pesoNome) whereCategory.name = { equals: pesoNome, mode: "insensitive" }
 
-  const whereBracket: Record<string, unknown> = { eventId: id }
+  const whereBracket: Record<string, unknown> = {
+    eventId: id,
+    deletedAt: trash ? { not: null } : null,
+  }
   if (faixa) whereBracket.belt = faixa
   if (absoluto) whereBracket.isAbsolute = true
   if (Object.keys(whereCategory).length > 0) whereBracket.weightCategory = whereCategory
@@ -85,7 +89,7 @@ export async function POST(
     // Get all approved registrations with weight category info
     const registrations = await prisma.registration.findMany({
       where: { eventId: id, status: "APROVADO" },
-      include: { weightCategory: true },
+      include: { weightCategory: true, team: { select: { id: true } } },
     })
 
     if (registrations.length === 0) {
@@ -124,6 +128,57 @@ export async function POST(
     let bracketNumber = 1
     const createdBrackets: string[] = []
 
+    function nextPow2(n: number): number {
+      let p = 1
+      while (p < n) p *= 2
+      return p
+    }
+
+    // Retorna pares [posA, posB] (índice 0) que se enfrentam no round 1
+    function getRound1Pairs(n: number): [number, number][] {
+      if (n === 3) return [[0, 2]]
+      const half = nextPow2(n) / 2
+      const pairs: [number, number][] = []
+      for (let seed = 1; seed <= half; seed++) {
+        const a = seed - 1
+        const b = seed + half - 1
+        if (a < n && b < n) pairs.push([a, b])
+      }
+      return pairs
+    }
+
+    // Reordena arr para que atletas da mesma equipe não se enfrentem no round 1
+    function applyTeamSeeding<T extends { team?: { id: string } | null }>(arr: T[]): T[] {
+      const n = arr.length
+      const pairs = getRound1Pairs(n)
+      for (let iter = 0; iter < 100; iter++) {
+        let conflict = false
+        for (const [a, b] of pairs) {
+          const tA = arr[a]?.team?.id
+          const tB = arr[b]?.team?.id
+          if (tA && tB && tA === tB) {
+            conflict = true
+            let fixed = false
+            for (let c = 0; c < n && !fixed; c++) {
+              if (c === a || c === b) continue
+              const pairOfC = pairs.find(([x, y]) => x === c || y === c)
+              const partnerC = pairOfC ? (pairOfC[0] === c ? pairOfC[1] : pairOfC[0]) : -1
+              const tC = arr[c]?.team?.id
+              const tPartnerC = partnerC >= 0 ? arr[partnerC]?.team?.id : undefined
+              const wouldConflictAtAB = tA && tC && tA === tC
+              const wouldConflictAtC = tPartnerC && tB && tPartnerC === tB
+              if (!wouldConflictAtAB && !wouldConflictAtC) {
+                ;[arr[b], arr[c]] = [arr[c], arr[b]]
+                fixed = true
+              }
+            }
+          }
+        }
+        if (!conflict) break
+      }
+      return arr
+    }
+
     // Cria uma ou duas sub-chaves para um grupo de inscrições.
     // Quando regs.length > MAX_BRACKET_SIZE, divide aleatoriamente em 2 partes
     // e marca ambas com o mesmo bracketGroupId para que, ao finalizarem,
@@ -134,7 +189,7 @@ export async function POST(
       belt: Belt,
       isAbsolute: boolean,
     ) {
-      const shuffled = [...regs].sort(() => Math.random() - 0.5)
+      const shuffled = applyTeamSeeding([...regs].sort(() => Math.random() - 0.5))
 
       if (shuffled.length <= MAX_BRACKET_SIZE) {
         const bracket = await prisma.bracket.create({
@@ -151,8 +206,8 @@ export async function POST(
 
       // Divide em 2 sub-chaves: metade superior e metade inferior
       const half = Math.ceil(shuffled.length / 2)
-      const groupA = shuffled.slice(0, half)
-      const groupB = shuffled.slice(half)
+      const groupA = applyTeamSeeding(shuffled.slice(0, half))
+      const groupB = applyTeamSeeding(shuffled.slice(half))
       const bracketGroupId = `${id}-${weightCategoryId}-${belt}-${isAbsolute}`
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
