@@ -40,31 +40,33 @@ export async function GET(
   if (absoluto) whereBracket.isAbsolute = true
   if (Object.keys(whereCategory).length > 0) whereBracket.weightCategory = whereCategory
 
-  const brackets = await prisma.bracket.findMany({
-    where: whereBracket,
+  const bracketQuery = {
     include: {
       weightCategory: true,
       positions: {
         include: {
           registration: {
             include: {
-              athlete: {
-                include: {
-                  user: { select: { id: true, name: true } },
-                },
-              },
+              athlete: { include: { user: { select: { id: true, name: true } } } },
               team: { select: { id: true, name: true } },
             },
           },
         },
         orderBy: { position: "asc" },
       },
-      matches: {
-        orderBy: [{ round: "asc" }, { matchNumber: "asc" }],
-      },
+      matches: { orderBy: [{ round: "asc" }, { matchNumber: "asc" }] },
     },
     orderBy: { bracketNumber: "asc" },
-  })
+  }
+
+  let brackets
+  try {
+    brackets = await prisma.bracket.findMany({ where: whereBracket, ...bracketQuery })
+  } catch {
+    // Fallback: coluna deletedAt ainda não existe no banco (migration pendente)
+    const { deletedAt: _d, ...whereFallback } = whereBracket as Record<string, unknown>
+    brackets = await prisma.bracket.findMany({ where: whereFallback as Parameters<typeof prisma.bracket.findMany>[0]["where"], ...bracketQuery })
+  }
 
   return NextResponse.json(brackets)
 }

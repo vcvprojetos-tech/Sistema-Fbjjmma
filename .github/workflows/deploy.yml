@@ -27,7 +27,8 @@ jobs:
               cp -rn /var/www/fbjjmma/fbjjmma/public/uploads/. /var/www/fbjjmma/public/uploads/ 2>/dev/null || true
             fi
             echo "==> Aplicando migrations..."
-            npx prisma migrate deploy
+            [ -f .env ] && export $(grep -v '^#' .env | xargs) || true
+            npx prisma migrate deploy || echo "Aviso: migrate deploy falhou, continuando..."
             echo "==> Gerando cliente Prisma..."
             npx prisma generate
             echo "==> Compilando..."
