@@ -20,7 +20,6 @@ export async function GET(
   const faixa = searchParams.get("faixa") || ""
   const pesoNome = searchParams.get("pesoNome") || ""
   const absoluto = searchParams.get("absoluto") === "1"
-  const trash = searchParams.get("trash") === "1"
 
   const event = await prisma.event.findUnique({ where: { id } })
   if (!event) {
@@ -32,35 +31,36 @@ export async function GET(
   if (categoria) whereCategory.ageGroup = categoria
   if (pesoNome) whereCategory.name = { equals: pesoNome, mode: "insensitive" }
 
-  // Garante que a coluna deletedAt existe — idempotente com IF NOT EXISTS
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.$executeRawUnsafe as any)('ALTER TABLE brackets ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)')
-    .catch(() => {})
-
-  const whereBracket: Record<string, unknown> = {
-    eventId: id,
-    deletedAt: trash ? { not: null } : null,
-  }
+  const whereBracket: Record<string, unknown> = { eventId: id }
   if (faixa) whereBracket.belt = faixa
   if (absoluto) whereBracket.isAbsolute = true
   if (Object.keys(whereCategory).length > 0) whereBracket.weightCategory = whereCategory
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const brackets = await prisma.bracket.findMany({ where: whereBracket as any, include: {
-    weightCategory: true,
-    positions: {
-      include: {
-        registration: {
-          include: {
-            athlete: { include: { user: { select: { id: true, name: true } } } },
-            team: { select: { id: true, name: true } },
+  const brackets = await prisma.bracket.findMany({
+    where: whereBracket,
+    include: {
+      weightCategory: true,
+      positions: {
+        include: {
+          registration: {
+            include: {
+              athlete: {
+                include: {
+                  user: { select: { id: true, name: true } },
+                },
+              },
+              team: { select: { id: true, name: true } },
+            },
           },
         },
+        orderBy: { position: "asc" },
       },
-      orderBy: { position: "asc" },
+      matches: {
+        orderBy: [{ round: "asc" }, { matchNumber: "asc" }],
+      },
     },
-    matches: { orderBy: [{ round: "asc" }, { matchNumber: "asc" }] },
-  }, orderBy: { bracketNumber: "asc" } })
+    orderBy: { bracketNumber: "asc" },
+  })
 
   return NextResponse.json(brackets)
 }
