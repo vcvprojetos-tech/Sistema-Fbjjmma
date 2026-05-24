@@ -183,12 +183,19 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
         (m) => m.round === semiRound && m.winnerId === finalMatch.winnerId
       )
       const semiHadWO = champSemi?.isWO || (!champSemi && matches.some(m => m.round === semiRound && m.isWO))
-      if (champSemi && !semiHadWO) {
-        const loserId =
-          champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
-        const loserPos = positions.find((p) => p.id === loserId)
-        if (loserPos?.registration)
-          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+      if (!semiHadWO) {
+        // Se o campeão chegou à final por BYE (sem semi real), usa a semi do vice como fallback
+        const runnerUpSemi = !champSemi
+          ? realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
+          : null
+        const semi = champSemi ?? runnerUpSemi
+        if (semi) {
+          const loserId =
+            semi.position1Id === semi.winnerId ? semi.position2Id : semi.position1Id
+          const loserPos = positions.find((p) => p.id === loserId)
+          if (loserPos?.registration)
+            placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+        }
       }
     }
   }
