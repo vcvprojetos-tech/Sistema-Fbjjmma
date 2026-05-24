@@ -272,30 +272,8 @@ export async function resetBracketAwards(bracketId: string): Promise<void> {
 
   if (regIds.length === 0) return
 
-  // Não resetar registrations já premiadas em outras chaves (ex: chave de peso já PREMIADA
-  // quando a chave do absoluto é finalizada — mesmo atleta, mesma registration)
-  const premiadaBrackets = await (prisma.bracket as any).findMany({
-    where: { id: { not: bracketId }, status: "PREMIADA" },
-    select: { id: true },
+  await prisma.registration.updateMany({
+    where: { id: { in: regIds } },
+    data: { awarded: false, medal: null },
   })
-  const premiadaIds = premiadaBrackets.map((b: { id: string }) => b.id)
-
-  let protectedRegIds = new Set<string>()
-  if (premiadaIds.length > 0) {
-    const protectedPositions = await prisma.bracketPosition.findMany({
-      where: { bracketId: { in: premiadaIds }, registrationId: { in: regIds } },
-      select: { registrationId: true },
-    })
-    protectedRegIds = new Set(
-      protectedPositions.map(p => p.registrationId).filter((id): id is string => !!id)
-    )
-  }
-
-  const toResetIds = regIds.filter(id => !protectedRegIds.has(id))
-  if (toResetIds.length > 0) {
-    await prisma.registration.updateMany({
-      where: { id: { in: toResetIds } },
-      data: { awarded: false, medal: null },
-    })
-  }
 }

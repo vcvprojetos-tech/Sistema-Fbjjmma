@@ -823,7 +823,9 @@ export default function PremiacaoPage() {
                       <div className="space-y-3">
                         {placements.map((pl) => {
                           const cfg = (isLight ? PLACE_CONFIG_LIGHT : PLACE_CONFIG)[pl.place]
-                          const awarded = pl.registration?.awarded ?? false
+                          // Chave PREMIADA: sempre mostra como premiado independente do registration.awarded
+                          // (registration.awarded é global — pode ter sido resetado por outra chave do mesmo atleta)
+                          const awarded = pl.sourceBracket.status === "PREMIADA" || (pl.registration?.awarded ?? false)
                           const isAwardingNow = awarding.has(pl.registration?.id ?? "")
                           const regName = pl.registration?.athlete?.user.name ?? pl.registration?.guestName ?? "—"
                           const teamName = pl.registration?.team?.name
