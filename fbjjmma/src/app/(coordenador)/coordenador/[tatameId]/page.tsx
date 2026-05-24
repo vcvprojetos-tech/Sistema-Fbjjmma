@@ -641,11 +641,12 @@ export default function TatamePage() {
           : null)
     : null
 
-  // 2° lugar: perdedor da final, buscado via posMap
-  const runnerUpId = podiumFinalMatch?.winnerId
-    ? (podiumFinalMatch.winnerId === podiumFinalMatch.position1Id ? podiumFinalMatch.position2Id : podiumFinalMatch.position1Id)
+  // 2° lugar: perdedor da final, usando objetos embutidos da partida
+  const runnerUp = podiumFinalMatch?.winnerId
+    ? (podiumFinalMatch.winnerId === podiumFinalMatch.position1Id
+        ? podiumFinalMatch.position2
+        : podiumFinalMatch.position1) ?? null
     : null
-  const runnerUp = runnerUpId ? podiumPosMap.get(runnerUpId) ?? null : null
 
   // 3° lugar: perdedor da final da sub-chave do campeão geral
   const thirdPlace: BracketPositionData | null = (() => {
