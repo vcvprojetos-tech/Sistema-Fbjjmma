@@ -617,33 +617,46 @@ export default function TatamePage() {
     ? (groupBrackets.find(b => b.isGrandFinal) ?? null)
     : bracket
   const podiumRealMatches = podiumBracket?.matches.filter(m => m.position1Id !== null && m.position2Id !== null) ?? []
-  const podiumLastMatch = podiumRealMatches.length > 0
-    ? [...podiumRealMatches].sort((a, b) => b.round - a.round || b.matchNumber - a.matchNumber)[0] ?? null
+
+  // Mapa de posições para lookup O(1) — idêntico ao BracketView
+  const podiumPosMap = new Map((podiumBracket?.positions ?? []).map(p => [p.id, p]))
+
+  // Todas as partidas concluídas (igual ao allMatchesDone do BracketView)
+  const podiumAllDone = (podiumBracket?.matches.length ?? 0) > 0
+    && (podiumBracket?.matches ?? []).every(m => !!m.winnerId || (m.isWO && !!m.endedAt))
+  const podiumMaxRealRound = podiumRealMatches.length > 0
+    ? Math.max(...podiumRealMatches.map(m => m.round)) : 0
+
+  // Partida final = maior rodada, matchNumber 1 (igual ao finalMatch do BracketView)
+  const podiumFinalMatch = podiumAllDone && podiumMaxRealRound > 0
+    ? podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.matchNumber === 1) ?? null
     : null
+
   // Chave de 1 atleta: a "partida final" é a partida solo (sem position2Id)
   const soloFinalMatch = podiumBracket?.matches.find(m => m.position1Id !== null && m.position2Id === null && m.endedAt) ?? null
+
   const champion = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA")
-    ? (podiumLastMatch?.winnerId
-        ? podiumBracket!.positions.find(p => p.id === podiumLastMatch.winnerId) ?? null
+    ? (podiumFinalMatch?.winnerId
+        ? podiumPosMap.get(podiumFinalMatch.winnerId) ?? null
         : soloFinalMatch?.winnerId
-          ? podiumBracket!.positions.find(p => p.id === soloFinalMatch.winnerId) ?? null
+          ? podiumPosMap.get(soloFinalMatch.winnerId) ?? null
           : null)
     : null
-  // Se a final terminou via W.O., o perdedor foi desclassificado — sem 2° lugar
-  const runnerUp = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumLastMatch && !podiumLastMatch.isWO
-    ? podiumBracket.positions.find(p =>
-        p.id === (podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id)
-      ) ?? null
+
+  // 2° lugar: usa posMap.get() igual ao BracketView
+  const runnerUpId = podiumFinalMatch?.winnerId
+    ? (podiumFinalMatch.winnerId === podiumFinalMatch.position1Id ? podiumFinalMatch.position2Id : podiumFinalMatch.position1Id)
     : null
+  const runnerUp = runnerUpId ? podiumPosMap.get(runnerUpId) ?? null : null
+
   // 3° lugar: perdedor da final da sub-chave do campeão geral
   const thirdPlace: BracketPositionData | null = (() => {
-    if (!podiumBracket || (podiumBracket.status !== "FINALIZADA" && podiumBracket.status !== "PREMIADA") || !podiumLastMatch?.winnerId) return null
+    if (!podiumBracket || (podiumBracket.status !== "FINALIZADA" && podiumBracket.status !== "PREMIADA") || !podiumFinalMatch?.winnerId) return null
     if (!isGroup) {
       // Chave simples: 3° = perdedor da semi do campeão
-      const podiumMaxRound = podiumRealMatches.length > 0 ? Math.max(...podiumRealMatches.map(m => m.round)) : 0
       if (podiumBracket.positions.length === 3) {
-        const firstId = podiumLastMatch.winnerId
-        const secondId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
+        const firstId = podiumFinalMatch.winnerId
+        const secondId = podiumFinalMatch.winnerId === podiumFinalMatch.position1Id ? podiumFinalMatch.position2Id : podiumFinalMatch.position1Id
         const thirdCandidate = podiumBracket.positions.find(p => p.id !== firstId && p.id !== secondId) ?? null
         // Se o candidato ao 3° foi eliminado por W.O., não recebe colocação
         const eliminatedByWO = thirdCandidate ? podiumBracket.matches.some(m =>
@@ -652,18 +665,18 @@ export default function TatamePage() {
         ) : false
         return eliminatedByWO ? null : thirdCandidate
       }
-      if (podiumMaxRound < 2) return null
-      const champSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === podiumLastMatch.winnerId)
+      if (podiumMaxRealRound < 2) return null
+      const champSemi = podiumRealMatches.find(m => m.round === podiumMaxRealRound - 1 && m.winnerId === podiumFinalMatch.winnerId)
       // Se a semi do campeão foi qualquer W.O. — sem 3° lugar
       if (champSemi?.isWO) return null
       // Se o campeão não teve partida 2x2 na semi, verificar W.O. solo na mesma rodada
-      if (!champSemi && podiumBracket.matches.some(m => m.round === podiumMaxRound - 1 && m.isWO)) return null
-      const runnerUpId = podiumLastMatch.winnerId === podiumLastMatch.position1Id ? podiumLastMatch.position2Id : podiumLastMatch.position1Id
-      const runnerUpSemi = podiumRealMatches.find(m => m.round === podiumMaxRound - 1 && m.winnerId === runnerUpId)
+      if (!champSemi && podiumBracket.matches.some(m => m.round === podiumMaxRealRound - 1 && m.isWO)) return null
+      const runnerUpPosId = podiumFinalMatch.winnerId === podiumFinalMatch.position1Id ? podiumFinalMatch.position2Id : podiumFinalMatch.position1Id
+      const runnerUpSemi = podiumRealMatches.find(m => m.round === podiumMaxRealRound - 1 && m.winnerId === runnerUpPosId)
       const semi = champSemi ?? (!runnerUpSemi?.isWO ? runnerUpSemi : null)
       if (!semi) return null
       const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
-      return loserId ? podiumBracket.positions.find(p => p.id === loserId) ?? null : null
+      return loserId ? podiumPosMap.get(loserId) ?? null : null
     }
     // Grupo: 3° = perdedor da final da sub-chave do campeão geral
     const champRegId = champion?.registration?.id
@@ -677,8 +690,8 @@ export default function TatamePage() {
       const subChamp = sub.positions.find(p => p.id === subFinal.winnerId)
       if (subChamp?.registration?.id !== champRegId) continue
       // Esta é a sub-chave do campeão — o 3° é o perdedor da final desta sub-chave
-      const loserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
-      return loserId ? sub.positions.find(p => p.id === loserId) ?? null : null
+      const subLoserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
+      return subLoserId ? sub.positions.find(p => p.id === subLoserId) ?? null : null
     }
     return null
   })()
