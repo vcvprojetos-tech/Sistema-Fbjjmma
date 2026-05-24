@@ -69,12 +69,48 @@ export async function GET(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bracketsComCampeao = brackets.filter((b: any) => !semCampeaoIds.has(b.id))
 
-  // Auto-promover brackets FINALIZADA onde todos os colocados já foram premiados
-  const travados = bracketsComCampeao.filter((b: { id: string; status: string; positions: { id: string; registration: { awarded: boolean } | null }[]; matches: { position1Id: string | null; position2Id: string | null; winnerId: string | null; isWO: boolean }[] }) => {
+  // Auto-promover brackets FINALIZADA onde todos os COLOCADOS REAIS já foram premiados.
+  // Usa a mesma lógica de computePlacements: exclui W.O.'d do 2°/3° lugar.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const travados = bracketsComCampeao.filter((b: any) => {
     if (b.status !== "FINALIZADA") return false
-    const regs = b.positions.map((p: { registration: { awarded: boolean } | null }) => p.registration).filter(Boolean)
-    if (regs.length === 0) return false
-    return regs.every((r: { awarded: boolean } | null) => r?.awarded)
+    const realMs = b.matches.filter((m: { position1Id: string | null; position2Id: string | null }) => m.position1Id && m.position2Id)
+    if (realMs.length === 0) return false
+    const maxRound = Math.max(...realMs.map((m: { round: number }) => m.round))
+    const finalM = realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.matchNumber === 1)
+    if (!finalM?.winnerId) return false
+
+    // Coleta os IDs de posição que realmente têm colocação (mesmo critério do award route)
+    const pIds: string[] = [finalM.winnerId]
+    const secondId = finalM.winnerId === finalM.position1Id ? finalM.position2Id : finalM.position1Id
+    const secondHadWO = secondId ? b.matches.some((m: { isWO: boolean; endedAt: unknown; winnerId: string | null; position1Id: string | null; position2Id: string | null }) =>
+      m.isWO && m.endedAt && m.winnerId !== secondId &&
+      (m.position1Id === secondId || m.position2Id === secondId)
+    ) : false
+    if (secondId && !finalM.isWO && !secondHadWO) pIds.push(secondId)
+
+    if (maxRound > 1) {
+      if (b.positions.length === 3) {
+        const thirdPos = b.positions.find((p: { id: string }) => p.id !== finalM.winnerId && p.id !== secondId)
+        if (thirdPos) {
+          const thirdHadWO = b.matches.some((m: { isWO: boolean; endedAt: unknown; winnerId: string | null; position1Id: string | null; position2Id: string | null }) =>
+            m.isWO && m.endedAt && m.winnerId !== thirdPos.id &&
+            (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
+          )
+          if (!thirdHadWO) pIds.push(thirdPos.id)
+        }
+      } else {
+        const champSemi = realMs.find((m: { round: number; winnerId: string | null }) => m.round === maxRound - 1 && m.winnerId === finalM.winnerId)
+        const semiHadWO = champSemi?.isWO || (!champSemi && b.matches.some((m: { isWO: boolean; endedAt: unknown }) => m.isWO && m.endedAt))
+        if (champSemi && !semiHadWO) {
+          const loserId = champSemi.winnerId === champSemi.position1Id ? champSemi.position2Id : champSemi.position1Id
+          if (loserId) pIds.push(loserId)
+        }
+      }
+    }
+
+    const posMap = new Map(b.positions.map((p: { id: string; registration: { awarded: boolean } | null }) => [p.id, p]))
+    return pIds.every(id => (posMap.get(id) as { registration: { awarded: boolean } | null } | undefined)?.registration?.awarded === true)
   })
   if (travados.length > 0) {
     await prisma.bracket.updateMany({
