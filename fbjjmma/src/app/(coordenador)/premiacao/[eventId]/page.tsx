@@ -135,7 +135,8 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   const secondPosId =
     finalMatch.position1Id === finalMatch.winnerId ? finalMatch.position2Id : finalMatch.position1Id
   const secondPos = positions.find((p) => p.id === secondPosId)
-  if (secondPos?.registration)
+  // W.O. na final: perdedor foi ausente/desclassificado, não recebe medalha de 2° lugar
+  if (secondPos?.registration && !finalMatch.isWO)
     placements.push({ place: 2, positionId: secondPos.id, registration: secondPos.registration })
 
   // 3° lugar

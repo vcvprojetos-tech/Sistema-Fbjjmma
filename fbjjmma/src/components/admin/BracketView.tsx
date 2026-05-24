@@ -1000,7 +1000,7 @@ function StandardBracketView({ bracket, onAthleteClick }: { bracket: BracketData
     primeiro = winnerPos?.registration ?? null
 
     const loserId = finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
-    if (loserId) segundo = posMap2.get(loserId)?.registration ?? null
+    if (loserId && !finalMatch.isWO) segundo = posMap2.get(loserId)?.registration ?? null
   }
 
   const placements = [
