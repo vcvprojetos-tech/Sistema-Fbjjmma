@@ -936,15 +936,10 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
     if (!finalMatch?.winnerId || maxRealRound < 2) return null
     const semiRound = maxRealRound - 1
     const champSemiAny = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
-    // Campeão ganhou a semi por qualquer W.O. — sem 3° lugar
-    if (champSemiAny?.isWO) return null
-    // Sem partida 2x2 na semi: verificar W.O. solo na mesma rodada (adversário eliminado antes da partida)
-    if (!champSemiAny && matches.some(m => m.round === semiRound && m.isWO)) return null
-    const champSemi = champSemiAny ?? null
-    const runnerUpSemi = realMatches.find(m => m.round === semiRound && m.winnerId === secondPosId && !m.isWO)
-    const semi = champSemi ?? runnerUpSemi
-    if (!semi) return null
-    const loserId = semi.winnerId === semi.position1Id ? semi.position2Id : semi.position1Id
+    // Sem semi real ou semi foi W.O. (inclusive se adversário W.O.'d em qualquer rodada) — sem 3° lugar
+    if (!champSemiAny || champSemiAny.isWO) return null
+    if (!champSemiAny && matches.some(m => m.isWO && m.endedAt)) return null
+    const loserId = champSemiAny.winnerId === champSemiAny.position1Id ? champSemiAny.position2Id : champSemiAny.position1Id
     return loserId ? posIdMap.get(loserId)?.registration ?? null : null
   })()
 
