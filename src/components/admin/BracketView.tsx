@@ -921,9 +921,14 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
   const firstPlaceReg = finalWinnerId
     ? posIdMap.get(finalWinnerId)?.registration ?? null
     : (positions.length === 1 ? positions[0].registration : null)
-  const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO)
+  const loserPosId = (finalMatch && finalWinnerId)
     ? (finalWinnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id)
     : null
+  const loserWasWOd = loserPosId ? matches.some(m =>
+    m.isWO && m.endedAt && m.winnerId !== loserPosId &&
+    (m.position1Id === loserPosId || m.position2Id === loserPosId)
+  ) : false
+  const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO && !loserWasWOd) ? loserPosId : null
   const secondPlaceReg = secondPosId ? posIdMap.get(secondPosId)?.registration ?? null : null
 
   // 3° lugar: perdedor da semifinal do campeão (ou do vice se o lado do campeão foi W.O.)
@@ -1034,7 +1039,7 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
     primeiro = winnerPos?.registration ?? null
 
     const loserId = finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
-    if (loserId) segundo = posMap2.get(loserId)?.registration ?? null
+    if (loserId && !finalMatch.isWO && !loserWasWOd) segundo = posMap2.get(loserId)?.registration ?? null
   } else if (soloMatchWon?.winnerId) {
     // Chave solo: único atleta confirmou presença e é o campeão
     primeiro = posMap2.get(soloMatchWon.winnerId)?.registration ?? null
