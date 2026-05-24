@@ -46,6 +46,7 @@ export default async function EditarEventoPage({
     isVisible: event.isVisible,
     banner: event.banner || "",
     schedule: event.schedule || "",
+    pesoDoc: event.pesoDoc || "",
     about: event.about || "",
     paymentInfo: event.paymentInfo || "",
     prize: event.prize || "",
