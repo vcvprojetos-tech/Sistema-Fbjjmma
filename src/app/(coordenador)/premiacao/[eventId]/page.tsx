@@ -422,9 +422,11 @@ export default function PremiacaoPage() {
         const soloMatch = b.matches.find(m => m.position1Id !== null && m.position2Id === null)
         if (soloMatch?.isWO) return false
       }
-      // Já totalmente premiada (status travado): não mostrar em aguardando
+      // Sem colocados (todos W.O.): não vai pra premiação
       const placements = computePlacements(b, brackets)
-      if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return false
+      if (placements.length === 0) return false
+      // Já totalmente premiada (status travado): não mostrar em aguardando
+      if (placements.every(pl => pl.registration?.awarded)) return false
       return true
     })
     .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
