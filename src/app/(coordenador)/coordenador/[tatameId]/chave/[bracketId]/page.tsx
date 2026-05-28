@@ -196,7 +196,7 @@ export default function ChaveControlePage() {
     : 0
 
   // 2nd place = loser of the final match (usa os dados embutidos do match, não busca em positions)
-  const runnerUp: BracketPositionData | null = bracket.status === "FINALIZADA" && lastMatch
+  const runnerUp = bracket.status === "FINALIZADA" && lastMatch
     ? (lastMatch.winnerId === lastMatch.position1Id ? lastMatch.position2 : lastMatch.position1) ?? null
     : null
 

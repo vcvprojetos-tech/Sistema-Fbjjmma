@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma, ensureEventIsActive } from "@/lib/db"
+import { prisma } from "@/lib/db"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const eventId = searchParams.get("eventId")
 
   if (!eventId) {
-    await ensureEventIsActive()
     const events = await prisma.event.findMany({
       where: { isActive: true, deletedAt: null },
       select: { id: true, name: true, date: true, status: true },

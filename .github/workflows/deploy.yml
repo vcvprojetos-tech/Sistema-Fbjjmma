@@ -52,7 +52,7 @@ jobs:
             npx prisma generate
 
             echo "==> Compilando..."
-            rm -rf .next
+            rm -rf .next && mkdir -p .next
             npm run build
 
             echo "==> Reiniciando servidor..."

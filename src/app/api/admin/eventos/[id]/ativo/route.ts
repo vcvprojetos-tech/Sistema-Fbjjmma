@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma, ensureEventIsActive } from "@/lib/db"
+import { prisma } from "@/lib/db"
 
 export async function PATCH(
   _req: NextRequest,
@@ -10,8 +10,6 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
 
   const { id } = await params
-
-  await ensureEventIsActive()
 
   const event = await prisma.event.findUnique({ where: { id }, select: { id: true, isActive: true } })
   if (!event) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 })

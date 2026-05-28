@@ -667,7 +667,12 @@ export default function EventoDetailPage() {
       if (res.ok) {
         const { isActive } = await res.json()
         setEvent(prev => prev ? { ...prev, isActive } : null)
+      } else {
+        const body = await res.json().catch(() => ({}))
+        alert(`Erro ao atualizar: ${body.error || res.status}`)
       }
+    } catch (e) {
+      alert(`Erro de rede: ${e}`)
     } finally {
       setIsActiveLoading(false)
     }
@@ -1058,9 +1063,9 @@ export default function EventoDetailPage() {
               disabled={isActiveLoading}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
               style={{
-                backgroundColor: event.isActive ? "#16a34a10" : "#6b728010",
-                color: event.isActive ? "#16a34a" : "#6b7280",
-                borderColor: event.isActive ? "#16a34a40" : "#6b728040",
+                backgroundColor: event.isActive ? "#dcfce7" : "#f3f4f6",
+                color: event.isActive ? "#16a34a" : "#374151",
+                borderColor: event.isActive ? "#86efac" : "#d1d5db",
                 cursor: isActiveLoading ? "not-allowed" : "pointer",
                 opacity: isActiveLoading ? 0.6 : 1,
               }}
