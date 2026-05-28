@@ -11,10 +11,12 @@ export async function PATCH(
 
   const { id } = await params
 
-  const event = await prisma.event.findUnique({ where: { id }, select: { id: true, isActive: true } })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const event = await (prisma.event as any).findUnique({ where: { id }, select: { id: true, isActive: true } })
   if (!event) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 })
 
-  const updated = await prisma.event.update({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updated = await (prisma.event as any).update({
     where: { id },
     data: { isActive: !event.isActive },
   })

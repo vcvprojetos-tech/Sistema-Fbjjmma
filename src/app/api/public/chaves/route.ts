@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   // Se não for passado um eventId, retorna lista de eventos com chaves disponíveis.
   // Prioriza eventos EM_ANDAMENTO e ENCERRADO (que têm chaves), depois INSCRICOES_ENCERRADAS.
   if (!eventId) {
-    const events = await prisma.event.findMany({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const events = await (prisma.event as any).findMany({
       where: { isActive: true, deletedAt: null },
       select: { id: true, name: true, date: true, status: true },
       orderBy: [{ date: "desc" }],
