@@ -85,6 +85,7 @@ interface Event {
   status: string
   registrationOpen: boolean
   isVisible: boolean
+  isActive: boolean
   banner: string | null
   schedule: string | null
   pesoDoc: string | null
@@ -394,6 +395,7 @@ export default function EventoDetailPage() {
   const [selectedBracketId, setSelectedBracketId] = useState<string | null>(null)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
   const [encerrarLoading, setEncerrarLoading] = useState(false)
+  const [isActiveLoading, setIsActiveLoading] = useState(false)
   const [tatamaGavetaOpen, setTatamaGavetaOpen] = useState(false)
   const [tatamesSectionVisible, setTatamesSectionVisible] = useState(true)
   const tatamesSectionRef = useRef<HTMLDivElement>(null)
@@ -655,6 +657,19 @@ export default function EventoDetailPage() {
       }
     } finally {
       setEncerrarLoading(false)
+    }
+  }, [id])
+
+  const toggleIsActive = useCallback(async () => {
+    setIsActiveLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/ativo`, { method: "PATCH" })
+      if (res.ok) {
+        const { isActive } = await res.json()
+        setEvent(prev => prev ? { ...prev, isActive } : null)
+      }
+    } finally {
+      setIsActiveLoading(false)
     }
   }, [id])
 
@@ -1037,6 +1052,22 @@ export default function EventoDetailPage() {
         </div>
         {/* Botões de consulta rápida */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {event && (
+            <button
+              onClick={toggleIsActive}
+              disabled={isActiveLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border"
+              style={{
+                backgroundColor: event.isActive ? "#dcfce7" : "#f3f4f6",
+                color: event.isActive ? "#16a34a" : "#374151",
+                borderColor: event.isActive ? "#86efac" : "#d1d5db",
+                cursor: isActiveLoading ? "not-allowed" : "pointer",
+                opacity: isActiveLoading ? 0.6 : 1,
+              }}
+            >
+              {isActiveLoading ? "Salvando..." : event.isActive ? "✅ Ativo nas Chaves" : "🔒 Inativo nas Chaves"}
+            </button>
+          )}
           {event && event.status !== "ENCERRADO" && (
             <button
               onClick={encerrarEvento}
