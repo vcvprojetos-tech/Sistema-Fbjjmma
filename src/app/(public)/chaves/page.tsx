@@ -233,13 +233,35 @@ export default function ChavesPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
       {/* Cabeçalho */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-black" style={{ color: "var(--foreground)" }}>
-          Chaves
-        </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--muted-foreground)" }}>
-          Visualize todas as chaves do campeonato
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black" style={{ color: "var(--foreground)" }}>
+            Chaves
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--muted-foreground)" }}>
+            Visualize todas as chaves do campeonato
+          </p>
+        </div>
+        {selectedEventId && (
+          <a
+            href={`/painel/${selectedEventId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+              padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+              backgroundColor: "#dc2626", color: "#fff",
+              border: "none", cursor: "pointer", textDecoration: "none",
+              boxShadow: "0 1px 4px #dc262630",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 19 2 12 11 5 11 19" />
+              <polygon points="22 19 13 12 22 5 22 19" />
+            </svg>
+            Painel de Chamadas
+          </a>
+        )}
       </div>
 
       {/* Seletor de evento + busca + botão filtros */}
