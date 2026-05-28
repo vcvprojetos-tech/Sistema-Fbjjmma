@@ -26,11 +26,12 @@ jobs:
             if [ -d /var/www/fbjjmma/fbjjmma/public/uploads ]; then
               cp -rn /var/www/fbjjmma/fbjjmma/public/uploads/. /var/www/fbjjmma/public/uploads/ 2>/dev/null || true
             fi
-            echo "==> Aplicando migrations..."
+            echo "==> Carregando variáveis de ambiente..."
             [ -f .env ] && export $(grep -v '^#' .env | xargs) || true
+            echo "==> Aplicando migrations via script Node (pg direto)..."
+            node scripts/migrate-isactive.mjs || echo "Script de migration falhou, continuando..."
+            echo "==> Aplicando migrations via Prisma..."
             npx prisma migrate deploy || echo "Aviso: migrate deploy falhou, continuando..."
-            echo "==> Garantindo coluna isActive na tabela events..."
-            which psql >/dev/null 2>&1 && [ -n "$DATABASE_URL" ] && psql "$DATABASE_URL" -c 'ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;' 2>/dev/null || true
             echo "==> Gerando cliente Prisma..."
             npx prisma generate
             echo "==> Compilando..."

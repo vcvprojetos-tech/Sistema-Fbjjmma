@@ -11,17 +11,14 @@ export async function PATCH(
 
   const { id } = await params
 
-  try {
-    await prisma.$executeRaw`ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
-  } catch { /* coluna já existe */ }
+  const event = await prisma.event.findUnique({ where: { id }, select: { id: true, isActive: true } })
+  if (!event) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 })
 
-  const rows = await prisma.$queryRaw<{ isActive: boolean }[]>`
-    SELECT "isActive" FROM "events" WHERE id = ${id} LIMIT 1
-  `
-  if (!rows.length) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 })
+  const updated = await prisma.event.update({
+    where: { id },
+    data: { isActive: !event.isActive },
+    select: { isActive: true },
+  })
 
-  const newValue = !rows[0].isActive
-  await prisma.$executeRaw`UPDATE "events" SET "isActive" = ${newValue} WHERE id = ${id}`
-
-  return NextResponse.json({ isActive: newValue })
+  return NextResponse.json({ isActive: updated.isActive })
 }

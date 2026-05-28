@@ -8,21 +8,15 @@ export async function GET(req: NextRequest) {
   // Se não for passado um eventId, retorna lista de eventos com chaves disponíveis.
   // Prioriza eventos EM_ANDAMENTO e ENCERRADO (que têm chaves), depois INSCRICOES_ENCERRADAS.
   if (!eventId) {
-    // Garante que a coluna existe (idempotente)
+    let events
     try {
-      await prisma.$executeRaw`ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
-    } catch { /* coluna já existe */ }
-
-    let events: { id: string; name: string; date: Date; status: string }[]
-    try {
-      // Filtra por isActive via raw SQL (campo fora do schema Prisma)
-      events = await prisma.$queryRaw<{ id: string; name: string; date: Date; status: string }[]>`
-        SELECT id, name, date, status FROM "events"
-        WHERE "isActive" IS TRUE AND "deletedAt" IS NULL
-        ORDER BY date DESC
-      `
+      events = await prisma.event.findMany({
+        where: { isActive: true, deletedAt: null },
+        select: { id: true, name: true, date: true, status: true },
+        orderBy: [{ date: "desc" }],
+      })
     } catch {
-      // Fallback: mostra todos os eventos caso a coluna ainda não exista
+      // Fallback caso a coluna isActive ainda não exista no banco
       events = await prisma.event.findMany({
         where: { deletedAt: null },
         select: { id: true, name: true, date: true, status: true },
