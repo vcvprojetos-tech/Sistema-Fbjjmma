@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import React, { useMemo } from "react"
+import { useTheme } from "next-themes"
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
 const ATHLETE_H = 44
@@ -1090,8 +1091,50 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
 }
 
 export default function BracketView({ bracket, onAthleteClick, onPositionCardClick }: { bracket: BracketData; onAthleteClick?: (registrationId: string) => void; onPositionCardClick?: (info: PositionCardInfo) => void }) {
-  if (bracket.positions.length === 3) {
-    return <ThreeAthleteBracket bracket={bracket} onAthleteClick={onAthleteClick} onPositionCardClick={onPositionCardClick} />
+  const { resolvedTheme } = useTheme()
+  const dark = resolvedTheme === "dark"
+
+  // Injeta variáveis de cor diretamente no container para contornar qualquer problema de cascata CSS
+  const colorVars = dark ? {
+    "--bracket-card-bg": "#1a1f2e",
+    "--bracket-card-border": "#2d3748",
+    "--bracket-card-text": "#ffffff",
+    "--bracket-dimmed-bg": "#151008",
+    "--bracket-dimmed-border": "#3d3020",
+    "--bracket-dimmed-text": "#a07830",
+    "--bracket-gold-bg": "#1c0f00",
+    "--bracket-gold-border": "#78350f",
+    "--bracket-silver-bg": "#0d1a2e",
+    "--bracket-silver-border": "#1e3a5f",
+    "--bracket-bronze-bg": "#1a0e00",
+    "--bracket-bronze-border": "#5c3a1e",
+    "--bracket-final-name": "#ffffff",
+    "--podium-silver": "#94a3b8",
+    "--podium-bronze": "#d97706",
+  } : {
+    "--bracket-card-bg": "#eef1f5",
+    "--bracket-card-border": "#c8d0db",
+    "--bracket-card-text": "#1f2328",
+    "--bracket-dimmed-bg": "#f5ead8",
+    "--bracket-dimmed-border": "#d4a95a",
+    "--bracket-dimmed-text": "#a07830",
+    "--bracket-gold-bg": "#fef9ec",
+    "--bracket-gold-border": "#d97706",
+    "--bracket-silver-bg": "#eff6ff",
+    "--bracket-silver-border": "#3b82f6",
+    "--bracket-bronze-bg": "#fff7ed",
+    "--bracket-bronze-border": "#ea580c",
+    "--bracket-final-name": "#1f2328",
+    "--podium-silver": "#374151",
+    "--podium-bronze": "#92400e",
   }
-  return <StandardBracketView bracket={bracket} onAthleteClick={onAthleteClick} onPositionCardClick={onPositionCardClick} />
+
+  return (
+    <div style={colorVars as React.CSSProperties}>
+      {bracket.positions.length === 3
+        ? <ThreeAthleteBracket bracket={bracket} onAthleteClick={onAthleteClick} onPositionCardClick={onPositionCardClick} />
+        : <StandardBracketView bracket={bracket} onAthleteClick={onAthleteClick} onPositionCardClick={onPositionCardClick} />
+      }
+    </div>
+  )
 }
