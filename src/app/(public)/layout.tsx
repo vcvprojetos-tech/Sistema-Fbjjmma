@@ -3,15 +3,20 @@
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Menu, X, LogOut, User, ChevronDown } from "lucide-react"
-import { ThemeToggle } from "@/components/ThemeToggle"
+import { useTheme } from "next-themes"
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const { setTheme } = useTheme()
+
+  useEffect(() => {
+    setTheme("light")
+  }, [])
 
   const navLinks = [
     { href: "https://fbjjmma.com.br/", label: "Início" },
@@ -53,7 +58,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* Auth buttons + toggle */}
             <div className="hidden md:flex items-center gap-3">
-              <ThemeToggle />
               {session ? (
                 <div className="relative">
                   <button
@@ -111,9 +115,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ) : null}
             </div>
 
-            {/* Mobile: toggle + menu button */}
+            {/* Mobile: menu button */}
             <div className="md:hidden flex items-center gap-2">
-              <ThemeToggle />
               <button
                 className="transition-colors"
                 style={{ color: "var(--muted-foreground)" }}
