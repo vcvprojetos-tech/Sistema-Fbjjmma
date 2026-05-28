@@ -25,6 +25,6 @@ export async function PATCH(
   await prisma.$executeRaw`UPDATE "events" SET "isActive" = ${newValue} WHERE id = ${id}`
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updated = await (prisma.event as any).findUnique({ where: { id } })
-  return NextResponse.json(updated)
+  const base = await (prisma.event as any).findUnique({ where: { id } })
+  return NextResponse.json({ ...base, isActive: newValue })
 }

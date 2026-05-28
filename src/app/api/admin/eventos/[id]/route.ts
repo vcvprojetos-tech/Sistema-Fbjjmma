@@ -24,7 +24,12 @@ export async function GET(
     return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 })
   }
 
-  return NextResponse.json(event)
+  // isActive não está no schema Prisma; lê via raw SQL com fallback
+  const isActiveRows = await prisma.$queryRaw<{ isActive: boolean }[]>`
+    SELECT "isActive" FROM "events" WHERE id = ${id} LIMIT 1
+  `.catch(() => [{ isActive: true }])
+
+  return NextResponse.json({ ...event, isActive: isActiveRows[0]?.isActive ?? true })
 }
 
 export async function PUT(
