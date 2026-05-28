@@ -36,7 +36,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 flex-shrink-0">
               <img src="/logo-color-crop.png" alt="FBJJMMA" className="w-9 h-9 object-contain" />
-              <span className="font-bold text-sm leading-tight hidden sm:block" style={{ color: "var(--foreground)" }}>
+              <span className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>
                 FBJJMMA
               </span>
             </Link>
