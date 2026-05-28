@@ -1,0 +1,63 @@
+name: Deploy para VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy no servidor
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          command_timeout: 30m
+          script: |
+            set -e
+            echo "==> Atualizando código..."
+            cd /var/www/fbjjmma
+            git pull origin main
+
+            echo "==> Entrando na pasta do app..."
+            cd /var/www/fbjjmma/fbjjmma
+
+            echo "==> Garantindo .env na pasta do app..."
+            [ ! -f .env ] && [ -f /var/www/fbjjmma/.env ] && cp /var/www/fbjjmma/.env . || true
+
+            echo "==> Migrando uploads antigos..."
+            mkdir -p public/uploads/eventos
+            [ -d /var/www/fbjjmma/public/uploads ] && cp -rn /var/www/fbjjmma/public/uploads/. public/uploads/ 2>/dev/null || true
+
+            echo "==> Aplicando migrations SQL via postgres (superusuário)..."
+            DB_NAME=$(grep 'DATABASE_URL' .env 2>/dev/null | head -1 | awk -F'/' '{print $NF}' | cut -d'?' -f1 | tr -d '"' | tr -d "'")
+            echo "Banco detectado: $DB_NAME"
+            echo "ALTER TABLE events ADD COLUMN IF NOT EXISTS \"isActive\" BOOLEAN NOT NULL DEFAULT true;" > /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE events ADD COLUMN IF NOT EXISTS \"pesoDoc\" TEXT;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"startedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"deletedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE tatames ADD COLUMN IF NOT EXISTS \"panelBracketIds\" TEXT[] NOT NULL DEFAULT '{}';" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE tatames ADD COLUMN IF NOT EXISTS \"panelUpdatedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
+            su postgres -c "psql -d '$DB_NAME' -f /tmp/fbjjmma_migrate.sql" || echo "Migration SQL falhou, continuando..."
+            echo "==> Migrations SQL concluídas"
+
+            echo "==> Aplicando migrations Prisma..."
+            [ -f .env ] && export $(grep -v '^#' .env | xargs) || true
+            npx prisma migrate deploy || echo "Aviso: migrate deploy falhou, continuando..."
+
+            echo "==> Gerando cliente Prisma..."
+            npx prisma generate
+
+            echo "==> Compilando..."
+            rm -rf .next && mkdir -p .next
+            npm run build
+
+            echo "==> Reiniciando servidor..."
+            pm2 stop fbjjmma 2>/dev/null || pm2 stop all 2>/dev/null || true
+            pm2 delete fbjjmma 2>/dev/null || pm2 delete all 2>/dev/null || true
+            pm2 start npm --name fbjjmma -- start
+            pm2 save
+            echo "==> Deploy concluído!"
