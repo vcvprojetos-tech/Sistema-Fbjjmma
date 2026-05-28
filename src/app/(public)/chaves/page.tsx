@@ -181,16 +181,20 @@ export default function ChavesPage() {
     const ageGroups = new Set<string>()
     const weights = new Set<string>()
     const belts = new Set<string>()
+    let hasAbsolute = false
     for (const b of brackets) {
       sexes.add(b.weightCategory.sex)
       ageGroups.add(b.weightCategory.ageGroup)
-      if (!b.isAbsolute) weights.add(b.weightCategory.name)
+      if (b.isAbsolute) hasAbsolute = true
+      else weights.add(b.weightCategory.name)
       belts.add(b.belt)
     }
+    const weightList = [...weights].sort((a, b) => a.localeCompare(b, "pt-BR"))
+    if (hasAbsolute) weightList.push("ABSOLUTO")
     return {
       sexes: (["MASCULINO","FEMININO"] as string[]).filter(s => sexes.has(s)),
       ageGroups: AGE_GROUP_ORDER.filter(a => ageGroups.has(a)),
-      weights: [...weights].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      weights: weightList,
       belts: BELT_ORDER.filter(b => belts.has(b)),
     }
   }, [brackets])
@@ -216,7 +220,11 @@ export default function ChavesPage() {
     }
     if (sexFilter.size > 0 && !sexFilter.has(b.weightCategory.sex)) return false
     if (ageGroupFilter.size > 0 && !ageGroupFilter.has(b.weightCategory.ageGroup)) return false
-    if (weightFilter.size > 0 && (b.isAbsolute || !weightFilter.has(b.weightCategory.name))) return false
+    if (weightFilter.size > 0) {
+      const passAbsoluto = b.isAbsolute && weightFilter.has("ABSOLUTO")
+      const passWeight = !b.isAbsolute && weightFilter.has(b.weightCategory.name)
+      if (!passAbsoluto && !passWeight) return false
+    }
     if (beltFilter.size > 0 && !beltFilter.has(b.belt)) return false
     return true
   }), [brackets, search, sexFilter, ageGroupFilter, weightFilter, beltFilter])
