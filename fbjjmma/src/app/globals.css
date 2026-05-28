@@ -45,14 +45,14 @@
   --btn-peso-bg: #78350f20;
   --btn-peso-fg: #fbbf24;
   --btn-peso-br: #78350f40;
-  /* BracketView — cards de atletas */
+  /* BracketView — cards de atletas (modo escuro) */
   --bracket-card-bg: #1a1f2e;
   --bracket-card-border: #2d3748;
   --bracket-card-text: #ffffff;
   --bracket-dimmed-bg: #151008;
   --bracket-dimmed-border: #3d3020;
   --bracket-dimmed-text: #a07830;
-  /* BracketView — caixas de resultado final */
+  /* BracketView — caixas de resultado final (modo escuro) */
   --bracket-gold-bg: #1c0f00;
   --bracket-gold-border: #78350f;
   --bracket-silver-bg: #0d1a2e;
@@ -63,6 +63,26 @@
   /* Pódio — labels de colocação */
   --podium-silver: #94a3b8;
   --podium-bronze: #d97706;
+}
+
+/* ── Forçar cores claras do BracketView no modo claro ──────────────────────── */
+/* next-themes aplica class="light" no html — seletor direto no elemento root  */
+:root:not(.dark) {
+  --bracket-card-bg: #eef1f5;
+  --bracket-card-border: #c8d0db;
+  --bracket-card-text: #1f2328;
+  --bracket-dimmed-bg: #f5ead8;
+  --bracket-dimmed-border: #d4a95a;
+  --bracket-dimmed-text: #a07830;
+  --bracket-gold-bg: #fef9ec;
+  --bracket-gold-border: #d97706;
+  --bracket-silver-bg: #eff6ff;
+  --bracket-silver-border: #3b82f6;
+  --bracket-bronze-bg: #fff7ed;
+  --bracket-bronze-border: #ea580c;
+  --bracket-final-name: #1f2328;
+  --podium-silver: #374151;
+  --podium-bronze: #92400e;
 }
 
 /* ── Modo claro (paleta GitHub) ────────────────────────────────────────────── */
