@@ -14,7 +14,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   const navLinks = [
-    { href: "/", label: "Início" },
+    { href: "https://fbjjmma.com.br/", label: "Início" },
     { href: "/chaves", label: "Chaves" },
     { href: "https://fbjjmma.com.br/#eventos", label: "Eventos" },
   ]
