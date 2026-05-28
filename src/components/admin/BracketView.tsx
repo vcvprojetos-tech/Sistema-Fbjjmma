@@ -920,7 +920,7 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
   const finalWinnerId = finalMatch?.winnerId ?? soloMatchWon?.winnerId ?? null
   const firstPlaceReg = finalWinnerId
     ? posIdMap.get(finalWinnerId)?.registration ?? null
-    : (positions.length === 1 ? positions[0].registration : null)
+    : null
   const loserPosId = (finalMatch && finalWinnerId)
     ? (finalWinnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id)
     : null
@@ -1038,9 +1038,6 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
   } else if (soloMatchWon?.winnerId) {
     // Chave solo: único atleta confirmou presença e é o campeão
     primeiro = posMap2.get(soloMatchWon.winnerId)?.registration ?? null
-  } else if (positions.length === 1 && positions[0].registration) {
-    // Chave solo sem partida registrada: o único atleta é o campeão por padrão
-    primeiro = positions[0].registration
   }
 
   const placements = [
