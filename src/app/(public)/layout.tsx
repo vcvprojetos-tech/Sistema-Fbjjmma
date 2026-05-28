@@ -30,7 +30,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 flex-shrink-0">
-              <img src="/logo-color.png" alt="FBJJMMA" className="w-9 h-9 object-contain" />
+              <img src="/logo-color-crop.png" alt="FBJJMMA" className="w-9 h-9 object-contain dark:hidden" />
+              <img src="/logo.png" alt="FBJJMMA" className="w-9 h-9 object-contain hidden dark:block" />
               <span className="font-bold text-sm leading-tight hidden sm:block" style={{ color: "var(--foreground)" }}>
                 FBJJMMA
               </span>
@@ -177,7 +178,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <img src="/logo-color.png" alt="FBJJMMA" className="w-7 h-7 object-contain" />
+              <img src="/logo-color-crop.png" alt="FBJJMMA" className="w-7 h-7 object-contain dark:hidden" />
+              <img src="/logo.png" alt="FBJJMMA" className="w-7 h-7 object-contain hidden dark:block" />
               <span className="text-sm" style={{ color: "var(--muted)" }}>
                 FBJJMMA — Federação Baiana de Jiu-Jitsu MMA
               </span>
