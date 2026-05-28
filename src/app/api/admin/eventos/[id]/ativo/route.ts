@@ -11,20 +11,22 @@ export async function PATCH(
 
   const { id } = await params
 
-  // Garante que a coluna existe (idempotente)
+  // Garante que a coluna existe
   await prisma.$executeRawUnsafe(
     `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
   ).catch(() => {})
 
-  const rows = await prisma.$queryRaw<{ id: string; isActive: boolean }[]>`
-    SELECT id, "isActive" FROM "events" WHERE id = ${id} LIMIT 1
+  const rows = await prisma.$queryRaw<{ isActive: boolean }[]>`
+    SELECT "isActive" FROM "events" WHERE id = ${id} LIMIT 1
   `
   if (!rows.length) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 })
 
   const newValue = !rows[0].isActive
-  await prisma.$executeRaw`UPDATE "events" SET "isActive" = ${newValue} WHERE id = ${id}`
+  await prisma.$executeRawUnsafe(
+    `UPDATE "events" SET "isActive" = $1 WHERE id = $2`,
+    newValue,
+    id
+  )
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const base = await (prisma.event as any).findUnique({ where: { id } })
-  return NextResponse.json({ ...base, isActive: newValue })
+  return NextResponse.json({ isActive: newValue })
 }

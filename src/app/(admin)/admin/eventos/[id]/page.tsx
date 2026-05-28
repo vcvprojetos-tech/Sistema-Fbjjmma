@@ -657,8 +657,8 @@ export default function EventoDetailPage() {
     try {
       const res = await fetch(`/api/admin/eventos/${id}/ativo`, { method: "PATCH" })
       if (res.ok) {
-        const updated = await res.json()
-        setEvent(updated)
+        const { isActive } = await res.json()
+        setEvent(prev => prev ? { ...prev, isActive } : null)
       }
     } finally {
       setIsActiveLoading(false)
