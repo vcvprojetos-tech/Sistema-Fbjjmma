@@ -6,7 +6,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   turbopack: {
-    root: __dirname,
+    root: process.cwd(),
   },
   async redirects() {
     return [
