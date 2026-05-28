@@ -13,13 +13,22 @@ export async function GET(req: NextRequest) {
       `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
     ).catch(() => {})
 
-    // Usa raw SQL para filtrar por isActive (campo fora do schema Prisma)
-    const events = await prisma.$queryRaw<{ id: string; name: string; date: Date; status: string }[]>`
-      SELECT id, name, date, status
-      FROM "events"
-      WHERE "isActive" = true AND "deletedAt" IS NULL
-      ORDER BY date DESC
-    `
+    let events: { id: string; name: string; date: Date; status: string }[]
+    try {
+      // Filtra por isActive via raw SQL (campo fora do schema Prisma)
+      events = await prisma.$queryRaw<{ id: string; name: string; date: Date; status: string }[]>`
+        SELECT id, name, date, status FROM "events"
+        WHERE "isActive" IS TRUE AND "deletedAt" IS NULL
+        ORDER BY date DESC
+      `
+    } catch {
+      // Fallback: mostra todos os eventos caso a coluna ainda não exista
+      events = await prisma.event.findMany({
+        where: { deletedAt: null },
+        select: { id: true, name: true, date: true, status: true },
+        orderBy: [{ date: "desc" }],
+      })
+    }
     return NextResponse.json({ events })
   }
 
