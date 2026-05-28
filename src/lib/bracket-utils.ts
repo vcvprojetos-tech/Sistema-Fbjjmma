@@ -270,10 +270,10 @@ export async function resetBracketAwards(bracketId: string): Promise<void> {
     .map((p) => p.registrationId)
     .filter((id): id is string => !!id)
 
-  if (regIds.length > 0) {
-    await prisma.registration.updateMany({
-      where: { id: { in: regIds } },
-      data: { awarded: false, medal: null },
-    })
-  }
+  if (regIds.length === 0) return
+
+  await prisma.registration.updateMany({
+    where: { id: { in: regIds } },
+    data: { awarded: false, medal: null },
+  })
 }

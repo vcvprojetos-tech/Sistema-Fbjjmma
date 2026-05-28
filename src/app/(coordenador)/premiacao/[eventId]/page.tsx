@@ -135,7 +135,12 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   const secondPosId =
     finalMatch.position1Id === finalMatch.winnerId ? finalMatch.position2Id : finalMatch.position1Id
   const secondPos = positions.find((p) => p.id === secondPosId)
-  if (secondPos?.registration)
+  // Não recebe 2° lugar se: final foi W.O., OU perdedor foi W.O.'d em qualquer partida da chave
+  const secondHadWO = secondPosId ? matches.some(m =>
+    m.isWO && m.endedAt && m.winnerId !== secondPosId &&
+    (m.position1Id === secondPosId || m.position2Id === secondPosId)
+  ) : false
+  if (secondPos?.registration && !finalMatch.isWO && !secondHadWO)
     placements.push({ place: 2, positionId: secondPos.id, registration: secondPos.registration })
 
   // 3° lugar
@@ -177,7 +182,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
       const champSemi = realMatches.find(
         (m) => m.round === semiRound && m.winnerId === finalMatch.winnerId
       )
-      const semiHadWO = champSemi?.isWO || (!champSemi && matches.some(m => m.round === semiRound && m.isWO))
+      const semiHadWO = champSemi?.isWO || (!champSemi && matches.some(m => m.isWO && m.endedAt))
       if (champSemi && !semiHadWO) {
         const loserId =
           champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
@@ -417,9 +422,11 @@ export default function PremiacaoPage() {
         const soloMatch = b.matches.find(m => m.position1Id !== null && m.position2Id === null)
         if (soloMatch?.isWO) return false
       }
-      // Já totalmente premiada (status travado): não mostrar em aguardando
+      // Sem colocados (todos W.O.): não vai pra premiação
       const placements = computePlacements(b, brackets)
-      if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return false
+      if (placements.length === 0) return false
+      // Já totalmente premiada (status travado): não mostrar em aguardando
+      if (placements.every(pl => pl.registration?.awarded)) return false
       return true
     })
     .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
@@ -818,7 +825,9 @@ export default function PremiacaoPage() {
                       <div className="space-y-3">
                         {placements.map((pl) => {
                           const cfg = (isLight ? PLACE_CONFIG_LIGHT : PLACE_CONFIG)[pl.place]
-                          const awarded = pl.registration?.awarded ?? false
+                          // Chave PREMIADA: sempre mostra como premiado independente do registration.awarded
+                          // (registration.awarded é global — pode ter sido resetado por outra chave do mesmo atleta)
+                          const awarded = pl.sourceBracket.status === "PREMIADA" || (pl.registration?.awarded ?? false)
                           const isAwardingNow = awarding.has(pl.registration?.id ?? "")
                           const regName = pl.registration?.athlete?.user.name ?? pl.registration?.guestName ?? "—"
                           const teamName = pl.registration?.team?.name

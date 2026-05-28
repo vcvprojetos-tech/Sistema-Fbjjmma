@@ -28,7 +28,7 @@ export async function GET(
     },
   })
 
-  const getN = (s: string) => { const m = s.match(/Tatame[\s-]*(\d+)/i); return m ? parseInt(m[1], 10) : 9999 }
+  const getN = (s: string) => { const m = s.match(/(\d+)\D*$/); return m ? parseInt(m[1], 10) : 9999 }
   tatames.sort((a, b) => getN(a.name) - getN(b.name) || a.name.localeCompare(b.name, "pt-BR"))
 
   return NextResponse.json(tatames, {

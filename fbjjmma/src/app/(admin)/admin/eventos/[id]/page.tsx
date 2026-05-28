@@ -769,6 +769,7 @@ export default function EventoDetailPage() {
       if (!res.ok) {
         alert((data.error || "Erro ao gerar chaves.") + (data.detail ? `\n\nDetalhe: ${data.detail}` : ""))
       } else {
+        setDeletedBrackets([])
         await loadAllChaves()
       }
     } catch {
@@ -1716,6 +1717,7 @@ export default function EventoDetailPage() {
                 onClick={async () => {
                   if (!confirm("Tem certeza que deseja remover todas as chaves?")) return
                   await fetch(`/api/admin/eventos/${id}/chaves`, { method: "DELETE" })
+                  setDeletedBrackets([])
                   await loadChaves()
                 }}
               >

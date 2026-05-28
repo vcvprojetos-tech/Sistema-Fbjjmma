@@ -3,19 +3,25 @@
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Menu, X, LogOut, User, ChevronDown } from "lucide-react"
-import { ThemeToggle } from "@/components/ThemeToggle"
+import { useTheme } from "next-themes"
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const { setTheme } = useTheme()
+
+  useEffect(() => {
+    setTheme("light")
+  }, [])
 
   const navLinks = [
-    { href: "/", label: "Início" },
-    { href: "/eventos", label: "Eventos" },
+    { href: "https://fbjjmma.com.br/", label: "Início" },
+    { href: "/chaves", label: "Chaves" },
+    { href: "https://fbjjmma.com.br/#eventos", label: "Eventos" },
   ]
 
   return (
@@ -29,8 +35,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 flex-shrink-0">
-              <img src="/logo.png" alt="FBJJMMA" className="w-9 h-9 object-contain" />
-              <span className="font-bold text-sm leading-tight hidden sm:block" style={{ color: "var(--foreground)" }}>
+              <img src="/logo-color-crop.png" alt="FBJJMMA" className="w-9 h-9 object-contain" />
+              <span className="font-bold text-sm leading-tight" style={{ color: "var(--foreground)" }}>
                 FBJJMMA
               </span>
             </Link>
@@ -51,7 +57,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* Auth buttons + toggle */}
             <div className="hidden md:flex items-center gap-3">
-              <ThemeToggle />
               {session ? (
                 <div className="relative">
                   <button
@@ -106,29 +111,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     </div>
                   )}
                 </div>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="text-sm transition-colors"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Entrar
-                  </Link>
-                  <Link
-                    href="/cadastro"
-                    className="text-sm font-medium px-4 py-2 rounded-md transition-colors"
-                    style={{ backgroundColor: "#dc2626", color: "white" }}
-                  >
-                    Cadastrar-se
-                  </Link>
-                </>
-              )}
+              ) : null}
             </div>
 
-            {/* Mobile: toggle + menu button */}
+            {/* Mobile: menu button */}
             <div className="md:hidden flex items-center gap-2">
-              <ThemeToggle />
               <button
                 className="transition-colors"
                 style={{ color: "var(--muted-foreground)" }}
@@ -176,26 +163,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     Sair
                   </button>
                 </>
-              ) : (
-                <div className="flex gap-3">
-                  <Link
-                    href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-sm"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Entrar
-                  </Link>
-                  <Link
-                    href="/cadastro"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-sm font-medium px-4 py-1.5 rounded-md"
-                    style={{ backgroundColor: "#dc2626", color: "white" }}
-                  >
-                    Cadastrar-se
-                  </Link>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}
@@ -212,7 +180,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="FBJJMMA" className="w-7 h-7 object-contain" />
+              <img src="/logo-color-crop.png" alt="FBJJMMA" className="w-7 h-7 object-contain" />
               <span className="text-sm" style={{ color: "var(--muted)" }}>
                 FBJJMMA — Federação Baiana de Jiu-Jitsu MMA
               </span>

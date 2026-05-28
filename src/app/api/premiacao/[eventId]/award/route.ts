@@ -65,14 +65,21 @@ export async function PUT(
 
         if (finalMatch?.winnerId) {
           const placementIds: string[] = []
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const allMatches: any[] = matches
 
           placementIds.push(finalMatch.winnerId)
 
+          // 2° lugar: só inclui se a final não foi W.O. e o perdedor não foi W.O.'d em nenhuma partida
           const secondId =
             finalMatch.winnerId === finalMatch.position1Id
               ? finalMatch.position2Id
               : finalMatch.position1Id
-          if (secondId) placementIds.push(secondId)
+          const secondHadWO = secondId ? allMatches.some((m: { isWO: boolean; endedAt: Date | null; winnerId: string | null; position1Id: string | null; position2Id: string | null }) =>
+            m.isWO && m.endedAt && m.winnerId !== secondId &&
+            (m.position1Id === secondId || m.position2Id === secondId)
+          ) : false
+          if (secondId && !finalMatch.isWO && !secondHadWO) placementIds.push(secondId)
 
           // 3° lugar — depende se é grande final ou chave normal
           if (bracketAny.isGrandFinal && bracketAny.bracketGroupId) {
@@ -100,12 +107,21 @@ export async function PUT(
               const thirdPos = positions.find(
                 (p) => p.id !== finalMatch.winnerId && p.id !== secondId
               )
-              if (thirdPos) placementIds.push(thirdPos.id)
+              if (thirdPos) {
+                // Só inclui 3° se não foi W.O.'d em nenhuma partida
+                const thirdHadWO = allMatches.some((m: { isWO: boolean; endedAt: Date | null; winnerId: string | null; position1Id: string | null; position2Id: string | null }) =>
+                  m.isWO && m.endedAt && m.winnerId !== thirdPos.id &&
+                  (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
+                )
+                if (!thirdHadWO) placementIds.push(thirdPos.id)
+              }
             } else {
               const champSemi = realMatches.find(
                 (m) => m.round === maxRound - 1 && m.winnerId === finalMatch.winnerId
               )
-              if (champSemi) {
+              // Sem 3° lugar se a semi do campeão teve W.O. ou se não houve semi real
+              const semiHadWO = champSemi?.isWO || (!champSemi && allMatches.some((m: { isWO: boolean; endedAt: Date | null }) => m.isWO && m.endedAt))
+              if (champSemi && !semiHadWO) {
                 const loserId =
                   champSemi.winnerId === champSemi.position1Id
                     ? champSemi.position2Id

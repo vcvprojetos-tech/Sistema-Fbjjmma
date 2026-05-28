@@ -2,6 +2,39 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
+// Recompacta posições de uma chave para que não haja lacunas (1, 2, 3, ...)
+// Só executa em chaves PENDENTE ou DESIGNADA (sem partidas em andamento).
+async function compactBracketPositions(bracketId: string) {
+  const bracket = await prisma.bracket.findUnique({
+    where: { id: bracketId },
+    select: { status: true },
+  })
+  if (!bracket || (bracket.status !== "PENDENTE" && bracket.status !== "DESIGNADA")) return
+
+  // Deleta posições sem atleta que possam ter sobrado
+  await prisma.bracketPosition.deleteMany({ where: { bracketId, registrationId: null } })
+
+  const positions = await prisma.bracketPosition.findMany({
+    where: { bracketId },
+    orderBy: { position: "asc" },
+    select: { id: true },
+  })
+  if (positions.length === 0) return
+
+  // Passo 1: negativos para evitar conflito de unique constraint (bracketId, position)
+  await prisma.$transaction(
+    positions.map((p, i) =>
+      prisma.bracketPosition.update({ where: { id: p.id }, data: { position: -(i + 1) } })
+    )
+  )
+  // Passo 2: valores finais sequenciais
+  await prisma.$transaction(
+    positions.map((p, i) =>
+      prisma.bracketPosition.update({ where: { id: p.id }, data: { position: i + 1 } })
+    )
+  )
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; atletaId: string }> }
@@ -156,11 +189,13 @@ export async function PUT(
         // Remover da chave antiga
         await prisma.bracketPosition.delete({ where: { id: pos.id } })
 
-        // Se a chave ficou vazia, removê-la
+        // Se a chave ficou vazia, removê-la; caso contrário, compactar posições
         const remaining = await prisma.bracketPosition.count({ where: { bracketId: oldBracketId } })
         if (remaining === 0) {
           await prisma.match.deleteMany({ where: { bracketId: oldBracketId } })
           await prisma.bracket.delete({ where: { id: oldBracketId } })
+        } else {
+          await compactBracketPositions(oldBracketId)
         }
 
         // Determinar a chave destino
@@ -334,6 +369,11 @@ export async function DELETE(
         await prisma.match.deleteMany({ where: { bracketId: { in: emptyBracketIds } } })
         await prisma.bracketPosition.deleteMany({ where: { bracketId: { in: emptyBracketIds } } })
         await prisma.bracket.deleteMany({ where: { id: { in: emptyBracketIds } } })
+      }
+
+      // Compactar posições das chaves que ainda têm atletas
+      for (const bracketId of affectedBracketIds.filter((bid) => stillPopulated.has(bid))) {
+        await compactBracketPositions(bracketId)
       }
     }
 
