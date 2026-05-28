@@ -10,11 +10,13 @@ export async function GET(req: NextRequest) {
   if (!eventId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allEvents = await (prisma.event as any).findMany({
-      where: { status: { in: ["EM_ANDAMENTO", "ENCERRADO", "INSCRICOES_ENCERRADAS"] } },
+      where: { status: { not: "RASCUNHO" } },
       select: { id: true, name: true, date: true, status: true },
       orderBy: { date: "desc" },
     })
-    const statusPriority: Record<string, number> = { EM_ANDAMENTO: 0, ENCERRADO: 1, INSCRICOES_ENCERRADAS: 2 }
+    const statusPriority: Record<string, number> = {
+      EM_ANDAMENTO: 0, ENCERRADO: 1, INSCRICOES_ENCERRADAS: 2, INSCRICOES_ABERTAS: 3,
+    }
     const events = [...allEvents].sort((a: { status: string; date: string }, b: { status: string; date: string }) => {
       const diff = (statusPriority[a.status] ?? 3) - (statusPriority[b.status] ?? 3)
       if (diff !== 0) return diff
