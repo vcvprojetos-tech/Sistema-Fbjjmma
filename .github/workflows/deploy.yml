@@ -21,11 +21,17 @@ jobs:
             echo "==> Atualizando código..."
             cd /var/www/fbjjmma
             git pull origin main
-            echo "==> Migrando uploads antigos para a raiz..."
-            mkdir -p /var/www/fbjjmma/public/uploads/eventos
-            if [ -d /var/www/fbjjmma/fbjjmma/public/uploads ]; then
-              cp -rn /var/www/fbjjmma/fbjjmma/public/uploads/. /var/www/fbjjmma/public/uploads/ 2>/dev/null || true
-            fi
+
+            echo "==> Entrando na pasta do app..."
+            cd /var/www/fbjjmma/fbjjmma
+
+            echo "==> Garantindo .env na pasta do app..."
+            [ ! -f .env ] && [ -f /var/www/fbjjmma/.env ] && cp /var/www/fbjjmma/.env . || true
+
+            echo "==> Migrando uploads antigos..."
+            mkdir -p public/uploads/eventos
+            [ -d /var/www/fbjjmma/public/uploads ] && cp -rn /var/www/fbjjmma/public/uploads/. public/uploads/ 2>/dev/null || true
+
             echo "==> Aplicando migrations SQL via postgres (superusuário)..."
             DB_NAME=$(grep 'DATABASE_URL' .env 2>/dev/null | head -1 | awk -F'/' '{print $NF}' | cut -d'?' -f1 | tr -d '"' | tr -d "'")
             echo "Banco detectado: $DB_NAME"
@@ -36,12 +42,19 @@ jobs:
             echo "ALTER TABLE tatames ADD COLUMN IF NOT EXISTS \"panelBracketIds\" TEXT[] NOT NULL DEFAULT '{}';" >> /tmp/fbjjmma_migrate.sql
             echo "ALTER TABLE tatames ADD COLUMN IF NOT EXISTS \"panelUpdatedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
             su postgres -c "psql -d '$DB_NAME' -f /tmp/fbjjmma_migrate.sql" || echo "Migration SQL falhou, continuando..."
-            echo "==> Migrations concluídas"
+            echo "==> Migrations SQL concluídas"
+
+            echo "==> Aplicando migrations Prisma..."
+            [ -f .env ] && export $(grep -v '^#' .env | xargs) || true
+            npx prisma migrate deploy || echo "Aviso: migrate deploy falhou, continuando..."
+
             echo "==> Gerando cliente Prisma..."
             npx prisma generate
+
             echo "==> Compilando..."
             rm -rf .next
             npm run build
+
             echo "==> Reiniciando servidor..."
             pm2 stop fbjjmma 2>/dev/null || pm2 stop all 2>/dev/null || true
             pm2 delete fbjjmma 2>/dev/null || pm2 delete all 2>/dev/null || true

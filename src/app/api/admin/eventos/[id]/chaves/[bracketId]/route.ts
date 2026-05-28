@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { BracketStatus } from "@prisma/client"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, ensureBracketDeletedAt } from "@/lib/db"
 import { notifyTatame } from "@/lib/tatame-events"
+import { Pool } from "pg"
 
 export async function GET(
   _req: NextRequest,
@@ -167,13 +168,18 @@ export async function DELETE(
     const bracket = await prisma.bracket.findFirst({ where: { id: bracketId, eventId: id } })
     if (!bracket) return NextResponse.json({ error: "Chave não encontrada." }, { status: 404 })
 
-    await prisma.match.deleteMany({ where: { bracketId } })
-    await prisma.bracketPosition.deleteMany({ where: { bracketId } })
-    await prisma.bracket.delete({ where: { id: bracketId } })
+    // Soft-delete via raw SQL (deletedAt não está no schema Prisma)
+    await ensureBracketDeletedAt()
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL! })
+    await pool.query(
+      `UPDATE brackets SET "deletedAt" = NOW(), "tatameId" = NULL WHERE id = $1`,
+      [bracketId]
+    )
+    await pool.end()
 
     if (bracket.tatameId) notifyTatame(bracket.tatameId)
 
-    return NextResponse.json({ message: "Chave removida." })
+    return NextResponse.json({ ok: true })
   } catch (error) {
     console.error("[BRACKET DELETE ERROR]", error)
     return NextResponse.json({ error: "Erro ao remover chave." }, { status: 500 })

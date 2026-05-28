@@ -86,6 +86,7 @@ export default function EventosPage() {
     INSCRICOES_ABERTAS: { label: "Inscrições Abertas", cls: "admin-badge admin-badge-green" },
     INSCRICOES_ENCERRADAS: { label: "Inscrições Encerradas", cls: "admin-badge admin-badge-amber" },
     EM_ANDAMENTO: { label: "Em Andamento", cls: "admin-badge admin-badge-blue" },
+    ENCERRADO: { label: "Encerrado", cls: "admin-badge admin-badge-gray" },
   }
 
   return (

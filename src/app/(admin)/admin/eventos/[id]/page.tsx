@@ -574,18 +574,26 @@ export default function EventoDetailPage() {
   const loadAllChaves = useCallback(async () => {
     setChavesLoading(true)
     try {
-      const [res, resTrash] = await Promise.all([
-        fetch(`/api/admin/eventos/${id}/chaves`),
-        fetch(`/api/admin/eventos/${id}/chaves?trash=1`),
-      ])
+      const res = await fetch(`/api/admin/eventos/${id}/chaves`)
       const data = await res.json()
-      const dataTrash = await resTrash.json()
       if (Array.isArray(data)) setBrackets(data)
-      if (Array.isArray(dataTrash)) setDeletedBrackets(dataTrash)
     } catch {
       console.error("Erro ao carregar chaves")
     } finally {
       setChavesLoading(false)
+    }
+  }, [id])
+
+  const loadDeletedBrackets = useCallback(async () => {
+    setDeletedBracketsLoading(true)
+    try {
+      const res = await fetch(`/api/admin/eventos/${id}/chaves?trash=1`)
+      const data = await res.json()
+      if (Array.isArray(data)) setDeletedBrackets(data)
+    } catch {
+      console.error("Erro ao carregar chaves excluídas")
+    } finally {
+      setDeletedBracketsLoading(false)
     }
   }, [id])
 
@@ -776,6 +784,7 @@ export default function EventoDetailPage() {
       if (!res.ok) {
         alert((data.error || "Erro ao gerar chaves.") + (data.detail ? `\n\nDetalhe: ${data.detail}` : ""))
       } else {
+        setDeletedBrackets([])
         await loadAllChaves()
       }
     } catch {
@@ -1739,6 +1748,7 @@ export default function EventoDetailPage() {
                 onClick={async () => {
                   if (!confirm("Tem certeza que deseja remover todas as chaves?")) return
                   await fetch(`/api/admin/eventos/${id}/chaves`, { method: "DELETE" })
+                  setDeletedBrackets([])
                   await loadChaves()
                 }}
               >
@@ -2392,7 +2402,7 @@ export default function EventoDetailPage() {
                     ] as const).map(t => (
                       <button
                         key={t.key}
-                        onClick={() => setTatamesChaveTab(t.key)}
+                        onClick={() => { setTatamesChaveTab(t.key); if (t.key === "excluidas") loadDeletedBrackets() }}
                         className="px-4 py-2.5 text-xs font-bold transition-colors whitespace-nowrap"
                         style={{
                           color: tatamesChaveTab === t.key ? t.color : "var(--muted)",

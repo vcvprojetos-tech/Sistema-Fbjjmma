@@ -195,11 +195,9 @@ export default function ChaveControlePage() {
     ? Math.max(...bracket.matches.map((m) => m.round))
     : 0
 
-  // 2nd place = loser of the final match
-  const runnerUp = bracket.status === "FINALIZADA" && lastMatch
-    ? bracket.positions.find((p) =>
-        p.id === (lastMatch.winnerId === lastMatch.position1Id ? lastMatch.position2Id : lastMatch.position1Id)
-      ) ?? null
+  // 2nd place = loser of the final match (usa os dados embutidos do match, não busca em positions)
+  const runnerUp: BracketPositionData | null = bracket.status === "FINALIZADA" && lastMatch
+    ? (lastMatch.winnerId === lastMatch.position1Id ? lastMatch.position2 : lastMatch.position1) ?? null
     : null
 
   // 3rd place logic:
