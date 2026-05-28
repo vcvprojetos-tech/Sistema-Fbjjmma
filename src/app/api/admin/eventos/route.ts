@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, ensureEventIsActive } from "@/lib/db"
 import path from "path"
 import { writeFile, mkdir } from "fs/promises"
 
@@ -9,6 +9,8 @@ export async function GET(req: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
   }
+
+  await ensureEventIsActive()
 
   const { searchParams } = new URL(req.url)
   const trash = searchParams.get("trash") === "1"

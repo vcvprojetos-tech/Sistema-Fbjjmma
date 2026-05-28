@@ -1,28 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { prisma, ensureEventIsActive } from "@/lib/db"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const eventId = searchParams.get("eventId")
 
-  // Se não for passado um eventId, retorna lista de eventos com chaves disponíveis.
-  // Prioriza eventos EM_ANDAMENTO e ENCERRADO (que têm chaves), depois INSCRICOES_ENCERRADAS.
   if (!eventId) {
-    let events
-    try {
-      events = await prisma.event.findMany({
-        where: { isActive: true, deletedAt: null },
-        select: { id: true, name: true, date: true, status: true },
-        orderBy: [{ date: "desc" }],
-      })
-    } catch {
-      // Fallback caso a coluna isActive ainda não exista no banco
-      events = await prisma.event.findMany({
-        where: { deletedAt: null },
-        select: { id: true, name: true, date: true, status: true },
-        orderBy: [{ date: "desc" }],
-      })
-    }
+    await ensureEventIsActive()
+    const events = await prisma.event.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: { id: true, name: true, date: true, status: true },
+      orderBy: [{ date: "desc" }],
+    })
     return NextResponse.json({ events })
   }
 

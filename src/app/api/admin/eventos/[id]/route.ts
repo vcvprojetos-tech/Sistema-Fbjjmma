@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, ensureEventIsActive } from "@/lib/db"
 import path from "path"
 import { writeFile, mkdir } from "fs/promises"
 
@@ -12,6 +12,8 @@ export async function GET(
   if (!session) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
   }
+
+  await ensureEventIsActive()
 
   const { id } = await params
 
