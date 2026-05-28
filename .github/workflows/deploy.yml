@@ -26,12 +26,17 @@ jobs:
             if [ -d /var/www/fbjjmma/fbjjmma/public/uploads ]; then
               cp -rn /var/www/fbjjmma/fbjjmma/public/uploads/. /var/www/fbjjmma/public/uploads/ 2>/dev/null || true
             fi
-            echo "==> Carregando variáveis de ambiente..."
-            [ -f .env ] && export $(grep -v '^#' .env | xargs) || true
-            echo "==> Aplicando migrations via script Node (pg direto)..."
-            node scripts/migrate-isactive.mjs || echo "Script de migration falhou, continuando..."
-            echo "==> Aplicando migrations via Prisma..."
-            npx prisma migrate deploy || echo "Aviso: migrate deploy falhou, continuando..."
+            echo "==> Aplicando migrations SQL via postgres (superusuário)..."
+            DB_NAME=$(grep 'DATABASE_URL' .env 2>/dev/null | head -1 | awk -F'/' '{print $NF}' | cut -d'?' -f1 | tr -d '"' | tr -d "'")
+            echo "Banco detectado: $DB_NAME"
+            echo "ALTER TABLE events ADD COLUMN IF NOT EXISTS \"isActive\" BOOLEAN NOT NULL DEFAULT true;" > /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE events ADD COLUMN IF NOT EXISTS \"pesoDoc\" TEXT;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"startedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"deletedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE tatames ADD COLUMN IF NOT EXISTS \"panelBracketIds\" TEXT[] NOT NULL DEFAULT '{}';" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE tatames ADD COLUMN IF NOT EXISTS \"panelUpdatedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
+            su postgres -c "psql -d '$DB_NAME' -f /tmp/fbjjmma_migrate.sql" || echo "Migration SQL falhou, continuando..."
+            echo "==> Migrations concluídas"
             echo "==> Gerando cliente Prisma..."
             npx prisma generate
             echo "==> Compilando..."
