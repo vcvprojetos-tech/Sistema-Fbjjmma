@@ -107,24 +107,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     </div>
                   )}
                 </div>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="text-sm transition-colors"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Entrar
-                  </Link>
-                  <Link
-                    href="/cadastro"
-                    className="text-sm font-medium px-4 py-2 rounded-md transition-colors"
-                    style={{ backgroundColor: "#dc2626", color: "white" }}
-                  >
-                    Cadastrar-se
-                  </Link>
-                </>
-              )}
+              ) : null}
             </div>
 
             {/* Mobile: toggle + menu button */}
@@ -177,26 +160,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     Sair
                   </button>
                 </>
-              ) : (
-                <div className="flex gap-3">
-                  <Link
-                    href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-sm"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    Entrar
-                  </Link>
-                  <Link
-                    href="/cadastro"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-sm font-medium px-4 py-1.5 rounded-md"
-                    style={{ backgroundColor: "#dc2626", color: "white" }}
-                  >
-                    Cadastrar-se
-                  </Link>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}
