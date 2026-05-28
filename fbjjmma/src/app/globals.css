@@ -45,35 +45,14 @@
   --btn-peso-bg: #78350f20;
   --btn-peso-fg: #fbbf24;
   --btn-peso-br: #78350f40;
-  /* BracketView — cards de atletas (modo escuro) */
-  --bracket-card-bg: #1a1f2e;
-  --bracket-card-border: #2d3748;
-  --bracket-card-text: #ffffff;
-  --bracket-dimmed-bg: #151008;
-  --bracket-dimmed-border: #3d3020;
-  --bracket-dimmed-text: #a07830;
-  /* BracketView — caixas de resultado final (modo escuro) */
-  --bracket-gold-bg: #1c0f00;
-  --bracket-gold-border: #78350f;
-  --bracket-silver-bg: #0d1a2e;
-  --bracket-silver-border: #1e3a5f;
-  --bracket-bronze-bg: #1a0e00;
-  --bracket-bronze-border: #5c3a1e;
-  --bracket-final-name: #ffffff;
-  /* Pódio — labels de colocação */
-  --podium-silver: #94a3b8;
-  --podium-bronze: #d97706;
-}
-
-/* ── Forçar cores claras do BracketView no modo claro ──────────────────────── */
-/* next-themes aplica class="light" no html — seletor direto no elemento root  */
-:root:not(.dark) {
+  /* BracketView — cards de atletas (claro por padrão, sobrescrito por .dark) */
   --bracket-card-bg: #eef1f5;
   --bracket-card-border: #c8d0db;
   --bracket-card-text: #1f2328;
   --bracket-dimmed-bg: #f5ead8;
   --bracket-dimmed-border: #d4a95a;
   --bracket-dimmed-text: #a07830;
+  /* BracketView — caixas de resultado final (claro por padrão) */
   --bracket-gold-bg: #fef9ec;
   --bracket-gold-border: #d97706;
   --bracket-silver-bg: #eff6ff;
@@ -81,6 +60,7 @@
   --bracket-bronze-bg: #fff7ed;
   --bracket-bronze-border: #ea580c;
   --bracket-final-name: #1f2328;
+  /* Pódio — labels de colocação (claro por padrão) */
   --podium-silver: #374151;
   --podium-bronze: #92400e;
 }
@@ -148,6 +128,25 @@
   /* Pódio — labels de colocação (modo claro) */
   --podium-silver: #374151;
   --podium-bronze: #92400e;
+}
+
+/* ── Modo escuro: sobrescreve os vars do BracketView ───────────────────────── */
+.dark {
+  --bracket-card-bg: #1a1f2e;
+  --bracket-card-border: #2d3748;
+  --bracket-card-text: #ffffff;
+  --bracket-dimmed-bg: #151008;
+  --bracket-dimmed-border: #3d3020;
+  --bracket-dimmed-text: #a07830;
+  --bracket-gold-bg: #1c0f00;
+  --bracket-gold-border: #78350f;
+  --bracket-silver-bg: #0d1a2e;
+  --bracket-silver-border: #1e3a5f;
+  --bracket-bronze-bg: #1a0e00;
+  --bracket-bronze-border: #5c3a1e;
+  --bracket-final-name: #ffffff;
+  --podium-silver: #94a3b8;
+  --podium-bronze: #d97706;
 }
 
 @theme inline {
