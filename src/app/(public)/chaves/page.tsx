@@ -216,9 +216,13 @@ export default function ChavesPage() {
           <p className="text-lg font-semibold">Nenhum evento disponível</p>
           <p className="text-sm mt-1">As chaves serão exibidas assim que um campeonato estiver em andamento.</p>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && search.trim() ? (
         <div className="text-center py-20" style={{ color: "var(--muted-foreground)" }}>
           <p className="text-sm">Nenhuma chave encontrada para &ldquo;{search}&rdquo;</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20" style={{ color: "var(--muted-foreground)" }}>
+          <p className="text-sm font-medium">Nenhuma chave gerada para este evento ainda.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">

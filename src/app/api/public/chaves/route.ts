@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
   const brackets = await (prisma.bracket as any).findMany({
     where: {
       eventId,
-      status: { in: ["EM_ANDAMENTO", "FINALIZADA", "PREMIADA"] },
       deletedAt: null,
     },
     include: {
