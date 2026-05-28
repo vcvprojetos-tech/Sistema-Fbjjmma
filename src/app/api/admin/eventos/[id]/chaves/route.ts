@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Belt, Sex, AgeGroup } from "@prisma/client"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, ensureBracketDeletedAt } from "@/lib/db"
+import { Pool } from "pg"
+
+function getPgPool() {
+  return new Pool({ connectionString: process.env.DATABASE_URL! })
+}
 
 export async function GET(
   req: NextRequest,
@@ -31,7 +36,28 @@ export async function GET(
   if (categoria) whereCategory.ageGroup = categoria
   if (pesoNome) whereCategory.name = { equals: pesoNome, mode: "insensitive" }
 
+  // Filtro de lixeira via raw SQL (deletedAt não está no schema Prisma)
+  const trash = searchParams.get("trash") === "1"
   const whereBracket: Record<string, unknown> = { eventId: id }
+  try {
+    await ensureBracketDeletedAt()
+    const pool = getPgPool()
+    const result = await pool.query<{ id: string }>(
+      `SELECT id FROM brackets WHERE "eventId" = $1 AND "deletedAt" IS ${trash ? "NOT NULL" : "NULL"}`,
+      [id]
+    )
+    await pool.end()
+    const ids = result.rows.map(r => r.id)
+    if (trash) {
+      if (ids.length === 0) return NextResponse.json([])
+      whereBracket.id = { in: ids }
+    } else if (ids.length > 0) {
+      whereBracket.id = { notIn: ids }
+    }
+  } catch {
+    if (trash) return NextResponse.json([])
+    // Coluna não existe ainda — retorna todos sem filtro
+  }
   if (faixa) whereBracket.belt = faixa
   if (absoluto) whereBracket.isAbsolute = true
   if (Object.keys(whereCategory).length > 0) whereBracket.weightCategory = whereCategory

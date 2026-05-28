@@ -618,15 +618,17 @@ export default function TatamePage() {
     : bracket
   const podiumRealMatches = podiumBracket?.matches.filter(m => m.position1Id !== null && m.position2Id !== null) ?? []
 
-  // Mapa de posições para lookup O(1)
+  // Mapa de posições para lookup O(1) — idêntico ao BracketView
   const podiumPosMap = new Map((podiumBracket?.positions ?? []).map(p => [p.id, p]))
 
+  // Todas as partidas concluídas (igual ao allMatchesDone do BracketView)
+  const podiumAllDone = (podiumBracket?.matches.length ?? 0) > 0
+    && (podiumBracket?.matches ?? []).every(m => !!m.winnerId || (m.isWO && !!m.endedAt))
   const podiumMaxRealRound = podiumRealMatches.length > 0
     ? Math.max(...podiumRealMatches.map(m => m.round)) : 0
 
-  // Partida final = maior rodada com dois atletas reais, matchNumber 1
-  // Usa status da chave como gatilho (não allMatchesDone, que falha em chaves com slots BYE sem winnerId)
-  const podiumFinalMatch = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumMaxRealRound > 0
+  // Partida final = maior rodada, matchNumber 1 (igual ao finalMatch do BracketView)
+  const podiumFinalMatch = podiumAllDone && podiumMaxRealRound > 0
     ? podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.matchNumber === 1) ?? null
     : null
 
@@ -641,7 +643,7 @@ export default function TatamePage() {
           : null)
     : null
 
-  // 2° lugar: perdedor da final, buscado via posMap
+  // 2° lugar: usa posMap.get() igual ao BracketView (sem checar isWO — comportamento idêntico ao Placements)
   const runnerUpId = podiumFinalMatch?.winnerId
     ? (podiumFinalMatch.winnerId === podiumFinalMatch.position1Id ? podiumFinalMatch.position2Id : podiumFinalMatch.position1Id)
     : null
