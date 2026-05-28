@@ -51,8 +51,9 @@ export async function GET(
     if (trash) {
       if (ids.length === 0) return NextResponse.json([])
       whereBracket.id = { in: ids }
-    } else if (ids.length > 0) {
-      whereBracket.id = { notIn: ids }
+    } else {
+      // Inclui apenas as chaves não excluídas (deletedAt IS NULL)
+      whereBracket.id = { in: ids }
     }
   } catch {
     if (trash) return NextResponse.json([])
