@@ -667,7 +667,12 @@ export default function EventoDetailPage() {
       if (res.ok) {
         const { isActive } = await res.json()
         setEvent(prev => prev ? { ...prev, isActive } : null)
+      } else {
+        const body = await res.json().catch(() => ({}))
+        alert(`Erro ao atualizar: ${body.error || res.status}`)
       }
+    } catch (e) {
+      alert(`Erro de rede: ${e}`)
     } finally {
       setIsActiveLoading(false)
     }
