@@ -25,9 +25,12 @@ export async function GET(
   }
 
   // isActive não está no schema Prisma; lê via raw SQL com fallback
-  const isActiveRows = await prisma.$queryRaw<{ isActive: boolean }[]>`
-    SELECT "isActive" FROM "events" WHERE id = ${id} LIMIT 1
-  `.catch(() => [{ isActive: true }])
+  let isActiveRows: { isActive: boolean }[] = [{ isActive: true }]
+  try {
+    isActiveRows = await prisma.$queryRaw<{ isActive: boolean }[]>`
+      SELECT "isActive" FROM "events" WHERE id = ${id} LIMIT 1
+    `
+  } catch { /* coluna ainda não existe, assume true */ }
 
   return NextResponse.json({ ...event, isActive: isActiveRows[0]?.isActive ?? true })
 }

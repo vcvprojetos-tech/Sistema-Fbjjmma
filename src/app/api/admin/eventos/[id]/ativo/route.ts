@@ -11,10 +11,9 @@ export async function PATCH(
 
   const { id } = await params
 
-  // Garante que a coluna existe
-  await prisma.$executeRawUnsafe(
-    `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
-  ).catch(() => {})
+  try {
+    await prisma.$executeRaw`ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
+  } catch { /* coluna já existe */ }
 
   const rows = await prisma.$queryRaw<{ isActive: boolean }[]>`
     SELECT "isActive" FROM "events" WHERE id = ${id} LIMIT 1
@@ -22,11 +21,7 @@ export async function PATCH(
   if (!rows.length) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 })
 
   const newValue = !rows[0].isActive
-  await prisma.$executeRawUnsafe(
-    `UPDATE "events" SET "isActive" = $1 WHERE id = $2`,
-    newValue,
-    id
-  )
+  await prisma.$executeRaw`UPDATE "events" SET "isActive" = ${newValue} WHERE id = ${id}`
 
   return NextResponse.json({ isActive: newValue })
 }

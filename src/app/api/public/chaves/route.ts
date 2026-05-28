@@ -9,9 +9,9 @@ export async function GET(req: NextRequest) {
   // Prioriza eventos EM_ANDAMENTO e ENCERRADO (que têm chaves), depois INSCRICOES_ENCERRADAS.
   if (!eventId) {
     // Garante que a coluna existe (idempotente)
-    await prisma.$executeRawUnsafe(
-      `ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
-    ).catch(() => {})
+    try {
+      await prisma.$executeRaw`ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`
+    } catch { /* coluna já existe */ }
 
     let events: { id: string; name: string; date: Date; status: string }[]
     try {
