@@ -5,13 +5,20 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const eventId = searchParams.get("eventId")
 
-  // Se não for passado um eventId, retorna lista de eventos públicos com chaves disponíveis
+  // Se não for passado um eventId, retorna lista de eventos com chaves disponíveis.
+  // Prioriza eventos EM_ANDAMENTO e ENCERRADO (que têm chaves), depois INSCRICOES_ENCERRADAS.
   if (!eventId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const events = await (prisma.event as any).findMany({
+    const allEvents = await (prisma.event as any).findMany({
       where: { status: { in: ["EM_ANDAMENTO", "ENCERRADO", "INSCRICOES_ENCERRADAS"] } },
       select: { id: true, name: true, date: true, status: true },
       orderBy: { date: "desc" },
+    })
+    const statusPriority: Record<string, number> = { EM_ANDAMENTO: 0, ENCERRADO: 1, INSCRICOES_ENCERRADAS: 2 }
+    const events = [...allEvents].sort((a: { status: string; date: string }, b: { status: string; date: string }) => {
+      const diff = (statusPriority[a.status] ?? 3) - (statusPriority[b.status] ?? 3)
+      if (diff !== 0) return diff
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
     return NextResponse.json({ events })
   }
@@ -25,10 +32,7 @@ export async function GET(req: NextRequest) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const brackets = await (prisma.bracket as any).findMany({
-    where: {
-      eventId,
-      deletedAt: null,
-    },
+    where: { eventId },
     include: {
       weightCategory: {
         select: { id: true, name: true, ageGroup: true, sex: true, maxWeight: true },
