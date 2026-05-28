@@ -130,6 +130,13 @@ export default function ChavesPage() {
   const [ageGroupFilter, setAgeGroupFilter] = useState<Set<string>>(new Set())
   const [weightFilter, setWeightFilter] = useState<Set<string>>(new Set())
   const [beltFilter, setBeltFilter] = useState<Set<string>>(new Set())
+  const [now, setNow] = useState(() => Date.now())
+
+  // Atualiza o horário a cada minuto para ativar o botão automaticamente
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   // Carrega lista de eventos disponíveis
   useEffect(() => {
@@ -229,6 +236,9 @@ export default function ChavesPage() {
     return true
   }), [brackets, search, sexFilter, ageGroupFilter, weightFilter, beltFilter])
 
+  const selectedEvent = events.find(e => e.id === selectedEventId)
+  const painelAtivo = selectedEvent ? new Date(selectedEvent.date).getTime() <= now : false
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
@@ -243,24 +253,44 @@ export default function ChavesPage() {
           </p>
         </div>
         {selectedEventId && (
-          <a
-            href={`/painel/${selectedEventId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
-              padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
-              backgroundColor: "#dc2626", color: "#fff",
-              border: "none", cursor: "pointer", textDecoration: "none",
-              boxShadow: "0 1px 4px #dc262630",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 19 2 12 11 5 11 19" />
-              <polygon points="22 19 13 12 22 5 22 19" />
-            </svg>
-            Painel de Chamadas
-          </a>
+          painelAtivo ? (
+            <a
+              href={`/painel/${selectedEventId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Abrir painel de chamadas"
+              style={{
+                display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+                padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                backgroundColor: "#dc2626", color: "#fff",
+                border: "none", cursor: "pointer", textDecoration: "none",
+                boxShadow: "0 1px 4px #dc262630",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 19 2 12 11 5 11 19" />
+                <polygon points="22 19 13 12 22 5 22 19" />
+              </svg>
+              Painel de Chamadas
+            </a>
+          ) : (
+            <div
+              title={selectedEvent ? `Disponível a partir de ${new Date(selectedEvent.date).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}` : "Aguardando data do evento"}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+                padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                backgroundColor: "var(--card)", color: "var(--muted-foreground)",
+                border: "1px solid var(--border)", cursor: "not-allowed",
+                opacity: 0.5, userSelect: "none",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 19 2 12 11 5 11 19" />
+                <polygon points="22 19 13 12 22 5 22 19" />
+              </svg>
+              Painel de Chamadas
+            </div>
+          )
         )}
       </div>
 
