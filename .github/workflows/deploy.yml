@@ -29,6 +29,8 @@ jobs:
             echo "==> Aplicando migrations..."
             [ -f .env ] && export $(grep -v '^#' .env | xargs) || true
             npx prisma migrate deploy || echo "Aviso: migrate deploy falhou, continuando..."
+            echo "==> Garantindo coluna isActive na tabela events..."
+            which psql >/dev/null 2>&1 && [ -n "$DATABASE_URL" ] && psql "$DATABASE_URL" -c 'ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;' 2>/dev/null || true
             echo "==> Gerando cliente Prisma..."
             npx prisma generate
             echo "==> Compilando..."
