@@ -1841,7 +1841,7 @@ export default function TatamePage() {
                   }}
                 />
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (woModal.winnerId) {
                       setPendingDq({ matchId: woModal.matchId, bracketId: woModal.bracketId, loserId: woModal.loserId ?? "", loserName: woModal.loserName ?? "", winnerPositionId: woModal.winnerId, winnerName: woModal.winnerName ?? "", woType: "PESO", woWeight: pesoInput, woPhotoFile: pesoPhoto || undefined })
                       setWoModal(null); setPesoStep(false); setPesoInput(""); setPesoPhoto(null); setPesoPhotoPreview("")
