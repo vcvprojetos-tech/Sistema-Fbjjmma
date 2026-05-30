@@ -201,13 +201,14 @@ export default function TatamePage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [optimisticCheckins, setOptimisticCheckins] = useState<Record<string, boolean>>({})
   const [error, setError] = useState("")
-  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string } | null>(null)
+  const [woModal, setWoModal] = useState<{ matchId: string; winnerId: string; bracketId: string; p1Name?: string; p2Name?: string; loserName?: string; winnerName?: string } | null>(null)
   const [pesoStep, setPesoStep] = useState(false)
   const [pesoInput, setPesoInput] = useState("")
   const [callLoading, setCallLoading] = useState<string | null>(null)
   const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
   const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
-  const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string } | null>(null)
+  const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string; winnerName?: string } | null>(null)
+  const [soloChoiceModal, setSoloChoiceModal] = useState<{ bracketId: string; matchId: string; winnerId: string; winnerName: string; loserName: string; isWO: boolean; woType: string; woWeight?: string; woReason?: string } | null>(null)
   const [desclReason, setDesclReason] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
@@ -490,6 +491,7 @@ export default function TatamePage() {
     } finally {
       setActionLoading(false)
       setWoModal(null)
+      setSoloChoiceModal(null)
       setPesoStep(false)
       setPesoInput("")
     }
@@ -1413,7 +1415,14 @@ export default function TatamePage() {
                                             </>
                                           ) : (
                                             <button
-                                              onClick={() => aplicarWOAusencia(match.id, match._bracketId, callMenu.winnerId)}
+                                              onClick={() => {
+                                                if (callMenu.winnerId) {
+                                                  setSoloChoiceModal({ bracketId: match._bracketId, matchId: match.id, winnerId: callMenu.winnerId, winnerName: callMenu.absentPosition === "p1" ? p2Name : p1Name, loserName: callMenu.absenteeName, isWO: true, woType: "AUSENCIA" })
+                                                  setCallMenu(null)
+                                                } else {
+                                                  aplicarWOAusencia(match.id, match._bracketId, callMenu.winnerId)
+                                                }
+                                              }}
                                               disabled={actionLoading}
                                               className="w-full py-2 rounded-lg text-sm font-bold text-white"
                                               style={{ backgroundColor: "#dc2626" }}
@@ -1434,7 +1443,7 @@ export default function TatamePage() {
                                       )
                                     })()}
                                     <button
-                                      onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId }); setPesoStep(true); setCallMenu(null) }}
+                                      onClick={() => { setWoModal({ matchId: match.id, winnerId: callMenu.winnerId, bracketId: match._bracketId, loserName: callMenu.absenteeName, winnerName: callMenu.absentPosition === "p1" ? p2Name : p1Name }); setPesoStep(true); setCallMenu(null) }}
                                       disabled={actionLoading}
                                       className="w-full py-3 rounded-lg text-sm font-semibold"
                                       style={{ backgroundColor: "#78350f", color: "#ffffff" }}
@@ -1442,7 +1451,7 @@ export default function TatamePage() {
                                       Desclassificação por Peso
                                     </button>
                                     <button
-                                      onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: callMenu.winnerId, loserName: callMenu.absenteeName }); setDesclReason(""); setCallMenu(null) }}
+                                      onClick={() => { setDesclModal({ matchId: match.id, bracketId: match._bracketId, winnerId: callMenu.winnerId, loserName: callMenu.absenteeName, winnerName: callMenu.absentPosition === "p1" ? p2Name : p1Name }); setDesclReason(""); setCallMenu(null) }}
                                       disabled={actionLoading}
                                       className="w-full py-3 rounded-lg text-sm font-semibold"
                                       style={{ backgroundColor: "#7c3aed", color: "#ffffff" }}
@@ -1726,7 +1735,14 @@ export default function TatamePage() {
                   autoFocus
                 />
                 <button
-                  onClick={() => declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO", pesoInput)}
+                  onClick={() => {
+                    if (woModal.winnerId) {
+                      setSoloChoiceModal({ bracketId: woModal.bracketId, matchId: woModal.matchId, winnerId: woModal.winnerId, winnerName: woModal.winnerName ?? "", loserName: woModal.loserName ?? "", isWO: true, woType: "PESO", woWeight: pesoInput })
+                      setWoModal(null); setPesoStep(false); setPesoInput("")
+                    } else {
+                      declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO", pesoInput)
+                    }
+                  }}
                   disabled={actionLoading || !pesoInput}
                   className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
                   style={{ backgroundColor: "#dc2626" }}
@@ -1919,9 +1935,13 @@ export default function TatamePage() {
             <button
               onClick={async () => {
                 if (!desclReason.trim()) return
-                await declararVencedor(desclModal.bracketId, desclModal.matchId, desclModal.winnerId, true, "DESCLASSIFICACAO", undefined, desclReason.trim())
-                setDesclModal(null)
-                setDesclReason("")
+                if (desclModal.winnerId) {
+                  setSoloChoiceModal({ bracketId: desclModal.bracketId, matchId: desclModal.matchId, winnerId: desclModal.winnerId, winnerName: desclModal.winnerName ?? "", loserName: desclModal.loserName, isWO: true, woType: "DESCLASSIFICACAO", woReason: desclReason.trim() })
+                  setDesclModal(null); setDesclReason("")
+                } else {
+                  await declararVencedor(desclModal.bracketId, desclModal.matchId, desclModal.winnerId, true, "DESCLASSIFICACAO", undefined, desclReason.trim())
+                  setDesclModal(null); setDesclReason("")
+                }
               }}
               disabled={actionLoading || !desclReason.trim()}
               className="w-full py-4 rounded-xl font-bold text-white text-sm disabled:opacity-50"
@@ -1931,6 +1951,44 @@ export default function TatamePage() {
             </button>
             <button
               onClick={() => { setDesclModal(null); setDesclReason("") }}
+              className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
+              style={{ backgroundColor: "var(--card)" }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de escolha pós W.O./desclassificação — o que acontece com o outro atleta */}
+      {soloChoiceModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.85)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ backgroundColor: "var(--card-alt)" }}>
+            <div className="text-center space-y-1">
+              <p className="text-[#9ca3af] text-sm">{soloChoiceModal.loserName.split(" ")[0]} foi eliminado.</p>
+              <p className="text-white font-bold text-xl">O que acontece com</p>
+              <p className="text-[#fbbf24] font-bold text-xl">{soloChoiceModal.winnerName.split(" ")[0]}?</p>
+            </div>
+            <div className="flex flex-col gap-3 pt-1">
+              <button
+                onClick={() => declararVencedor(soloChoiceModal.bracketId, soloChoiceModal.matchId, soloChoiceModal.winnerId, soloChoiceModal.isWO, soloChoiceModal.woType, soloChoiceModal.woWeight, soloChoiceModal.woReason)}
+                disabled={actionLoading}
+                className="w-full py-4 rounded-xl font-bold text-white text-sm"
+                style={{ backgroundColor: "#15803d" }}
+              >
+                {actionLoading ? "Confirmando..." : `✓ ${soloChoiceModal.winnerName.split(" ")[0]} avança`}
+              </button>
+              <button
+                onClick={() => declararVencedor(soloChoiceModal.bracketId, soloChoiceModal.matchId, "", true, "AUSENCIA")}
+                disabled={actionLoading}
+                className="w-full py-4 rounded-xl font-bold text-white text-sm"
+                style={{ backgroundColor: "#7c3aed" }}
+              >
+                {actionLoading ? "Confirmando..." : "Também eliminado — Nenhum avança"}
+              </button>
+            </div>
+            <button
+              onClick={() => setSoloChoiceModal(null)}
               className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
               style={{ backgroundColor: "var(--card)" }}
             >
