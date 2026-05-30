@@ -60,6 +60,8 @@ export async function PUT(
             isWO: true,
             woType: woType ? (woType as WOType) : "AUSENCIA",
             ...(woWeight != null && woType === "PESO" && { woWeight1: Number(woWeight) }),
+            ...(pesoPhoto1 && { pesoPhoto1 }),
+            ...(pesoPhoto2 && { pesoPhoto2 }),
             endedAt: new Date(),
           },
         })

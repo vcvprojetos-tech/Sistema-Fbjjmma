@@ -7,6 +7,28 @@ import Link from "next/link"
 import BracketView from "@/components/admin/BracketView"
 import { ThemeLogo } from "@/components/ThemeLogo"
 
+async function compressImage(file: File, maxSize = 1280, quality = 0.82): Promise<File> {
+  return new Promise(resolve => {
+    const img = new Image()
+    const blobUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl)
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(
+        blob => resolve(blob ? new File([blob], "photo.jpg", { type: "image/jpeg" }) : file),
+        "image/jpeg",
+        quality
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file) }
+    img.src = blobUrl
+  })
+}
+
 const AGE_GROUP_LABELS: Record<string, string> = {
   PRE_MIRIM: "Pré Mirim", MIRIM: "Mirim", INFANTIL_A: "Infantil A",
   INFANTIL_B: "Infantil B", INFANTO_JUVENIL_A: "Infanto Juv. A",
@@ -481,8 +503,9 @@ export default function TatamePage() {
   }, [load, getPin])
 
   const uploadFoto = useCallback(async (file: File): Promise<string | null> => {
+    const compressed = await compressImage(file)
     const formData = new FormData()
-    formData.append("file", file)
+    formData.append("file", compressed)
     try {
       const res = await fetch("/api/coordenador/upload-foto", {
         method: "POST",
@@ -1850,23 +1873,27 @@ export default function TatamePage() {
                       setWoModal(null); setPesoStep(false); setPesoInput(""); setPesoPhoto(null); setPesoPhotoPreview("")
                     } else {
                       if (pendingDq?.matchId === woModal.matchId && pendingDq.woWeight && pesoInput) {
+                        // W.O. duplo por peso: primeiro atleta já confirmado (URL salva), faz upload do segundo
                         const matchData = tatame?.brackets.flatMap(b => b.matches).find(m => m.id === woModal.matchId)
                         if (matchData) {
                           const firstLoserIsP1 = pendingDq.loserId === matchData.position1Id
                           const ww1 = firstLoserIsP1 ? parseFloat(pendingDq.woWeight) : parseFloat(pesoInput)
                           const ww2 = firstLoserIsP1 ? parseFloat(pesoInput) : parseFloat(pendingDq.woWeight)
-                          const [url1raw, url2raw] = await Promise.all([
-                            pendingDq.woPhotoFile ? uploadFoto(pendingDq.woPhotoFile) : Promise.resolve(null),
-                            pesoPhoto ? uploadFoto(pesoPhoto) : Promise.resolve(null),
-                          ])
-                          const photo1Url = (firstLoserIsP1 ? url1raw : url2raw) ?? undefined
-                          const photo2Url = (firstLoserIsP1 ? url2raw : url1raw) ?? undefined
+                          const url2raw = pesoPhoto ? await uploadFoto(pesoPhoto) : null
+                          const photo1Url = (firstLoserIsP1 ? (pendingDq.woPhotoUrl ?? null) : url2raw) ?? undefined
+                          const photo2Url = (firstLoserIsP1 ? url2raw : (pendingDq.woPhotoUrl ?? null)) ?? undefined
                           declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", undefined, undefined, ww1, ww2, photo1Url, photo2Url)
                         } else {
                           declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", pesoInput)
                         }
                       } else {
-                        declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", pesoInput)
+                        // Atleta solo desclassificado por peso — faz upload e salva como pesoPhoto1
+                        let uploadedUrl: string | undefined
+                        if (pesoPhoto) {
+                          const url = await uploadFoto(pesoPhoto)
+                          if (url) uploadedUrl = url
+                        }
+                        declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", pesoInput, undefined, undefined, undefined, uploadedUrl, undefined)
                       }
                       setPesoPhoto(null); setPesoPhotoPreview("")
                     }
