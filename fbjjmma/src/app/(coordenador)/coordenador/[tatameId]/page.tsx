@@ -475,14 +475,14 @@ export default function TatamePage() {
     }
   }, [load, getPin])
 
-  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string, woReason?: string) => {
+  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string, woReason?: string, extraWoWeight1?: number, extraWoWeight2?: number) => {
     setActionLoading(true)
     setError("")
     try {
       const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
-        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null, woReason: woReason || null }),
+        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null, woReason: woReason || null, ...(extraWoWeight1 != null && { woWeight1: extraWoWeight1 }), ...(extraWoWeight2 != null && { woWeight2: extraWoWeight2 }) }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error || "Erro ao registrar resultado.")
@@ -1775,7 +1775,19 @@ export default function TatamePage() {
                       setPendingDq({ matchId: woModal.matchId, bracketId: woModal.bracketId, loserId: woModal.loserId ?? "", loserName: woModal.loserName ?? "", winnerPositionId: woModal.winnerId, winnerName: woModal.winnerName ?? "", woType: "PESO", woWeight: pesoInput })
                       setWoModal(null); setPesoStep(false); setPesoInput("")
                     } else {
-                      declararVencedor(woModal.bracketId, woModal.matchId, woModal.winnerId, true, "PESO", pesoInput)
+                      if (pendingDq?.matchId === woModal.matchId && pendingDq.woWeight && pesoInput) {
+                        const matchData = tatame?.brackets.flatMap(b => b.matches).find(m => m.id === woModal.matchId)
+                        if (matchData) {
+                          const firstLoserIsP1 = pendingDq.loserId === matchData.position1Id
+                          const ww1 = firstLoserIsP1 ? parseFloat(pendingDq.woWeight) : parseFloat(pesoInput)
+                          const ww2 = firstLoserIsP1 ? parseFloat(pesoInput) : parseFloat(pendingDq.woWeight)
+                          declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", undefined, undefined, ww1, ww2)
+                        } else {
+                          declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", pesoInput)
+                        }
+                      } else {
+                        declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", pesoInput)
+                      }
                     }
                   }}
                   disabled={actionLoading || !pesoInput}
