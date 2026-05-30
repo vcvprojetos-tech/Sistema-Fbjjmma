@@ -46,6 +46,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const tatameName = `${user.name} - Tatame ${tatameNum}`
+
+  // Busca o tatame do coordenador antecipadamente para excluí-lo da verificação de sessão ativa
+  const existingTatame = await prisma.tatame.findFirst({
+    where: { eventId: event.id, name: tatameName },
+  })
+
   // Verifica se o número do tatame já está sendo operado por outro coordenador
   const tatameOcupado = await prisma.tatame.findFirst({
     where: {
@@ -76,8 +83,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Verifica se este coordenador já está conectado em outro dispositivo
-  // Considera ativo apenas se houve heartbeat nos últimos 2 minutos
+  // Verifica se este coordenador já está conectado em OUTRO tatame em outro dispositivo.
+  // Reconexão ao mesmo tatame (ex: página recarregada ou fechada e reaberta) é sempre permitida.
   const heartbeatCutoff = new Date(Date.now() - 2 * 60 * 1000)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sessaoAtiva = await (prisma.tatameOperation as any).findFirst({
@@ -85,6 +92,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       endedAt: null,
       lastHeartbeat: { gte: heartbeatCutoff },
+      ...(existingTatame ? { tatameId: { not: existingTatame.id } } : {}),
     },
     include: { tatame: { select: { name: true } } },
   })
@@ -96,11 +104,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const tatameName = `${user.name} - Tatame ${tatameNum}`
-
-  let tatame = await prisma.tatame.findFirst({
-    where: { eventId: event.id, name: tatameName },
-  })
+  let tatame = existingTatame
 
   if (!tatame) {
     const pin = String(Math.floor(1000 + Math.random() * 9000))
