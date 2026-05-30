@@ -1788,7 +1788,7 @@ export default function TatamePage() {
               <>
                 <p className="text-white font-bold text-center text-lg">Peso do Atleta</p>
                 <p className="text-[#9ca3af] text-sm text-center">Informe o peso aferido (kg)</p>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center w-full">
                   <input
                     type="number"
                     step="0.1"
@@ -1796,7 +1796,7 @@ export default function TatamePage() {
                     placeholder="Ex: 77.3"
                     value={pesoInput}
                     onChange={e => setPesoInput(e.target.value)}
-                    className="flex-1 px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
+                    className="flex-1 min-w-0 px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
                     style={{ backgroundColor: "var(--card)", borderColor: pesoInput ? "#dc2626" : "var(--border)" }}
                     autoFocus
                   />
