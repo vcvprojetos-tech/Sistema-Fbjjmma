@@ -210,7 +210,7 @@ export default function TatamePage() {
   const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
   const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string; winnerName?: string; loserId?: string } | null>(null)
-  const [pendingDq, setPendingDq] = useState<{ matchId: string; bracketId: string; loserId: string; loserName: string; winnerPositionId: string; winnerName: string; woType: string; woWeight?: string; woReason?: string; woPhotoFile?: File } | null>(null)
+  const [pendingDq, setPendingDq] = useState<{ matchId: string; bracketId: string; loserId: string; loserName: string; winnerPositionId: string; winnerName: string; woType: string; woWeight?: string; woReason?: string; woPhotoUrl?: string } | null>(null)
   const [pesoPhoto, setPesoPhoto] = useState<File | null>(null)
   const [pesoPhotoPreview, setPesoPhotoPreview] = useState<string>("")
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -1336,11 +1336,10 @@ export default function TatamePage() {
                                 const canTap = isPendingDq ? (!actionLoading && !!p1?.id) : (bothPresent && !actionLoading && !!p1?.id)
                                 return (
                                   <button
-                                    onClick={async () => {
+                                    onClick={() => {
                                       if (!canTap) return
                                       if (isPendingDq) {
-                                        let photoUrl: string | null = null
-                                        if (pendingDq!.woPhotoFile) photoUrl = await uploadFoto(pendingDq!.woPhotoFile)
+                                        const photoUrl = pendingDq!.woPhotoUrl
                                         const loserIsP1 = pendingDq!.loserId === match.position1Id
                                         declararVencedor(match._bracketId, match.id, p1?.id ?? "", true, pendingDq!.woType, pendingDq!.woWeight, pendingDq!.woReason, undefined, undefined, loserIsP1 && photoUrl ? photoUrl : undefined, !loserIsP1 && photoUrl ? photoUrl : undefined)
                                       } else {
@@ -1397,11 +1396,10 @@ export default function TatamePage() {
                                 const canTap = isPendingDq ? (!actionLoading && !!p2?.id) : (bothPresent && !actionLoading && !!p2?.id)
                                 return (
                                   <button
-                                    onClick={async () => {
+                                    onClick={() => {
                                       if (!canTap) return
                                       if (isPendingDq) {
-                                        let photoUrl: string | null = null
-                                        if (pendingDq!.woPhotoFile) photoUrl = await uploadFoto(pendingDq!.woPhotoFile)
+                                        const photoUrl = pendingDq!.woPhotoUrl
                                         const loserIsP1 = pendingDq!.loserId === match.position1Id
                                         declararVencedor(match._bracketId, match.id, p2?.id ?? "", true, pendingDq!.woType, pendingDq!.woWeight, pendingDq!.woReason, undefined, undefined, loserIsP1 && photoUrl ? photoUrl : undefined, !loserIsP1 && photoUrl ? photoUrl : undefined)
                                       } else {
@@ -1843,7 +1841,12 @@ export default function TatamePage() {
                 <button
                   onClick={async () => {
                     if (woModal.winnerId) {
-                      setPendingDq({ matchId: woModal.matchId, bracketId: woModal.bracketId, loserId: woModal.loserId ?? "", loserName: woModal.loserName ?? "", winnerPositionId: woModal.winnerId, winnerName: woModal.winnerName ?? "", woType: "PESO", woWeight: pesoInput, woPhotoFile: pesoPhoto || undefined })
+                      let uploadedUrl: string | undefined
+                      if (pesoPhoto) {
+                        const url = await uploadFoto(pesoPhoto)
+                        if (url) uploadedUrl = url
+                      }
+                      setPendingDq({ matchId: woModal.matchId, bracketId: woModal.bracketId, loserId: woModal.loserId ?? "", loserName: woModal.loserName ?? "", winnerPositionId: woModal.winnerId, winnerName: woModal.winnerName ?? "", woType: "PESO", woWeight: pesoInput, woPhotoUrl: uploadedUrl })
                       setWoModal(null); setPesoStep(false); setPesoInput(""); setPesoPhoto(null); setPesoPhotoPreview("")
                     } else {
                       if (pendingDq?.matchId === woModal.matchId && pendingDq.woWeight && pesoInput) {
