@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams } from "next/navigation"
-import { RefreshCw, AlertCircle, ChevronRight, Trophy } from "lucide-react"
+import { RefreshCw, AlertCircle, ChevronRight, Trophy, Camera } from "lucide-react"
 import Link from "next/link"
 import BracketView from "@/components/admin/BracketView"
 import { ThemeLogo } from "@/components/ThemeLogo"
@@ -52,6 +52,8 @@ interface MatchData {
   woWeight1: number | null
   woWeight2: number | null
   woReason: string | null
+  pesoPhoto1: string | null
+  pesoPhoto2: string | null
   callTimes: CallTime[] | null
   p1CheckedIn: boolean
   p2CheckedIn: boolean
@@ -208,7 +210,10 @@ export default function TatamePage() {
   const [callError, setCallError] = useState<{ matchId: string; msg: string; remaining?: number } | null>(null)
   const [callMenu, setCallMenu] = useState<{ matchId: string; bracketId: string; winnerId: string; absenteeName: string; absentPosition: "p1" | "p2" | null } | null>(null)
   const [desclModal, setDesclModal] = useState<{ matchId: string; bracketId: string; winnerId: string; loserName: string; winnerName?: string; loserId?: string } | null>(null)
-  const [pendingDq, setPendingDq] = useState<{ matchId: string; bracketId: string; loserId: string; loserName: string; winnerPositionId: string; winnerName: string; woType: string; woWeight?: string; woReason?: string } | null>(null)
+  const [pendingDq, setPendingDq] = useState<{ matchId: string; bracketId: string; loserId: string; loserName: string; winnerPositionId: string; winnerName: string; woType: string; woWeight?: string; woReason?: string; woPhotoFile?: File } | null>(null)
+  const [pesoPhoto, setPesoPhoto] = useState<File | null>(null)
+  const [pesoPhotoPreview, setPesoPhotoPreview] = useState<string>("")
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [desclReason, setDesclReason] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [docModal, setDocModal] = useState<{ title: string; url: string } | null>(null)
@@ -475,14 +480,31 @@ export default function TatamePage() {
     }
   }, [load, getPin])
 
-  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string, woReason?: string, extraWoWeight1?: number, extraWoWeight2?: number) => {
+  const uploadFoto = useCallback(async (file: File): Promise<string | null> => {
+    const formData = new FormData()
+    formData.append("file", file)
+    try {
+      const res = await fetch("/api/coordenador/upload-foto", {
+        method: "POST",
+        headers: { "x-tatame-pin": getPin() },
+        body: formData,
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      return data.url ?? null
+    } catch {
+      return null
+    }
+  }, [getPin])
+
+  const declararVencedor = useCallback(async (bracketId: string, matchId: string, winnerId: string, isWO = false, woType?: string, woWeight?: string, woReason?: string, extraWoWeight1?: number, extraWoWeight2?: number, pesoPhoto1Url?: string, pesoPhoto2Url?: string) => {
     setActionLoading(true)
     setError("")
     try {
       const res = await fetch(`/api/coordenador/chave/${bracketId}/matches/${matchId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-tatame-pin": getPin() },
-        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null, woReason: woReason || null, ...(extraWoWeight1 != null && { woWeight1: extraWoWeight1 }), ...(extraWoWeight2 != null && { woWeight2: extraWoWeight2 }) }),
+        body: JSON.stringify({ winnerId, isWO, woType: woType || null, woWeight: woWeight ? parseFloat(woWeight) : null, woReason: woReason || null, ...(extraWoWeight1 != null && { woWeight1: extraWoWeight1 }), ...(extraWoWeight2 != null && { woWeight2: extraWoWeight2 }), ...(pesoPhoto1Url && { pesoPhoto1: pesoPhoto1Url }), ...(pesoPhoto2Url && { pesoPhoto2: pesoPhoto2Url }) }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error || "Erro ao registrar resultado.")
@@ -495,6 +517,8 @@ export default function TatamePage() {
       setPendingDq(null)
       setPesoStep(false)
       setPesoInput("")
+      setPesoPhoto(null)
+      setPesoPhotoPreview("")
     }
   }, [load, getPin])
 
@@ -1312,10 +1336,13 @@ export default function TatamePage() {
                                 const canTap = isPendingDq ? (!actionLoading && !!p1?.id) : (bothPresent && !actionLoading && !!p1?.id)
                                 return (
                                   <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                       if (!canTap) return
                                       if (isPendingDq) {
-                                        declararVencedor(match._bracketId, match.id, p1?.id ?? "", true, pendingDq!.woType, pendingDq!.woWeight, pendingDq!.woReason)
+                                        let photoUrl: string | null = null
+                                        if (pendingDq!.woPhotoFile) photoUrl = await uploadFoto(pendingDq!.woPhotoFile)
+                                        const loserIsP1 = pendingDq!.loserId === match.position1Id
+                                        declararVencedor(match._bracketId, match.id, p1?.id ?? "", true, pendingDq!.woType, pendingDq!.woWeight, pendingDq!.woReason, undefined, undefined, loserIsP1 && photoUrl ? photoUrl : undefined, !loserIsP1 && photoUrl ? photoUrl : undefined)
                                       } else {
                                         p1?.id && declararVencedor(match._bracketId, match.id, p1.id)
                                       }
@@ -1370,10 +1397,13 @@ export default function TatamePage() {
                                 const canTap = isPendingDq ? (!actionLoading && !!p2?.id) : (bothPresent && !actionLoading && !!p2?.id)
                                 return (
                                   <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                       if (!canTap) return
                                       if (isPendingDq) {
-                                        declararVencedor(match._bracketId, match.id, p2?.id ?? "", true, pendingDq!.woType, pendingDq!.woWeight, pendingDq!.woReason)
+                                        let photoUrl: string | null = null
+                                        if (pendingDq!.woPhotoFile) photoUrl = await uploadFoto(pendingDq!.woPhotoFile)
+                                        const loserIsP1 = pendingDq!.loserId === match.position1Id
+                                        declararVencedor(match._bracketId, match.id, p2?.id ?? "", true, pendingDq!.woType, pendingDq!.woWeight, pendingDq!.woReason, undefined, undefined, loserIsP1 && photoUrl ? photoUrl : undefined, !loserIsP1 && photoUrl ? photoUrl : undefined)
                                       } else {
                                         p2?.id && declararVencedor(match._bracketId, match.id, p2.id)
                                       }
@@ -1758,22 +1788,63 @@ export default function TatamePage() {
               <>
                 <p className="text-white font-bold text-center text-lg">Peso do Atleta</p>
                 <p className="text-[#9ca3af] text-sm text-center">Informe o peso aferido (kg)</p>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="Ex: 77.3"
+                    value={pesoInput}
+                    onChange={e => setPesoInput(e.target.value)}
+                    className="flex-1 px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
+                    style={{ backgroundColor: "var(--card)", borderColor: pesoInput ? "#dc2626" : "var(--border)" }}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-colors"
+                    style={{ backgroundColor: "var(--card)", borderColor: pesoPhotoPreview ? "#16a34a" : "var(--border)" }}
+                    title="Tirar foto da balança"
+                  >
+                    <Camera size={18} style={{ color: pesoPhotoPreview ? "#16a34a" : "#9ca3af" }} />
+                  </button>
+                </div>
+                {pesoPhotoPreview && (
+                  <div className="relative rounded-xl overflow-hidden">
+                    <img src={pesoPhotoPreview} alt="Foto balança" className="w-full h-28 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setPesoPhoto(null); setPesoPhotoPreview("") }}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                    >
+                      ×
+                    </button>
+                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1 text-xs text-white" style={{ backgroundColor: "rgba(22,163,74,0.8)" }}>
+                      Foto registrada
+                    </div>
+                  </div>
+                )}
                 <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  placeholder="Ex: 77.3"
-                  value={pesoInput}
-                  onChange={e => setPesoInput(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-white text-center text-xl font-bold border focus:outline-none"
-                  style={{ backgroundColor: "var(--card)", borderColor: pesoInput ? "#dc2626" : "var(--border)" }}
-                  autoFocus
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setPesoPhoto(file)
+                    setPesoPhotoPreview(URL.createObjectURL(file))
+                    e.target.value = ""
+                  }}
                 />
                 <button
                   onClick={() => {
                     if (woModal.winnerId) {
-                      setPendingDq({ matchId: woModal.matchId, bracketId: woModal.bracketId, loserId: woModal.loserId ?? "", loserName: woModal.loserName ?? "", winnerPositionId: woModal.winnerId, winnerName: woModal.winnerName ?? "", woType: "PESO", woWeight: pesoInput })
-                      setWoModal(null); setPesoStep(false); setPesoInput("")
+                      setPendingDq({ matchId: woModal.matchId, bracketId: woModal.bracketId, loserId: woModal.loserId ?? "", loserName: woModal.loserName ?? "", winnerPositionId: woModal.winnerId, winnerName: woModal.winnerName ?? "", woType: "PESO", woWeight: pesoInput, woPhotoFile: pesoPhoto || undefined })
+                      setWoModal(null); setPesoStep(false); setPesoInput(""); setPesoPhoto(null); setPesoPhotoPreview("")
                     } else {
                       if (pendingDq?.matchId === woModal.matchId && pendingDq.woWeight && pesoInput) {
                         const matchData = tatame?.brackets.flatMap(b => b.matches).find(m => m.id === woModal.matchId)
@@ -1781,13 +1852,20 @@ export default function TatamePage() {
                           const firstLoserIsP1 = pendingDq.loserId === matchData.position1Id
                           const ww1 = firstLoserIsP1 ? parseFloat(pendingDq.woWeight) : parseFloat(pesoInput)
                           const ww2 = firstLoserIsP1 ? parseFloat(pesoInput) : parseFloat(pendingDq.woWeight)
-                          declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", undefined, undefined, ww1, ww2)
+                          const [url1raw, url2raw] = await Promise.all([
+                            pendingDq.woPhotoFile ? uploadFoto(pendingDq.woPhotoFile) : Promise.resolve(null),
+                            pesoPhoto ? uploadFoto(pesoPhoto) : Promise.resolve(null),
+                          ])
+                          const photo1Url = (firstLoserIsP1 ? url1raw : url2raw) ?? undefined
+                          const photo2Url = (firstLoserIsP1 ? url2raw : url1raw) ?? undefined
+                          declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", undefined, undefined, ww1, ww2, photo1Url, photo2Url)
                         } else {
                           declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", pesoInput)
                         }
                       } else {
                         declararVencedor(woModal.bracketId, woModal.matchId, "", true, "PESO", pesoInput)
                       }
+                      setPesoPhoto(null); setPesoPhotoPreview("")
                     }
                   }}
                   disabled={actionLoading || !pesoInput}
@@ -1797,7 +1875,7 @@ export default function TatamePage() {
                   {actionLoading ? "Confirmando..." : "Confirmar Desclassificação"}
                 </button>
                 <button
-                  onClick={() => setPesoStep(false)}
+                  onClick={() => { setPesoStep(false); setPesoPhoto(null); setPesoPhotoPreview("") }}
                   className="w-full py-3 rounded-xl text-[#6b7280] text-sm"
                   style={{ backgroundColor: "var(--card)" }}
                 >

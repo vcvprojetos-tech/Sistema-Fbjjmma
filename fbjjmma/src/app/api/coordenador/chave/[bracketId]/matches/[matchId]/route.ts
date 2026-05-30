@@ -38,7 +38,7 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const { winnerId, isWO, woType, woWeight, woWeight1: woWeight1Body, woWeight2: woWeight2Body, woReason } = body
+    const { winnerId, isWO, woType, woWeight, woWeight1: woWeight1Body, woWeight2: woWeight2Body, woReason, pesoPhoto1, pesoPhoto2 } = body
 
     const [match, bracketRecord] = await Promise.all([
       prisma.match.findFirst({ where: { id: matchId, bracketId } }),
@@ -131,6 +131,8 @@ export async function PUT(
             woReason: woReason ?? null,
             ...(woWeight1Body != null && { woWeight1: Number(woWeight1Body) }),
             ...(woWeight2Body != null && { woWeight2: Number(woWeight2Body) }),
+            ...(pesoPhoto1 && { pesoPhoto1 }),
+            ...(pesoPhoto2 && { pesoPhoto2 }),
             endedAt: new Date(),
           },
         }),
@@ -168,6 +170,8 @@ export async function PUT(
         ...(woWeight != null && woType === "PESO" && {
           [winnerId === match.position1Id ? "woWeight2" : "woWeight1"]: Number(woWeight),
         }),
+        ...(pesoPhoto1 && { pesoPhoto1 }),
+        ...(pesoPhoto2 && { pesoPhoto2 }),
         endedAt: new Date(),
       },
     })

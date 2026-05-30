@@ -422,6 +422,8 @@ model Match {
   woWeight1   Float?
   woWeight2   Float?
   woReason    String?
+  pesoPhoto1  String?
+  pesoPhoto2  String?
   callTimes   Json?
   p1CheckedIn Boolean          @default(false)
   p2CheckedIn Boolean          @default(false)
