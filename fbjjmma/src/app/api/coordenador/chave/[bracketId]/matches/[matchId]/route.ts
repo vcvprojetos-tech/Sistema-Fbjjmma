@@ -99,6 +99,20 @@ export async function PUT(
               data: { bracketId, round: 3, matchNumber: 1, position1Id: r1Match.winnerId,
                       position2Id: match.position1Id, p1CheckedIn: true, p2CheckedIn: true },
             })
+          } else if (r1Match.isWO && !r1Match.winnerId) {
+            // R1 foi W.O. duplo: terceiro atleta é campeão (se presente) ou todos eliminados
+            if (!isWO) {
+              await matchAny3.create({
+                data: { bracketId, round: 3, matchNumber: 1, position1Id: match.position1Id, position2Id: null,
+                        winnerId: match.position1Id!, p1CheckedIn: true, endedAt: new Date() },
+              })
+              await finalizeBracket(bracketId)
+            } else {
+              if (match.position1Id) {
+                await prisma.bracketPosition.update({ where: { id: match.position1Id }, data: { isEliminated: true } })
+              }
+              await finalizeBracket(bracketId)
+            }
           } else {
             // R1 normal: repescagem — perdedor R1 vs atleta em espera
             await matchAny3.create({
@@ -145,6 +159,41 @@ export async function PUT(
           ? [prisma.bracketPosition.update({ where: { id: match.position2Id }, data: { isEliminated: true } })]
           : []),
       ])
+      // Chave de 3 atletas com W.O. duplo no R1: terceiro atleta é campeão automaticamente
+      const totalPositions3dwo = await prisma.bracketPosition.count({ where: { bracketId } })
+      if (totalPositions3dwo === 3 && match.round === 1) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const matchAny3dwo = prisma.match as any
+        const thirdPosition = await prisma.bracketPosition.findFirst({
+          where: {
+            bracketId,
+            id: { notIn: [match.position1Id, match.position2Id].filter(Boolean) as string[] },
+            isEliminated: false,
+          },
+        })
+        if (thirdPosition) {
+          // Se o solo de check-in do terceiro atleta ainda está pendente, resolve automaticamente
+          const pendingSolo = await prisma.match.findFirst({
+            where: { bracketId, round: 1, position2Id: null, endedAt: null },
+          })
+          if (pendingSolo) {
+            await matchAny3dwo.update({
+              where: { id: pendingSolo.id },
+              data: { winnerId: thirdPosition.id, isWO: false, endedAt: new Date() },
+            })
+          }
+          await matchAny3dwo.create({
+            data: {
+              bracketId, round: 3, matchNumber: 1,
+              position1Id: thirdPosition.id, position2Id: null,
+              winnerId: thirdPosition.id, p1CheckedIn: true, endedAt: new Date(),
+            },
+          })
+          await finalizeBracket(bracketId)
+          if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+          return NextResponse.json({ message: "Dupla ausência registrada." })
+        }
+      }
       const finished = await propagateBracket(bracketId)
       if (finished) {
         await finalizeBracket(bracketId)

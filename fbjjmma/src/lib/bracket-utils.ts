@@ -153,7 +153,9 @@ function getFinalMatch(matches: { round: number; matchNumber: number; position1I
   const real = matches.filter(m => m.position1Id !== null && m.position2Id !== null)
   if (real.length === 0) return null
   const maxRound = Math.max(...real.map(m => m.round))
-  return real.find(m => m.round === maxRound && m.matchNumber === 1) ?? null
+  return real.find(m => m.round === maxRound && m.matchNumber === 1)
+    ?? real.find(m => m.round === maxRound)
+    ?? null
 }
 
 /**
@@ -270,10 +272,10 @@ export async function resetBracketAwards(bracketId: string): Promise<void> {
     .map((p) => p.registrationId)
     .filter((id): id is string => !!id)
 
-  if (regIds.length > 0) {
-    await prisma.registration.updateMany({
-      where: { id: { in: regIds } },
-      data: { awarded: false, medal: null },
-    })
-  }
+  if (regIds.length === 0) return
+
+  await prisma.registration.updateMany({
+    where: { id: { in: regIds } },
+    data: { awarded: false, medal: null },
+  })
 }

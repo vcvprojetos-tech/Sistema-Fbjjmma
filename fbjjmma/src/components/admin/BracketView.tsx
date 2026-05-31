@@ -939,7 +939,8 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
     : null
   const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
   const finalMatch = allMatchesDone
-    ? realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1)
+    ? (realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1)
+       ?? realMatches.find(m => m.round === maxRealRound))
     : undefined
   const finalWinnerId = finalMatch?.winnerId ?? soloMatchWon?.winnerId ?? null
   const firstPlaceReg = finalWinnerId

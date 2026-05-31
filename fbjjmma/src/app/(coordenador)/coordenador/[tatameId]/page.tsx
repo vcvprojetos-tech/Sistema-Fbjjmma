@@ -677,7 +677,9 @@ export default function TatamePage() {
   // Partida final = maior rodada com dois atletas reais, matchNumber 1
   // Usa status da chave como gatilho (não allMatchesDone, que falha em chaves com slots BYE sem winnerId)
   const podiumFinalMatch = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumMaxRealRound > 0
-    ? podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.matchNumber === 1) ?? null
+    ? (podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.matchNumber === 1)
+       ?? podiumRealMatches.find(m => m.round === podiumMaxRealRound)
+       ?? null)
     : null
 
   // Chave de 1 atleta: a "partida final" é a partida solo (sem position2Id)
@@ -735,6 +737,7 @@ export default function TatamePage() {
       const subReal = sub.matches.filter(m => m.position1Id && m.position2Id)
       const subMax = subReal.length > 0 ? Math.max(...subReal.map(m => m.round)) : 0
       const subFinal = subReal.find(m => m.round === subMax && m.matchNumber === 1)
+        ?? subReal.find(m => m.round === subMax)
       if (!subFinal?.winnerId) continue
       const subChamp = sub.positions.find(p => p.id === subFinal.winnerId)
       if (subChamp?.registration?.id !== champRegId) continue
@@ -1603,6 +1606,7 @@ export default function TatamePage() {
                                 const bRealMatches = b.matches.filter(m => m.position1Id && m.position2Id)
                                 const bMaxRound = bRealMatches.length > 0 ? Math.max(...bRealMatches.map(m => m.round)) : 0
                                 const bFinal = bRealMatches.find(m => m.round === bMaxRound && m.matchNumber === 1)
+                                  ?? bRealMatches.find(m => m.round === bMaxRound)
                                 const bChamp = bFinal?.winnerId ? b.positions.find(p => p.id === bFinal.winnerId) : null
                                 return (
                                   <div key={b.id}>
