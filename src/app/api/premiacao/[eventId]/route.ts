@@ -77,7 +77,10 @@ export async function GET(
     const realMs = b.matches.filter((m: { position1Id: string | null; position2Id: string | null }) => m.position1Id && m.position2Id)
     if (realMs.length === 0) return false
     const maxRound = Math.max(...realMs.map((m: { round: number }) => m.round))
-    const finalM = realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.matchNumber === 1)
+    const finalM = realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+      ?? realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.winnerId)
+      ?? realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.matchNumber === 1)
+      ?? realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound)
     if (!finalM?.winnerId) return false
 
     // Coleta os IDs de posição que realmente têm colocação (mesmo critério do award route)

@@ -2583,7 +2583,10 @@ export default function EventoDetailPage() {
           let champPosId: string | null = null
           if (real.length > 0) {
             const maxR = Math.max(...real.map(m => m.round))
-            const final = real.find(m => m.round === maxR && m.matchNumber === 1)
+            const final = real.find(m => m.round === maxR && m.matchNumber === 1 && m.winnerId)
+              ?? real.find(m => m.round === maxR && m.winnerId)
+              ?? real.find(m => m.round === maxR && m.matchNumber === 1)
+              ?? real.find(m => m.round === maxR)
             champPosId = final?.winnerId ?? null
           } else {
             const solo = b.matches.find(m => m.position1Id && !m.position2Id && m.winnerId)

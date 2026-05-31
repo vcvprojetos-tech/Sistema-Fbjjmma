@@ -102,7 +102,10 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
     const realMatches = getRealMatches(matches)
     if (realMatches.length === 0) return []
     const maxRound = Math.max(...realMatches.map((m) => m.round))
-    const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+    const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+      ?? realMatches.find((m) => m.round === maxRound && m.winnerId)
+      ?? realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+      ?? realMatches.find((m) => m.round === maxRound)
     if (!finalMatch?.winnerId) return []
     const firstPos = positions.find((p) => p.id === finalMatch.winnerId)
     if (firstPos?.registration)
@@ -123,7 +126,10 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   if (realMatches.length === 0) return []
 
   const maxRound = Math.max(...realMatches.map((m) => m.round))
-  const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+  const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+    ?? realMatches.find((m) => m.round === maxRound && m.winnerId)
+    ?? realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+    ?? realMatches.find((m) => m.round === maxRound)
   if (!finalMatch || !finalMatch.winnerId) return []
 
   const placements: Placement[] = []
@@ -154,7 +160,10 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
       for (const sub of subBrackets) {
         const subReal = getRealMatches(sub.matches)
         const subMaxRound = subReal.length > 0 ? Math.max(...subReal.map((m) => m.round)) : 0
-        const subFinal = subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1)
+        const subFinal = subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1 && m.winnerId)
+          ?? subReal.find((m) => m.round === subMaxRound && m.winnerId)
+          ?? subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1)
+          ?? subReal.find((m) => m.round === subMaxRound)
         if (!subFinal?.winnerId) continue
         const subChamp = sub.positions.find((p) => p.id === subFinal.winnerId)
         if (subChamp?.registration?.id !== champRegId) continue

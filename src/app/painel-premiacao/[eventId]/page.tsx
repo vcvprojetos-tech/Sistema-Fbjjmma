@@ -119,7 +119,10 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
     const rm = getRealMatches(matches)
     if (rm.length === 0) return []
     const maxR = Math.max(...rm.map(m => m.round))
-    const fin = rm.find(m => m.round === maxR && m.matchNumber === 1)
+    const fin = rm.find(m => m.round === maxR && m.matchNumber === 1 && m.winnerId)
+      ?? rm.find(m => m.round === maxR && m.winnerId)
+      ?? rm.find(m => m.round === maxR && m.matchNumber === 1)
+      ?? rm.find(m => m.round === maxR)
     if (!fin?.winnerId) return []
     const fp = positions.find(p => p.id === fin.winnerId)
     if (fp?.registration)
@@ -139,7 +142,10 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
   if (realMatches.length === 0) return []
 
   const maxRound = Math.max(...realMatches.map(m => m.round))
-  const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+  const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+    ?? realMatches.find(m => m.round === maxRound && m.winnerId)
+    ?? realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+    ?? realMatches.find(m => m.round === maxRound)
   if (!finalMatch || !finalMatch.winnerId) return []
 
   const placements: Placement[] = []
@@ -160,7 +166,10 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
       for (const sub of subBrackets) {
         const subReal = getRealMatches(sub.matches)
         const subMaxRound = subReal.length > 0 ? Math.max(...subReal.map(m => m.round)) : 0
-        const subFinal = subReal.find(m => m.round === subMaxRound && m.matchNumber === 1)
+        const subFinal = subReal.find(m => m.round === subMaxRound && m.matchNumber === 1 && m.winnerId)
+          ?? subReal.find(m => m.round === subMaxRound && m.winnerId)
+          ?? subReal.find(m => m.round === subMaxRound && m.matchNumber === 1)
+          ?? subReal.find(m => m.round === subMaxRound)
         if (!subFinal?.winnerId) continue
         const subChamp = sub.positions.find(p => p.id === subFinal.winnerId)
         if (subChamp?.registration?.id !== champRegId) continue

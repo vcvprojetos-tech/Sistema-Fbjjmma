@@ -153,7 +153,11 @@ function getFinalMatch(matches: { round: number; matchNumber: number; position1I
   const real = matches.filter(m => m.position1Id !== null && m.position2Id !== null)
   if (real.length === 0) return null
   const maxRound = Math.max(...real.map(m => m.round))
-  return real.find(m => m.round === maxRound && m.matchNumber === 1) ?? null
+  return real.find(m => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+    ?? real.find(m => m.round === maxRound && m.winnerId)
+    ?? real.find(m => m.round === maxRound && m.matchNumber === 1)
+    ?? real.find(m => m.round === maxRound)
+    ?? null
 }
 
 /**

@@ -31,7 +31,10 @@ export async function PATCH(
 
     if (realMatches.length > 0) {
       const maxRound = Math.max(...realMatches.map(m => m.round))
-      const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+      const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+        ?? realMatches.find(m => m.round === maxRound && m.winnerId)
+        ?? realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+        ?? realMatches.find(m => m.round === maxRound)
       championPositionId = finalMatch?.winnerId ?? null
     } else {
       // Chave solo (1 atleta): partida com position2Id null

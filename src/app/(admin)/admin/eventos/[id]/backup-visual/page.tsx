@@ -92,7 +92,10 @@ function buildPrintHTML(data: BackupData): string {
       // Chave com 1 atleta: campeão é o único atleta
       champPos = soloMatch.winnerId ? posMap.get(soloMatch.winnerId) : undefined
     } else {
-      const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+      const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+        ?? realMatches.find(m => m.round === maxRound && m.winnerId)
+        ?? realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+        ?? realMatches.find(m => m.round === maxRound)
       champPos = finalMatch?.winnerId ? posMap.get(finalMatch.winnerId) : undefined
       const viceId = finalMatch ? (finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id) : null
       vicePos = viceId ? posMap.get(viceId) : undefined

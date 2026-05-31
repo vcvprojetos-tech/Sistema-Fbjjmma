@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import React, { useMemo } from "react"
+import React, { useMemo, useState } from "react"
 import { useTheme } from "next-themes"
 
 // Athlete cards (outer/first-round columns) — taller, wider for names
@@ -51,9 +51,11 @@ interface BMatch {
   woType?: string | null
   woWeight1?: number | null
   woWeight2?: number | null
+  woReason?: string | null
+  pesoPhoto1?: string | null
+  pesoPhoto2?: string | null
   endedAt?: string | null
   callTimes?: Array<{ call: number; at: string; pos?: "p1" | "p2" | null }> | null
-  woReason?: string | null
 }
 
 const BELT_LABELS: Record<string, string> = {
@@ -126,11 +128,12 @@ function fmtTime(iso: string): string {
 }
 
 function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<string, BPos> }) {
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null)
   const woMatches = matches.filter(m => m.isWO)
   if (woMatches.length === 0) return null
 
   // Expande cada partida W.O. em entradas individuais por atleta
-  const entries: { key: string; name: string; label: string; woType?: string | null; calls: Array<{ call: number; at: string }>; endedAt?: string | null }[] = []
+  const entries: { key: string; name: string; label: string; woType?: string | null; calls: Array<{ call: number; at: string }>; endedAt?: string | null; photo?: string | null }[] = []
   for (const m of woMatches) {
     const isSolo = m.position2Id === null
     const isDoubleWO = !isSolo && m.winnerId === null && !!m.position1Id && !!m.position2Id
@@ -144,8 +147,8 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       // Infere tipo por atleta: peso presente → PESO; outro lado tem peso mas este não → AUSENCIA; senão usa woType do match
       const p1WoType = m.woWeight1 != null ? "PESO" : (m.woWeight2 != null ? "AUSENCIA" : (m.woType ?? "AUSENCIA"))
       const p2WoType = m.woWeight2 != null ? "PESO" : (m.woWeight1 != null ? "AUSENCIA" : (m.woType ?? "AUSENCIA"))
-      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(p1WoType, m.woWeight1 ?? null, m.woReason), woType: p1WoType, calls: p1Calls, endedAt: m.endedAt })
-      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(p2WoType, m.woWeight2 ?? null, m.woReason), woType: p2WoType, calls: p2Calls, endedAt: m.endedAt })
+      if (reg1) entries.push({ key: `${m.id}-1`, name: getRegName(reg1), label: woLabel(p1WoType, m.woWeight1 ?? null, m.woReason), woType: p1WoType, calls: p1Calls, endedAt: m.endedAt, photo: m.pesoPhoto1 ?? null })
+      if (reg2) entries.push({ key: `${m.id}-2`, name: getRegName(reg2), label: woLabel(p2WoType, m.woWeight2 ?? null, m.woReason), woType: p2WoType, calls: p2Calls, endedAt: m.endedAt, photo: m.pesoPhoto2 ?? null })
     } else if (m.position1Id) {
       if (isSolo && m.winnerId !== null) continue
       const loserId = isSolo
@@ -155,7 +158,8 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
       const weight = (!isSolo && m.winnerId === m.position1Id) ? m.woWeight2 : m.woWeight1
       const loserPos = loserId === m.position1Id ? "p1" : "p2"
       const loserCalls = allCalls.filter(c => c.pos === loserPos || !c.pos)
-      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), woType: m.woType, calls: loserCalls, endedAt: m.endedAt })
+      const loserPhoto = loserId === m.position1Id ? m.pesoPhoto1 : m.pesoPhoto2
+      if (loserReg) entries.push({ key: m.id, name: getRegName(loserReg), label: woLabel(m.woType, weight ?? null, m.woReason), woType: m.woType, calls: loserCalls, endedAt: m.endedAt, photo: loserPhoto ?? null })
     }
   }
 
@@ -166,39 +170,58 @@ function WOHistory({ matches, posIdMap }: { matches: BMatch[]; posIdMap: Map<str
   const sectionTitle = allAbsent ? "W.O." : allDescl ? "Desclassificados" : "W.O. / Desclassificados"
 
   return (
-    <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
-      <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{sectionTitle}</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        {entries.map(e => {
-          const isAbsence = e.woType === "AUSENCIA" || !e.woType
-          const endLabel = isAbsence ? "W.O." : "Desc."
-          const endColor = isAbsence ? "#dc2626" : "#a855f7"
-          return (
-            <div key={e.key}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
-                <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600 }}>{e.name}</span>
-                <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
-              </div>
-              {(e.calls.length > 0 || e.endedAt) && (
-                <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
-                  {e.calls.sort((a, b) => a.call - b.call).map(c => (
-                    <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
-                      <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
-                    </span>
-                  ))}
-                  {e.endedAt && (
-                    <span style={{ fontSize: 8, color: "#9ca3af" }}>
-                      <span style={{ color: endColor, fontWeight: 700 }}>{endLabel}</span> {fmtTime(e.endedAt)}
-                    </span>
+    <>
+      {viewPhoto && (
+        <div
+          onClick={() => setViewPhoto(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "rgba(0,0,0,0.88)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}
+        >
+          <img src={viewPhoto} alt="Foto balança" style={{ maxWidth: "90vw", maxHeight: "90vh", borderRadius: 12, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" }} />
+        </div>
+      )}
+      <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", backgroundColor: "var(--card)" }}>
+        <p style={{ fontSize: 9, fontWeight: 700, color: "#f97316", margin: "0 0 5px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{sectionTitle}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {entries.map(e => {
+            const isAbsence = e.woType === "AUSENCIA" || !e.woType
+            const endLabel = isAbsence ? "W.O." : "Desc."
+            const endColor = isAbsence ? "#dc2626" : "#a855f7"
+            return (
+              <div key={e.key}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 9, color: "#f97316", fontWeight: 700 }}>▸</span>
+                  {e.photo ? (
+                    <button
+                      onClick={() => setViewPhoto(e.photo!)}
+                      style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 2 }}
+                    >
+                      {e.name}
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 9, color: "var(--foreground)", fontWeight: 600 }}>{e.name}</span>
                   )}
+                  <span style={{ fontSize: 9, color: "#6b7280" }}>— {e.label}</span>
                 </div>
-              )}
-            </div>
-          )
-        })}
+                {(e.calls.length > 0 || e.endedAt) && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 2, marginLeft: 14, flexWrap: "wrap" }}>
+                    {e.calls.sort((a, b) => a.call - b.call).map(c => (
+                      <span key={c.call} style={{ fontSize: 8, color: "#9ca3af" }}>
+                        <span style={{ color: "#f97316", fontWeight: 700 }}>{c.call}ª</span> {fmtTime(c.at)}
+                      </span>
+                    ))}
+                    {e.endedAt && (
+                      <span style={{ fontSize: 8, color: "#9ca3af" }}>
+                        <span style={{ color: endColor, fontWeight: 700 }}>{endLabel}</span> {fmtTime(e.endedAt)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -916,7 +939,10 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
     : null
   const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
   const finalMatch = allMatchesDone
-    ? realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1)
+    ? (realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1 && m.winnerId)
+       ?? realMatches.find(m => m.round === maxRealRound && m.winnerId)
+       ?? realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1)
+       ?? realMatches.find(m => m.round === maxRealRound))
     : undefined
   const finalWinnerId = finalMatch?.winnerId ?? soloMatchWon?.winnerId ?? null
   const firstPlaceReg = finalWinnerId
