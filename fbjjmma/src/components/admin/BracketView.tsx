@@ -939,7 +939,9 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
     : null
   const maxRealRound = realMatches.length > 0 ? Math.max(...realMatches.map(m => m.round)) : 0
   const finalMatch = allMatchesDone
-    ? (realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1)
+    ? (realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1 && m.winnerId)
+       ?? realMatches.find(m => m.round === maxRealRound && m.winnerId)
+       ?? realMatches.find(m => m.round === maxRealRound && m.matchNumber === 1)
        ?? realMatches.find(m => m.round === maxRealRound))
     : undefined
   const finalWinnerId = finalMatch?.winnerId ?? soloMatchWon?.winnerId ?? null
@@ -953,12 +955,22 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
     m.isWO && m.endedAt && m.winnerId !== loserPosId &&
     (m.position1Id === loserPosId || m.position2Id === loserPosId)
   ) : false
-  const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO && !loserWasWOd) ? loserPosId : null
+  // Final fantasma: outras partidas reais do mesmo round são W.O. duplos sem vencedor.
+  // Nesse caso o vencedor é campeão e o perdedor fica em 3° lugar (sem 2° lugar).
+  const hasDoubleWOAtFinalRound = finalMatch
+    ? realMatches.some(m => m.round === finalMatch.round && m.id !== finalMatch.id && m.isWO && !m.winnerId)
+    : false
+  const secondPosId = (finalMatch && finalWinnerId && !finalMatch.isWO && !loserWasWOd && !hasDoubleWOAtFinalRound) ? loserPosId : null
   const secondPlaceReg = secondPosId ? posIdMap.get(secondPosId)?.registration ?? null : null
 
-  // 3° lugar: perdedor da semifinal do campeão (ou do vice se o lado do campeão foi W.O.)
+  // 3° lugar: perdedor da semifinal do campeão — ou perdedor da "final fantasma"
   const thirdPlaceReg = (() => {
-    if (!finalMatch?.winnerId || maxRealRound < 2) return null
+    if (!finalMatch?.winnerId) return null
+    // Final fantasma: perdedor desta partida (perdeu pra campeã, sem 2° lugar) = 3°
+    if (hasDoubleWOAtFinalRound) {
+      return loserPosId && !finalMatch.isWO ? posIdMap.get(loserPosId)?.registration ?? null : null
+    }
+    if (maxRealRound < 2) return null
     const semiRound = maxRealRound - 1
     const champSemiAny = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
     // Sem semi real ou semi foi W.O. (inclusive se adversário W.O.'d em qualquer rodada) — sem 3° lugar
@@ -1028,14 +1040,17 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
       position: "absolute", left: centerX,
       top: finalCenterY + 3,
       width: CENTER_W, height: finalBoxH,
-      border: `1px solid ${secondPlaceReg ? "var(--bracket-silver-border)" : "var(--border)"}`,
-      backgroundColor: secondPlaceReg ? "var(--bracket-silver-bg)" : "var(--card)",
+      border: `1px solid ${hasDoubleWOAtFinalRound ? (thirdPlaceReg ? "var(--bracket-bronze-border)" : "var(--border)") : (secondPlaceReg ? "var(--bracket-silver-border)" : "var(--border)")}`,
+      backgroundColor: hasDoubleWOAtFinalRound ? (thirdPlaceReg ? "var(--bracket-bronze-bg)" : "var(--card)") : (secondPlaceReg ? "var(--bracket-silver-bg)" : "var(--card)"),
       borderRadius: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "1px 4px",
     }}>
-      <span style={{ fontSize: 7, color: "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>2° Lugar</span>
-      {secondPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>}
+      <span style={{ fontSize: 7, color: hasDoubleWOAtFinalRound ? "#cd7c2f" : "var(--muted-foreground)", fontWeight: 600, lineHeight: 1.2 }}>{hasDoubleWOAtFinalRound ? "3° Lugar" : "2° Lugar"}</span>
+      {hasDoubleWOAtFinalRound
+        ? (thirdPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(thirdPlaceReg)}</span>)
+        : (secondPlaceReg && <span style={{ fontSize: 7, color: "var(--bracket-final-name)", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{shortName(secondPlaceReg)}</span>)
+      }
     </div>,
-    ...((!allMatchesDone || thirdPlaceReg) ? [<div key="final-3" style={{
+    ...(!hasDoubleWOAtFinalRound && (!allMatchesDone || thirdPlaceReg) ? [<div key="final-3" style={{
       position: "absolute", left: centerX,
       top: finalCenterY + finalBoxH + 9,
       width: CENTER_W, height: finalBoxH,
@@ -1059,7 +1074,7 @@ function StandardBracketView({ bracket, onAthleteClick, onPositionCardClick }: {
     primeiro = winnerPos?.registration ?? null
 
     const loserId = finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id
-    if (loserId && !finalMatch.isWO && !loserWasWOd) segundo = posMap2.get(loserId)?.registration ?? null
+    if (loserId && !finalMatch.isWO && !loserWasWOd && !hasDoubleWOAtFinalRound) segundo = posMap2.get(loserId)?.registration ?? null
   } else if (soloMatchWon?.winnerId) {
     // Chave solo: único atleta confirmou presença e é o campeão
     primeiro = posMap2.get(soloMatchWon.winnerId)?.registration ?? null

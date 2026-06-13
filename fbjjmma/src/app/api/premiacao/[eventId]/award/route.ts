@@ -52,7 +52,9 @@ export async function PUT(
         const matches = bracket.matches
         const realMatches = matches.filter((m) => m.position1Id !== null && m.position2Id !== null)
         const maxRound = realMatches.length > 0 ? Math.max(...realMatches.map((m) => m.round)) : 0
-        const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+        const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+          ?? realMatches.find((m) => m.round === maxRound && m.winnerId)
+          ?? realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
           ?? realMatches.find((m) => m.round === maxRound)
 
         // Chave de 1 atleta: partida solo (position2Id = null)
@@ -80,10 +82,19 @@ export async function PUT(
             m.isWO && m.endedAt && m.winnerId !== secondId &&
             (m.position1Id === secondId || m.position2Id === secondId)
           ) : false
-          if (secondId && !finalMatch.isWO && !secondHadWO) placementIds.push(secondId)
+          // Final fantasma: outras partidas reais do mesmo round são W.O. duplos — sem 2° lugar
+          const hasDoubleWOAtFinalRound = realMatches.some((m) =>
+            m.round === finalMatch.round && m.id !== finalMatch.id && m.isWO && !m.winnerId
+          )
+          if (secondId && !finalMatch.isWO && !secondHadWO && !hasDoubleWOAtFinalRound) placementIds.push(secondId)
+
+          // Final fantasma: perdedor da única partida real = 3° lugar
+          if (hasDoubleWOAtFinalRound) {
+            if (secondId && !finalMatch.isWO) placementIds.push(secondId)
+          }
 
           // 3° lugar — depende se é grande final ou chave normal
-          if (bracketAny.isGrandFinal && bracketAny.bracketGroupId) {
+          else if (bracketAny.isGrandFinal && bracketAny.bracketGroupId) {
             // Grande final: 3° vem das sub-chaves (perdedor da semi do campeão de cada sub-chave)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const subBrackets = await (prisma.bracket as any).findMany({
@@ -96,7 +107,9 @@ export async function PUT(
             for (const sub of subBrackets) {
               const subReal = sub.matches.filter((m: { position1Id: string | null; position2Id: string | null }) => m.position1Id && m.position2Id)
               const subMax = subReal.length > 0 ? Math.max(...subReal.map((m: { round: number }) => m.round)) : 0
-              const subFinal = subReal.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === subMax && m.matchNumber === 1)
+              const subFinal = subReal.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === subMax && m.matchNumber === 1 && m.winnerId)
+                ?? subReal.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === subMax && m.winnerId)
+                ?? subReal.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === subMax && m.matchNumber === 1)
                 ?? subReal.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === subMax)
               if (!subFinal?.winnerId) continue
               const champSemi = subReal.find((m: { round: number; winnerId: string | null }) => m.round === subMax - 1 && m.winnerId === subFinal.winnerId)

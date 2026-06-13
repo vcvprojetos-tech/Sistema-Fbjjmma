@@ -102,7 +102,9 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
     const realMatches = getRealMatches(matches)
     if (realMatches.length === 0) return []
     const maxRound = Math.max(...realMatches.map((m) => m.round))
-    const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+    const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+      ?? realMatches.find((m) => m.round === maxRound && m.winnerId)
+      ?? realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
       ?? realMatches.find((m) => m.round === maxRound)
     if (!finalMatch?.winnerId) return []
     const firstPos = positions.find((p) => p.id === finalMatch.winnerId)
@@ -124,7 +126,9 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   if (realMatches.length === 0) return []
 
   const maxRound = Math.max(...realMatches.map((m) => m.round))
-  const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
+  const finalMatch = realMatches.find((m) => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+    ?? realMatches.find((m) => m.round === maxRound && m.winnerId)
+    ?? realMatches.find((m) => m.round === maxRound && m.matchNumber === 1)
     ?? realMatches.find((m) => m.round === maxRound)
   if (!finalMatch || !finalMatch.winnerId) return []
 
@@ -142,8 +146,19 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
     m.isWO && m.endedAt && m.winnerId !== secondPosId &&
     (m.position1Id === secondPosId || m.position2Id === secondPosId)
   ) : false
-  if (secondPos?.registration && !finalMatch.isWO && !secondHadWO)
+  // Final fantasma: outras partidas reais do mesmo round são W.O. duplos — sem 2° lugar
+  const hasDoubleWOAtFinalRound = realMatches.some(m =>
+    m.round === finalMatch.round && m.id !== finalMatch.id && m.isWO && !m.winnerId
+  )
+  if (secondPos?.registration && !finalMatch.isWO && !secondHadWO && !hasDoubleWOAtFinalRound)
     placements.push({ place: 2, positionId: secondPos.id, registration: secondPos.registration })
+
+  // Final fantasma: perdedor da única partida real = 3° lugar
+  if (hasDoubleWOAtFinalRound) {
+    if (!finalMatch.isWO && secondPos?.registration)
+      placements.push({ place: 3, positionId: secondPos.id, registration: secondPos.registration })
+    return placements
+  }
 
   // 3° lugar
   if (bracket.isGrandFinal && allBrackets && bracket.bracketGroupId) {
@@ -156,7 +171,9 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
       for (const sub of subBrackets) {
         const subReal = getRealMatches(sub.matches)
         const subMaxRound = subReal.length > 0 ? Math.max(...subReal.map((m) => m.round)) : 0
-        const subFinal = subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1)
+        const subFinal = subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1 && m.winnerId)
+          ?? subReal.find((m) => m.round === subMaxRound && m.winnerId)
+          ?? subReal.find((m) => m.round === subMaxRound && m.matchNumber === 1)
           ?? subReal.find((m) => m.round === subMaxRound)
         if (!subFinal?.winnerId) continue
         const subChamp = sub.positions.find((p) => p.id === subFinal.winnerId)

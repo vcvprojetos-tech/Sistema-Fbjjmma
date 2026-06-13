@@ -677,7 +677,9 @@ export default function TatamePage() {
   // Partida final = maior rodada com dois atletas reais, matchNumber 1
   // Usa status da chave como gatilho (não allMatchesDone, que falha em chaves com slots BYE sem winnerId)
   const podiumFinalMatch = (podiumBracket?.status === "FINALIZADA" || podiumBracket?.status === "PREMIADA") && podiumMaxRealRound > 0
-    ? (podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.matchNumber === 1)
+    ? (podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.matchNumber === 1 && m.winnerId)
+       ?? podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.winnerId)
+       ?? podiumRealMatches.find(m => m.round === podiumMaxRealRound && m.matchNumber === 1)
        ?? podiumRealMatches.find(m => m.round === podiumMaxRealRound)
        ?? null)
     : null
@@ -693,8 +695,13 @@ export default function TatamePage() {
           : null)
     : null
 
-  // 2° lugar: perdedor da final, usando objetos embutidos da partida
-  const runnerUp = podiumFinalMatch?.winnerId
+  // Final fantasma: outras partidas reais do mesmo round são W.O. duplos sem vencedor
+  const podiumHasDoubleWOAtFinalRound = podiumFinalMatch
+    ? podiumRealMatches.some(m => m.round === podiumFinalMatch.round && m.id !== podiumFinalMatch.id && m.isWO && !m.winnerId)
+    : false
+
+  // 2° lugar: perdedor da final — nulo em final fantasma (sem 2° lugar nesse caso)
+  const runnerUp = (!podiumHasDoubleWOAtFinalRound && podiumFinalMatch?.winnerId)
     ? (podiumFinalMatch.winnerId === podiumFinalMatch.position1Id
         ? podiumFinalMatch.position2
         : podiumFinalMatch.position1) ?? null
@@ -704,6 +711,13 @@ export default function TatamePage() {
   const thirdPlace: BracketPositionData | null = (() => {
     if (!podiumBracket || (podiumBracket.status !== "FINALIZADA" && podiumBracket.status !== "PREMIADA") || !podiumFinalMatch?.winnerId) return null
     if (!isGroup) {
+      // Final fantasma: perdedor da única partida real = 3° lugar
+      if (podiumHasDoubleWOAtFinalRound) {
+        const loserId = podiumFinalMatch.winnerId === podiumFinalMatch.position1Id
+          ? podiumFinalMatch.position2Id
+          : podiumFinalMatch.position1Id
+        return loserId ? podiumPosMap.get(loserId) ?? null : null
+      }
       // Chave simples: 3° = perdedor da semi do campeão
       if (podiumBracket.positions.length === 3) {
         const firstId = podiumFinalMatch.winnerId
@@ -736,7 +750,9 @@ export default function TatamePage() {
     for (const sub of subBrackets) {
       const subReal = sub.matches.filter(m => m.position1Id && m.position2Id)
       const subMax = subReal.length > 0 ? Math.max(...subReal.map(m => m.round)) : 0
-      const subFinal = subReal.find(m => m.round === subMax && m.matchNumber === 1)
+      const subFinal = subReal.find(m => m.round === subMax && m.matchNumber === 1 && m.winnerId)
+        ?? subReal.find(m => m.round === subMax && m.winnerId)
+        ?? subReal.find(m => m.round === subMax && m.matchNumber === 1)
         ?? subReal.find(m => m.round === subMax)
       if (!subFinal?.winnerId) continue
       const subChamp = sub.positions.find(p => p.id === subFinal.winnerId)
@@ -1605,7 +1621,9 @@ export default function TatamePage() {
                               {doneSubs.map(b => {
                                 const bRealMatches = b.matches.filter(m => m.position1Id && m.position2Id)
                                 const bMaxRound = bRealMatches.length > 0 ? Math.max(...bRealMatches.map(m => m.round)) : 0
-                                const bFinal = bRealMatches.find(m => m.round === bMaxRound && m.matchNumber === 1)
+                                const bFinal = bRealMatches.find(m => m.round === bMaxRound && m.matchNumber === 1 && m.winnerId)
+                                  ?? bRealMatches.find(m => m.round === bMaxRound && m.winnerId)
+                                  ?? bRealMatches.find(m => m.round === bMaxRound && m.matchNumber === 1)
                                   ?? bRealMatches.find(m => m.round === bMaxRound)
                                 const bChamp = bFinal?.winnerId ? b.positions.find(p => p.id === bFinal.winnerId) : null
                                 return (

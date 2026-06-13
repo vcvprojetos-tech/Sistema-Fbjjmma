@@ -77,7 +77,9 @@ export async function GET(
     const realMs = b.matches.filter((m: { position1Id: string | null; position2Id: string | null }) => m.position1Id && m.position2Id)
     if (realMs.length === 0) return false
     const maxRound = Math.max(...realMs.map((m: { round: number }) => m.round))
-    const finalM = realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.matchNumber === 1)
+    const finalM = realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+      ?? realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.winnerId)
+      ?? realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound && m.matchNumber === 1)
       ?? realMs.find((m: { round: number; matchNumber: number; winnerId: string | null }) => m.round === maxRound)
     if (!finalM?.winnerId) return false
 
@@ -88,9 +90,14 @@ export async function GET(
       m.isWO && m.endedAt && m.winnerId !== secondId &&
       (m.position1Id === secondId || m.position2Id === secondId)
     ) : false
-    if (secondId && !finalM.isWO && !secondHadWO) pIds.push(secondId)
+    // Final fantasma: outras partidas reais do mesmo round são W.O. duplos — sem 2° lugar, perdedor é 3°
+    const hasDoubleWOAtFinalRound = realMs.some((m: { round: number; id: string; isWO: boolean; winnerId: string | null }) =>
+      m.round === finalM.round && m.id !== finalM.id && m.isWO && !m.winnerId
+    )
+    if (secondId && !finalM.isWO && !secondHadWO && !hasDoubleWOAtFinalRound) pIds.push(secondId)
+    if (hasDoubleWOAtFinalRound && secondId && !finalM.isWO) pIds.push(secondId)
 
-    if (maxRound > 1) {
+    if (!hasDoubleWOAtFinalRound && maxRound > 1) {
       if (b.positions.length === 3) {
         const thirdPos = b.positions.find((p: { id: string }) => p.id !== finalM.winnerId && p.id !== secondId)
         if (thirdPos) {
