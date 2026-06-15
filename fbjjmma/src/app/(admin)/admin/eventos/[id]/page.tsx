@@ -1761,7 +1761,14 @@ export default function EventoDetailPage() {
                 Limpar Chaves
               </Button>
             )}
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const params = buildAtletasParams()
+                const qs = params.toString()
+                window.open(`/admin/eventos/${id}/exportar-chaves${qs ? `?${qs}` : ""}`, "_blank")
+              }}
+            >
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
@@ -2583,7 +2590,9 @@ export default function EventoDetailPage() {
           let champPosId: string | null = null
           if (real.length > 0) {
             const maxR = Math.max(...real.map(m => m.round))
-            const final = real.find(m => m.round === maxR && m.matchNumber === 1)
+            const final = real.find(m => m.round === maxR && m.matchNumber === 1 && m.winnerId)
+              ?? real.find(m => m.round === maxR && m.winnerId)
+              ?? real.find(m => m.round === maxR && m.matchNumber === 1)
               ?? real.find(m => m.round === maxR)
             champPosId = final?.winnerId ?? null
           } else {
