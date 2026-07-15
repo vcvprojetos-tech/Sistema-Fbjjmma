@@ -14,12 +14,17 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
   const module = searchParams.get("module") || undefined
+  const modulesRaw = searchParams.get("modules") || undefined
   const userId = searchParams.get("userId") || undefined
   const from = searchParams.get("from") ? new Date(searchParams.get("from")!) : undefined
   const to = searchParams.get("to") ? new Date(searchParams.get("to")!) : undefined
 
   const where: Record<string, unknown> = {}
-  if (module) where.module = module
+  if (module) {
+    where.module = module
+  } else if (modulesRaw) {
+    where.module = { in: modulesRaw.split(",").map(m => m.trim()).filter(Boolean) }
+  }
   if (userId) where.userId = userId
   if (from || to) {
     where.createdAt = {

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db"
 import { notifyTatame } from "@/lib/tatame-events"
 import { propagateBracket, resetBracketAwards, checkAndCreateGrandFinal } from "@/lib/bracket-utils"
 import { saveBackupFile } from "@/lib/event-backup"
+import { logAction, getClientIP } from "@/lib/audit"
 
 async function finalizeBracket(bracketId: string) {
   // Chave sem campeão (todos eliminados = W.O. duplo): pula a fila de premiação
@@ -46,6 +47,23 @@ export async function PUT(
     ])
     if (!match) return NextResponse.json({ error: "Partida não encontrada." }, { status: 404 })
     if (match.winnerId) return NextResponse.json({ error: "Partida já finalizada." }, { status: 400 })
+
+    let coordinatorUserId = session?.user?.id ?? null
+    if (!coordinatorUserId && bracketRecord?.tatameId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const op = await (prisma.tatameOperation as any).findFirst({
+        where: { tatameId: bracketRecord.tatameId, endedAt: null },
+        select: { userId: true },
+      })
+      coordinatorUserId = op?.userId ?? null
+    }
+    const logResult = (tipo: string) => logAction({
+      userId: coordinatorUserId,
+      module: "COORDENADOR",
+      action: "RESULTADO",
+      details: { bracketId, matchId, tipo },
+      ip: getClientIP(req),
+    })
 
     // Chave com 1 atleta: position2Id é null
     const isSoloMatch = match.position2Id === null
@@ -122,6 +140,7 @@ export async function PUT(
           }
         }
         if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+        await logResult(isWO ? "W.O." : "NORMAL")
         return NextResponse.json({ message: isWO ? "Atleta desclassificado." : "Campeão declarado." })
       }
       // Propaga: pode haver rodadas seguintes (ex: solo criado por W.O. duplo no meio da chave)
@@ -130,6 +149,7 @@ export async function PUT(
         await finalizeBracket(bracketId)
       }
       if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+      await logResult(isWO ? "W.O." : "NORMAL")
       return NextResponse.json({ message: isWO ? "Atleta desclassificado." : "Campeão declarado." })
     }
 
@@ -191,6 +211,7 @@ export async function PUT(
           })
           await finalizeBracket(bracketId)
           if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+          await logResult("DUPLO_WO")
           return NextResponse.json({ message: "Dupla ausência registrada." })
         }
       }
@@ -199,6 +220,7 @@ export async function PUT(
         await finalizeBracket(bracketId)
       }
       if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+      await logResult("DUPLO_WO")
       return NextResponse.json({ message: "Dupla ausência registrada." })
     }
 
@@ -322,6 +344,7 @@ export async function PUT(
         await finalizeBracket(bracketId)
       }
       if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+      await logResult(isWO ? "W.O." : "NORMAL")
       return NextResponse.json({ message: "Resultado registrado." })
     }
     // ── End 3-athlete special bracket ─────────────────────────────────────────
@@ -377,6 +400,7 @@ export async function PUT(
     }
 
     if (bracketRecord?.tatameId) notifyTatame(bracketRecord.tatameId)
+    await logResult(isWO ? "W.O." : "NORMAL")
     return NextResponse.json({ message: "Resultado registrado." })
   } catch (error) {
     console.error("[COORD MATCH PUT ERROR]", error)

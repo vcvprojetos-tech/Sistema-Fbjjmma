@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { auth } from "@/lib/auth"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
 
+  const session = await auth()
   const { eventId } = await params
 
   try {
@@ -18,6 +21,7 @@ export async function PUT(
     // Verify registration belongs to this event
     const registration = await prisma.registration.findFirst({
       where: { id: registrationId, eventId },
+      include: { athlete: { include: { user: { select: { name: true } } } } },
     })
     if (!registration) {
       return NextResponse.json({ error: "Inscrição não encontrada." }, { status: 404 })
@@ -174,6 +178,18 @@ export async function PUT(
         }
       }
     }
+
+    await logAction({
+      userId: session?.user?.id ?? null,
+      module: "PREMIACAO",
+      action: "PREMIAR",
+      details: {
+        atleta: registration.athlete?.user?.name ?? registration.guestName ?? registrationId,
+        medal: medal ?? null,
+        eventId,
+      },
+      ip: getClientIP(req),
+    })
 
     return NextResponse.json({ ok: true })
   } catch (error) {

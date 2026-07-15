@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
+import { logAction } from "@/lib/audit"
 
 export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
   providers: [
@@ -39,6 +40,13 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
 
         const isPasswordValid = await bcrypt.compare(password, resolvedUser.password)
         if (!isPasswordValid) return null
+
+        logAction({
+          userId: resolvedUser.id,
+          module: "SISTEMA",
+          action: "LOGIN",
+          details: { nome: resolvedUser.name, perfil: resolvedUser.role },
+        }).catch(() => {})
 
         return {
           id: resolvedUser.id,

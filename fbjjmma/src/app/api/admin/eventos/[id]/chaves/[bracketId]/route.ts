@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma, ensureBracketDeletedAt } from "@/lib/db"
 import { notifyTatame } from "@/lib/tatame-events"
 import { Pool } from "pg"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function GET(
   _req: NextRequest,
@@ -148,6 +149,14 @@ export async function PATCH(
 
     if (bracket.tatameId) notifyTatame(bracket.tatameId)
 
+    await logAction({
+      userId: session.user.id,
+      module: "CHAVES",
+      action: "REINICIAR",
+      details: { chave: bracket.bracketNumber, bracketId, eventId: id },
+      ip: getClientIP(_req),
+    })
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error("[BRACKET PATCH RESET ERROR]", error)
@@ -178,6 +187,14 @@ export async function DELETE(
     await pool.end()
 
     if (bracket.tatameId) notifyTatame(bracket.tatameId)
+
+    await logAction({
+      userId: session.user.id,
+      module: "CHAVES",
+      action: "EXCLUIR_CHAVE",
+      details: { chave: bracket.bracketNumber, bracketId, eventId: id },
+      ip: getClientIP(_req),
+    })
 
     return NextResponse.json({ ok: true })
   } catch (error) {

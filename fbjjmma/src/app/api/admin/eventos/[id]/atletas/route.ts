@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function GET(
   req: NextRequest,
@@ -140,6 +141,17 @@ export async function POST(
       },
     })
 
+    await logAction({
+      userId: session.user.id,
+      module: "ATLETAS",
+      action: "INSCREVER",
+      details: {
+        atleta: registration.athlete?.user?.name ?? registration.guestName ?? "Convidado",
+        evento: event.name,
+      },
+      ip: getClientIP(req),
+    })
+
     return NextResponse.json(registration, { status: 201 })
   } catch (error: unknown) {
     console.error("[EVENTO ATLETAS POST ERROR]", error)
@@ -168,6 +180,14 @@ export async function DELETE(
 
     // Delete all registrations for this event
     const { count } = await prisma.registration.deleteMany({ where: { eventId: id } })
+
+    await logAction({
+      userId: session.user.id,
+      module: "ATLETAS",
+      action: "EXCLUIR_TODOS",
+      details: { eventId: id, quantidade: count },
+      ip: getClientIP(_req),
+    })
 
     return NextResponse.json({ message: `${count} inscrição(ões) removida(s).`, count })
   } catch (error: unknown) {

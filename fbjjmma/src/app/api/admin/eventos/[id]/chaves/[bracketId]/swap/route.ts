@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function POST(
   req: NextRequest,
@@ -48,6 +49,14 @@ export async function POST(
       prisma.bracketPosition.update({ where: { id: toPosId }, data: { position: posA.position } }),
       prisma.bracketPosition.update({ where: { id: fromPosId }, data: { position: posB.position } }),
     ])
+
+    await logAction({
+      userId: session.user.id,
+      module: "CHAVES",
+      action: "TROCAR_POSICAO",
+      details: { bracketId, eventId: id },
+      ip: getClientIP(req),
+    })
 
     return NextResponse.json({ ok: true })
   } catch (error) {

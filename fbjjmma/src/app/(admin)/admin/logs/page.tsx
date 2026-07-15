@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { ScrollText, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
+import { ScrollText, ChevronLeft, ChevronRight, RefreshCw, ShieldCheck, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface LogEntry {
@@ -17,23 +17,47 @@ interface LogEntry {
   user: { name: string; role: string } | null
 }
 
-const MODULE_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  USUARIOS:     { label: "Usuários",    bg: "#1e3a5f30", text: "#60a5fa" },
-  EVENTOS:      { label: "Eventos",     bg: "#14532d30", text: "#4ade80" },
-  CHAVES:       { label: "Chaves",      bg: "#92400e30", text: "#fbbf24" },
-  COORDENADOR:  { label: "Coordenador", bg: "#4c1d9530", text: "#c084fc" },
+type Tab = "admin" | "coord"
+
+const ADMIN_MODULES: Record<string, { label: string; bg: string; text: string }> = {
+  USUARIOS:  { label: "Usuários",   bg: "#1e3a5f30", text: "#60a5fa" },
+  EVENTOS:   { label: "Eventos",    bg: "#14532d30", text: "#4ade80" },
+  CHAVES:    { label: "Chaves",     bg: "#92400e30", text: "#fbbf24" },
+  ATLETAS:   { label: "Atletas",    bg: "#1e3a5f30", text: "#a78bfa" },
+  SISTEMA:   { label: "Sistema",    bg: "#1f2937",   text: "#9ca3af" },
 }
 
+const COORD_MODULES: Record<string, { label: string; bg: string; text: string }> = {
+  COORDENADOR: { label: "Coordenador", bg: "#4c1d9530", text: "#c084fc" },
+  PREMIACAO:   { label: "Premiação",   bg: "#7f1d1d30", text: "#f87171" },
+}
+
+const ADMIN_MODULE_KEYS = Object.keys(ADMIN_MODULES)
+const COORD_MODULE_KEYS = Object.keys(COORD_MODULES)
+
+const ALL_MODULE_CONFIG = { ...ADMIN_MODULES, ...COORD_MODULES }
+
 const ACTION_LABELS: Record<string, string> = {
-  CRIAR:              "Criou",
-  EDITAR:             "Editou",
-  EXCLUIR:            "Excluiu",
-  EXCLUIR_PERMANENTE: "Excluiu permanentemente",
-  RESTAURAR:          "Restaurou",
-  GERAR:              "Gerou chaves",
-  LIMPAR:             "Limpou chaves",
-  REINICIAR:          "Reiniciou chave",
-  ACESSO_TATAME:      "Acessou tatame",
+  LOGIN:               "Entrou no sistema",
+  CRIAR:               "Criou",
+  EDITAR:              "Editou",
+  EXCLUIR:             "Excluiu",
+  EXCLUIR_PERMANENTE:  "Excluiu permanentemente",
+  RESTAURAR:           "Restaurou",
+  GERAR:               "Gerou chaves",
+  LIMPAR:              "Limpou chaves",
+  REINICIAR:           "Reiniciou chave",
+  EXCLUIR_CHAVE:       "Excluiu chave",
+  TROCAR_POSICAO:      "Trocou posição na chave",
+  INSCREVER:           "Inscreveu atleta",
+  CANCELAR_INSCRICAO:  "Cancelou inscrição",
+  EDITAR_INSCRICAO:    "Editou inscrição",
+  EXCLUIR_TODOS:       "Excluiu todos os atletas",
+  IMPORTAR_EXCEL:      "Importou planilha Excel",
+  EDITAR_ATLETA:       "Editou dados do atleta",
+  ACESSO_TATAME:       "Acessou tatame",
+  RESULTADO:           "Registrou resultado",
+  PREMIAR:             "Premiou atleta",
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -51,21 +75,21 @@ const DATE_RANGES = [
 
 function formatDetails(details: Record<string, unknown> | null): string {
   if (!details) return ""
+  const labels: Record<string, string> = {
+    nome: "Nome", perfil: "Perfil", id: "ID", evento: "Evento",
+    eventId: "Evento ID", quantidade: "Qtd", tatame: "Tatame",
+    atleta: "Atleta", importados: "Importados", erros: "Erros",
+    chave: "Chave nº", bracketId: "Chave ID", matchId: "Partida",
+    tipo: "Tipo", medal: "Medalha",
+  }
   return Object.entries(details)
     .filter(([, v]) => v !== null && v !== undefined && v !== "")
-    .map(([k, v]) => {
-      const labels: Record<string, string> = {
-        nome: "Nome", perfil: "Perfil", id: "ID", evento: "Evento",
-        eventId: "Evento ID", quantidade: "Qtd", tatame: "Tatame",
-      }
-      return `${labels[k] ?? k}: ${v}`
-    })
+    .map(([k, v]) => `${labels[k] ?? k}: ${v}`)
     .join(" · ")
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleString("pt-BR", {
+  return new Date(iso).toLocaleString("pt-BR", {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit", second: "2-digit",
   })
@@ -75,26 +99,31 @@ export default function LogsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
+  const [tab, setTab] = useState<Tab>("admin")
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
-
   const [filterModule, setFilterModule] = useState("")
   const [filterDays, setFilterDays] = useState<number>(-1)
 
   useEffect(() => {
     if (status === "loading") return
-    if (session?.user?.role !== "PRESIDENTE") {
-      router.replace("/admin")
-    }
+    if (session?.user?.role !== "PRESIDENTE") router.replace("/admin")
   }, [session, status, router])
 
   const load = useCallback(async (p: number) => {
     setLoading(true)
     const params = new URLSearchParams({ page: String(p) })
-    if (filterModule) params.set("module", filterModule)
+
+    if (filterModule) {
+      params.set("module", filterModule)
+    } else {
+      const moduleKeys = tab === "admin" ? ADMIN_MODULE_KEYS : COORD_MODULE_KEYS
+      params.set("modules", moduleKeys.join(","))
+    }
+
     if (filterDays >= 0) {
       const from = new Date()
       from.setDate(from.getDate() - filterDays)
@@ -113,9 +142,15 @@ export default function LogsPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterModule, filterDays])
+  }, [filterModule, filterDays, tab])
 
   useEffect(() => { load(1) }, [load])
+
+  function switchTab(t: Tab) {
+    setTab(t)
+    setFilterModule("")
+    setPage(1)
+  }
 
   function changePage(p: number) {
     if (p < 1 || p > pages) return
@@ -123,6 +158,8 @@ export default function LogsPage() {
   }
 
   if (status === "loading") return null
+
+  const currentModules = tab === "admin" ? ADMIN_MODULES : COORD_MODULES
 
   return (
     <div className="p-6 space-y-5">
@@ -137,11 +174,37 @@ export default function LogsPage() {
         </div>
       </div>
 
+      {/* Abas */}
+      <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ backgroundColor: "var(--card-alt)" }}>
+        <button
+          onClick={() => switchTab("admin")}
+          className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          style={{
+            backgroundColor: tab === "admin" ? "#dc2626" : "transparent",
+            color: tab === "admin" ? "#fff" : "var(--muted-foreground)",
+          }}
+        >
+          <ShieldCheck className="h-4 w-4" />
+          Administração
+        </button>
+        <button
+          onClick={() => switchTab("coord")}
+          className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          style={{
+            backgroundColor: tab === "coord" ? "#dc2626" : "transparent",
+            color: tab === "coord" ? "#fff" : "var(--muted-foreground)",
+          }}
+        >
+          <Users className="h-4 w-4" />
+          Coordenadores de Tatame
+        </button>
+      </div>
+
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Módulo */}
         <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: "var(--card-alt)" }}>
-          {[{ label: "Todos", value: "" }, ...Object.entries(MODULE_CONFIG).map(([k, v]) => ({ label: v.label, value: k }))].map((opt) => (
+          {[{ label: "Todos", value: "" }, ...Object.entries(currentModules).map(([k, v]) => ({ label: v.label, value: k }))].map((opt) => (
             <button
               key={opt.value}
               onClick={() => { setFilterModule(opt.value); setPage(1) }}
@@ -216,7 +279,7 @@ export default function LogsPage() {
                   </td>
                 </tr>
               ) : logs.map((log) => {
-                const mod = MODULE_CONFIG[log.module]
+                const mod = ALL_MODULE_CONFIG[log.module]
                 const actionLabel = ACTION_LABELS[log.action] ?? log.action
                 const details = formatDetails(log.details)
                 return (

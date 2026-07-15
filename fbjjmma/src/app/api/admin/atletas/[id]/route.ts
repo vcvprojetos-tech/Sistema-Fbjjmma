@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function GET(
   req: NextRequest,
@@ -110,6 +111,14 @@ export async function PUT(
         },
       }),
     ])
+
+    await logAction({
+      userId: session.user.id,
+      module: "ATLETAS",
+      action: "EDITAR_ATLETA",
+      details: { atleta: updatedAthlete.user?.name ?? name ?? id },
+      ip: getClientIP(req),
+    })
 
     return NextResponse.json(updatedAthlete)
   } catch (error) {

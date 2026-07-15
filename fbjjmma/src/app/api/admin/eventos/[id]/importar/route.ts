@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import * as XLSX from "xlsx"
 import { Belt, Sex, AgeGroup } from "@prisma/client"
+import { logAction, getClientIP } from "@/lib/audit"
 
 const BELT_MAP: Record<string, Belt> = {
   "BRANCA": "BRANCA",
@@ -179,6 +180,14 @@ export async function POST(
   const importados = results.filter((r) => r.status === "ok").length
   const ignorados = results.filter((r) => r.status === "ignorado")
   const erros = results.filter((r) => r.status === "erro")
+
+  await logAction({
+    userId: session.user.id,
+    module: "ATLETAS",
+    action: "IMPORTAR_EXCEL",
+    details: { evento: event.name, importados, erros: erros.length },
+    ip: getClientIP(req),
+  })
 
   return NextResponse.json({ total: rows.length, importados, ignorados, erros })
 }
