@@ -43,6 +43,7 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
 
         const req = request as Request
         const ip = req?.headers?.get?.("x-forwarded-for") ?? req?.headers?.get?.("x-real-ip") ?? null
+        const userAgent = req?.headers?.get?.("user-agent") ?? null
 
         logAction({
           userId: resolvedUser.id,
@@ -58,7 +59,7 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
 
         try {
           const sessionRecord = await (prisma as any).userSession.create({
-            data: { sessionToken, userId: resolvedUser.id, ip },
+            data: { sessionToken, userId: resolvedUser.id, ip, userAgent },
           })
           sessionId = sessionRecord.id
         } catch {

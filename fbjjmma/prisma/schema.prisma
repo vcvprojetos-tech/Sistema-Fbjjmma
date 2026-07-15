@@ -46,6 +46,7 @@ model UserSession {
   userId        String
   sessionToken  String    @unique
   ip            String?
+  userAgent     String?
   createdAt     DateTime  @default(now())
   invalidatedAt DateTime?
 

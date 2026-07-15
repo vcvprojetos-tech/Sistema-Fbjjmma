@@ -18,6 +18,7 @@ type AdminSession = {
   userId: string
   user: { id: string; name: string; role: string }
   ip: string | null
+  userAgent: string | null
   createdAt: string
   isCurrentSession: boolean
 }
@@ -28,6 +29,43 @@ const ROLE_LABELS: Record<string, string> = {
   COORDENADOR_TATAME: "Coord. Tatame",
   ATLETA: "Atleta",
   CUSTOM: "Personalizado",
+}
+
+function parseUserAgent(ua: string | null): string {
+  if (!ua) return "Dispositivo desconhecido"
+  let os = ""
+  if (/Windows NT 10|Windows NT 11/.test(ua)) os = "Windows 10/11"
+  else if (/Windows NT 6\.3/.test(ua)) os = "Windows 8.1"
+  else if (/Windows NT 6\.1/.test(ua)) os = "Windows 7"
+  else if (/Windows/.test(ua)) os = "Windows"
+  else if (/iPhone/.test(ua)) {
+    const m = ua.match(/iPhone OS ([\d_]+)/)
+    os = m ? `iPhone iOS ${m[1].replace(/_/g, ".")}` : "iPhone"
+  } else if (/iPad/.test(ua)) os = "iPad"
+  else if (/Android/.test(ua)) {
+    const m = ua.match(/Android ([\d.]+)/)
+    os = m ? `Android ${m[1]}` : "Android"
+  } else if (/Macintosh|Mac OS X/.test(ua)) os = "macOS"
+  else if (/Linux/.test(ua)) os = "Linux"
+
+  let browser = ""
+  if (/Edg\//.test(ua)) {
+    const m = ua.match(/Edg\/([\d]+)/)
+    browser = m ? `Edge ${m[1]}` : "Edge"
+  } else if (/OPR\//.test(ua)) {
+    const m = ua.match(/OPR\/([\d]+)/)
+    browser = m ? `Opera ${m[1]}` : "Opera"
+  } else if (/Chrome\/([\d]+)/.test(ua) && !/Chromium/.test(ua)) {
+    const m = ua.match(/Chrome\/([\d]+)/)
+    browser = m ? `Chrome ${m[1]}` : "Chrome"
+  } else if (/Firefox\/([\d]+)/.test(ua)) {
+    const m = ua.match(/Firefox\/([\d]+)/)
+    browser = m ? `Firefox ${m[1]}` : "Firefox"
+  } else if (/Safari\//.test(ua)) {
+    browser = "Safari"
+  }
+
+  return [os, browser].filter(Boolean).join(" · ") || "Dispositivo desconhecido"
 }
 
 function tempoRelativo(dateStr: string) {
@@ -344,10 +382,14 @@ export default function SessoesPage() {
                               {ROLE_LABELS[s.user.role] ?? s.user.role}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 mt-0.5">
+                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                             <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
                               <Clock size={10} />
                               {dataHora(s.createdAt)} · {tempoRelativo(s.createdAt)}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
+                              <Monitor size={10} />
+                              {parseUserAgent(s.userAgent)}
                             </span>
                             {s.ip && (
                               <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
