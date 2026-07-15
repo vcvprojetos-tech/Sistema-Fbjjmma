@@ -43,6 +43,7 @@ jobs:
             echo "ALTER TABLE tatames ADD COLUMN IF NOT EXISTS \"panelUpdatedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
             echo "ALTER TABLE users ADD COLUMN IF NOT EXISTS \"deletedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
             echo "ALTER TABLE users ADD COLUMN IF NOT EXISTS \"permissions\" TEXT[] NOT NULL DEFAULT '{}';" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE users ADD COLUMN IF NOT EXISTS \"forceLogoutAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
             echo "CREATE TABLE IF NOT EXISTS \"audit_logs\" (\"id\" TEXT NOT NULL, \"userId\" TEXT, \"module\" TEXT NOT NULL, \"action\" TEXT NOT NULL, \"details\" JSONB, \"ip\" TEXT, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"audit_logs_pkey\" PRIMARY KEY (\"id\"));" >> /tmp/fbjjmma_migrate.sql
             su postgres -c "psql -d '$DB_NAME' -f /tmp/fbjjmma_migrate.sql" || echo "Migration SQL falhou, continuando..."
             echo "==> Migrations SQL concluídas"

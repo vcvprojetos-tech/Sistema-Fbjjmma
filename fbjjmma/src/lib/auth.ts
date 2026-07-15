@@ -48,6 +48,9 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
           details: { nome: resolvedUser.name, perfil: resolvedUser.role },
         }).catch(() => {})
 
+        // Limpa qualquer force-logout anterior ao fazer novo login
+        prisma.user.update({ where: { id: resolvedUser.id }, data: { forceLogoutAt: null } }).catch(() => {})
+
         return {
           id: resolvedUser.id,
           name: resolvedUser.name,
@@ -68,6 +71,18 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
         token.name = user.name
         token.cpf = (user as { cpf?: string }).cpf
         token.role = (user as { role?: string }).role
+      } else if (
+        token.id &&
+        ["PRESIDENTE", "COORDENADOR_GERAL", "COORDENADOR_TATAME"].includes(token.role as string)
+      ) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { isActive: true, forceLogoutAt: true },
+        })
+        if (!dbUser || !dbUser.isActive) return null
+        if (dbUser.forceLogoutAt && (token.iat as number) * 1000 < dbUser.forceLogoutAt.getTime()) {
+          return null
+        }
       }
       return token
     },

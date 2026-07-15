@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Lock,
   ScrollText,
+  MonitorSmartphone,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog, permission: null, presidenteOnly: false },
   { href: "/admin/permissoes", label: "Permissões", icon: Lock, permission: null, presidenteOnly: true },
   { href: "/admin/logs", label: "Logs", icon: ScrollText, permission: null, presidenteOnly: true },
+  { href: "/admin/sessoes", label: "Sessões", icon: MonitorSmartphone, permission: null, presidenteOnly: true },
 ]
 
 function hasEventPermission(perms: string[]): boolean {
@@ -43,6 +45,7 @@ const ROUTE_PERMISSION_MAP: Record<string, string | "PRESIDENTE_ONLY" | "EVENTO_
   "/admin/usuarios": "USUARIOS_CRIAR",
   "/admin/permissoes": "PRESIDENTE_ONLY",
   "/admin/logs": "PRESIDENTE_ONLY",
+  "/admin/sessoes": "PRESIDENTE_ONLY",
 }
 
 const ROLE_LABELS: Record<string, string> = {

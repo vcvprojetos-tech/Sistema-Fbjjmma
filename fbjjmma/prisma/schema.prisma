@@ -28,6 +28,7 @@ model User {
   customRoleId  String?
   customRole    CustomRole? @relation(fields: [customRoleId], references: [id])
   isActive      Boolean    @default(true)
+  forceLogoutAt DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
