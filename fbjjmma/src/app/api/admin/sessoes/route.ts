@@ -29,47 +29,49 @@ export async function GET(_req: NextRequest) {
     : []
   const tatameMap = Object.fromEntries(tatames.map((t) => [t.id, t]))
 
-  // Logins recentes dos últimos 30 dias (sessões administrativas)
-  const recentLogins = await prisma.auditLog.findMany({
+  // Todos os usuários admin/coordenador ativos
+  const adminUsers = await prisma.user.findMany({
     where: {
-      action: "LOGIN",
-      module: "SISTEMA",
-      createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+      isActive: true,
+      role: { in: ["PRESIDENTE", "COORDENADOR_GERAL", "COORDENADOR_TATAME", "CUSTOM"] },
     },
-    include: {
-      user: { select: { id: true, name: true, role: true, forceLogoutAt: true } },
-    },
-    orderBy: { createdAt: "desc" },
+    select: { id: true, name: true, role: true, forceLogoutAt: true },
+    orderBy: { name: "asc" },
   })
 
-  // Deduplica por userId (mais recente por usuário)
-  const seenUsers = new Set<string>()
-  const adminSessions: {
-    id: string
-    userId: string | null
-    user: { id: string; name: string; role: string } | null
-    ip: string | null
-    loginAt: Date
-    encerrada: boolean
-  }[] = []
-
-  for (const log of recentLogins) {
-    const uid = log.userId ?? "__guest"
-    if (!seenUsers.has(uid)) {
-      seenUsers.add(uid)
-      const u = log.user as { id: string; name: string; role: string; forceLogoutAt: Date | null } | null
-      adminSessions.push({
-        id: log.id,
-        userId: log.userId,
-        user: u ? { id: u.id, name: u.name, role: u.role } : null,
-        ip: log.ip,
-        loginAt: log.createdAt,
-        encerrada: u?.forceLogoutAt
-          ? u.forceLogoutAt.getTime() > new Date(log.createdAt).getTime()
-          : false,
+  // Último login de cada um nos audit logs (pode não existir se logou antes do sistema de logs)
+  const adminUserIds = adminUsers.map((u) => u.id)
+  const lastLoginLogs = adminUserIds.length > 0
+    ? await prisma.auditLog.findMany({
+        where: { action: "LOGIN", module: "SISTEMA", userId: { in: adminUserIds } },
+        select: { userId: true, createdAt: true, ip: true },
+        orderBy: { createdAt: "desc" },
       })
+    : []
+
+  // Map userId → login mais recente
+  const lastLoginMap = new Map<string, { createdAt: Date; ip: string | null }>()
+  for (const log of lastLoginLogs) {
+    if (log.userId && !lastLoginMap.has(log.userId)) {
+      lastLoginMap.set(log.userId, { createdAt: log.createdAt, ip: log.ip })
     }
   }
+
+  const adminSessions = adminUsers.map((u) => {
+    const lastLogin = lastLoginMap.get(u.id) ?? null
+    const encerrada = u.forceLogoutAt
+      ? lastLogin
+        ? u.forceLogoutAt.getTime() > lastLogin.createdAt.getTime()
+        : true
+      : false
+    return {
+      userId: u.id,
+      user: { id: u.id, name: u.name, role: u.role },
+      ip: lastLogin?.ip ?? null,
+      loginAt: lastLogin?.createdAt ?? null,
+      encerrada,
+    }
+  })
 
   return NextResponse.json(
     {

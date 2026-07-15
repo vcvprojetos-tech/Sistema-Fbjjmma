@@ -14,11 +14,10 @@ type TatameSession = {
 }
 
 type AdminSession = {
-  id: string
-  userId: string | null
-  user: { id: string; name: string; role: string } | null
+  userId: string
+  user: { id: string; name: string; role: string }
   ip: string | null
-  loginAt: string
+  loginAt: string | null
   encerrada: boolean
 }
 
@@ -110,6 +109,7 @@ export default function SessoesPage() {
 
   const totalAtivos = tatameSessions.filter((s) => s.ativo).length +
     adminSessions.filter((s) => !s.encerrada).length
+
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -299,7 +299,7 @@ export default function SessoesPage() {
                 className="rounded-lg border px-4 py-8 text-center text-sm"
                 style={{ borderColor: "var(--border)", color: "var(--muted)" }}
               >
-                Nenhum login administrativo nas últimas 8 horas.
+                Nenhum usuário administrativo encontrado.
               </div>
             ) : (
               <div className="space-y-2">
@@ -310,7 +310,7 @@ export default function SessoesPage() {
 
                   return (
                     <div
-                      key={s.id}
+                      key={s.userId}
                       className="flex items-center justify-between rounded-lg border px-4 py-3"
                       style={{
                         borderColor: "var(--border)",
@@ -323,12 +323,12 @@ export default function SessoesPage() {
                           className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
                           style={{ backgroundColor: isMe ? "#2563eb" : "#dc2626", color: "#fff" }}
                         >
-                          {s.user?.name?.charAt(0).toUpperCase() ?? "?"}
+                          {s.user.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm" style={{ color: "var(--foreground)" }}>
-                              {s.user?.name ?? "Usuário desconhecido"}
+                              {s.user.name}
                             </span>
                             {isMe && (
                               <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
@@ -339,7 +339,7 @@ export default function SessoesPage() {
                               className="text-xs px-1.5 py-0.5 rounded"
                               style={{ backgroundColor: "var(--card-alt)", color: "var(--muted)" }}
                             >
-                              {ROLE_LABELS[s.user?.role ?? ""] ?? s.user?.role}
+                              {ROLE_LABELS[s.user.role] ?? s.user.role}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
@@ -348,9 +348,15 @@ export default function SessoesPage() {
                               style={{ backgroundColor: statusColor }}
                             />
                             <span className="text-xs" style={{ color: statusColor }}>{statusLabel}</span>
-                            <span className="text-xs" style={{ color: "var(--muted)" }}>
-                              · Login em {dataHora(s.loginAt)}
-                            </span>
+                            {s.loginAt ? (
+                              <span className="text-xs" style={{ color: "var(--muted)" }}>
+                                · Último login: {dataHora(s.loginAt)}
+                              </span>
+                            ) : (
+                              <span className="text-xs" style={{ color: "var(--muted)" }}>
+                                · Último login: desconhecido
+                              </span>
+                            )}
                             {s.ip && (
                               <span className="text-xs" style={{ color: "var(--muted)" }}>
                                 · IP: {s.ip}
@@ -359,9 +365,9 @@ export default function SessoesPage() {
                           </div>
                         </div>
                       </div>
-                      {!isMe && !s.encerrada && s.userId && (
+                      {!isMe && !s.encerrada && (
                         <button
-                          onClick={() => encerrar("usuario", s.userId!)}
+                          onClick={() => encerrar("usuario", s.userId)}
                           disabled={encerrando === s.userId}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors hover:border-red-400 hover:text-red-500"
                           style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
