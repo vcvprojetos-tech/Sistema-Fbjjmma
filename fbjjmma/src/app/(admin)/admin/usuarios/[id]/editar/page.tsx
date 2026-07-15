@@ -22,11 +22,11 @@ export default function EditarUsuarioPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
-  const [cpf, setCpf] = useState("")
 
   const [form, setForm] = useState({
     name: "",
     email: "",
+    cpf: "",
     phone: "",
     role: "COORDENADOR_GERAL",
     isActive: true,
@@ -37,10 +37,10 @@ export default function EditarUsuarioPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.id) {
-          setCpf(data.cpf)
           setForm({
             name: data.name || "",
             email: data.email || "",
+            cpf: data.cpf || "",
             phone: data.phone || "",
             role: data.role || "COORDENADOR_GERAL",
             isActive: data.isActive ?? true,
@@ -61,10 +61,12 @@ export default function EditarUsuarioPage() {
     return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
   }
 
-  function maskCPF(raw: string) {
-    const d = raw.replace(/\D/g, "")
-    if (d.length !== 11) return raw
-    return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`
+  function formatCPF(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 11)
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0,3)}.${digits.slice(3)}`
+    if (digits.length <= 9) return `${digits.slice(0,3)}.${digits.slice(3,6)}.${digits.slice(6)}`
+    return `${digits.slice(0,3)}.${digits.slice(3,6)}.${digits.slice(6,9)}-${digits.slice(9)}`
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -77,6 +79,7 @@ export default function EditarUsuarioPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          cpf: form.cpf.replace(/\D/g, "") || undefined,
           phone: form.phone.replace(/\D/g, "") || null,
         }),
       })
@@ -127,11 +130,12 @@ export default function EditarUsuarioPage() {
         </div>
 
         <div className="space-y-2">
-          <Label>CPF (não editável)</Label>
+          <Label htmlFor="cpf">CPF</Label>
           <Input
-            value={maskCPF(cpf)}
-            disabled
-            className="opacity-50 cursor-not-allowed"
+            id="cpf"
+            value={formatCPF(form.cpf)}
+            onChange={(e) => set("cpf", e.target.value)}
+            placeholder="000.000.000-00"
           />
         </div>
 

@@ -47,7 +47,7 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const { name, email, phone, role, isActive } = body
+    const { name, email, phone, role, isActive, cpf } = body
 
     const user = await prisma.user.findUnique({ where: { id } })
     if (!user) {
@@ -66,6 +66,18 @@ export async function PUT(
       }
     }
 
+    if (cpf && cpf !== user.cpf) {
+      const existingCpf = await prisma.user.findFirst({
+        where: { cpf, id: { not: id } },
+      })
+      if (existingCpf) {
+        return NextResponse.json(
+          { error: "CPF já em uso por outro usuário." },
+          { status: 400 }
+        )
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id },
       data: {
@@ -74,6 +86,7 @@ export async function PUT(
         phone: phone !== undefined ? phone || null : undefined,
         role: role || undefined,
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
+        cpf: cpf || undefined,
       },
       select: {
         id: true,
