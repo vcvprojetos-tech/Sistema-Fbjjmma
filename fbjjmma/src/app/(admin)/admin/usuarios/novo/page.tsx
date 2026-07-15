@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,9 +17,12 @@ import {
 import Link from "next/link"
 
 export default function NovoUsuarioPage() {
+  const { data: session } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const isCoordGeral = session?.user?.role === "COORDENADOR_GERAL"
 
   const [form, setForm] = useState({
     name: "",
@@ -48,18 +52,20 @@ export default function NovoUsuarioPage() {
     return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
   }
 
-  const isCoordenadorTatame = form.role === "COORDENADOR_TATAME"
+  const isCoordenadorTatame = isCoordGeral || form.role === "COORDENADOR_TATAME"
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
+
+    const effectiveRole = isCoordGeral ? "COORDENADOR_TATAME" : form.role
 
     if (!form.name.trim() || !form.cpf) {
       setError("Nome e CPF são obrigatórios.")
       return
     }
 
-    if (!isCoordenadorTatame && (!form.email || !form.password)) {
+    if (effectiveRole !== "COORDENADOR_TATAME" && (!form.email || !form.password)) {
       setError("Nome, CPF, e-mail e senha são obrigatórios.")
       return
     }
@@ -71,6 +77,7 @@ export default function NovoUsuarioPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          role: effectiveRole,
           cpf: form.cpf.replace(/\D/g, ""),
           phone: form.phone.replace(/\D/g, "") || null,
         }),
@@ -178,16 +185,22 @@ export default function NovoUsuarioPage() {
 
         <div className="space-y-2">
           <Label>Perfil *</Label>
-          <Select value={form.role} onValueChange={(v) => set("role", v)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="PRESIDENTE">Presidente</SelectItem>
-              <SelectItem value="COORDENADOR_GERAL">Coordenador Geral</SelectItem>
-              <SelectItem value="COORDENADOR_TATAME">Coordenador de Tatame</SelectItem>
-            </SelectContent>
-          </Select>
+          {isCoordGeral ? (
+            <div className="flex items-center h-10 px-3 rounded-md border text-sm" style={{ borderColor: "var(--border)", color: "var(--muted-foreground)", backgroundColor: "var(--card-alt)" }}>
+              Coordenador de Tatame
+            </div>
+          ) : (
+            <Select value={form.role} onValueChange={(v) => set("role", v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PRESIDENTE">Presidente</SelectItem>
+                <SelectItem value="COORDENADOR_GERAL">Coordenador Geral</SelectItem>
+                <SelectItem value="COORDENADOR_TATAME">Coordenador de Tatame</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {error && <p className="text-sm text-[#dc2626]">{error}</p>}

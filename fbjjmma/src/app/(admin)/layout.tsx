@@ -21,20 +21,24 @@ import { ThemeLogo } from "@/components/ThemeLogo"
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, permission: null, presidenteOnly: false },
-  { href: "/admin/eventos", label: "Eventos", icon: CalendarDays, permission: "EVENTOS", presidenteOnly: false },
+  { href: "/admin/eventos", label: "Eventos", icon: CalendarDays, permission: null, presidenteOnly: false },
   { href: "/admin/atletas", label: "Atletas", icon: Users, permission: "ATLETAS", presidenteOnly: false },
   { href: "/admin/equipes", label: "Equipes", icon: Shield, permission: "EQUIPES", presidenteOnly: false },
   { href: "/admin/tabelas-peso", label: "Tabelas de Peso", icon: Weight, permission: "TABELAS_PESO", presidenteOnly: false },
-  { href: "/admin/usuarios", label: "Usuários", icon: UserCog, permission: null, presidenteOnly: true },
+  { href: "/admin/usuarios", label: "Usuários", icon: UserCog, permission: null, presidenteOnly: false },
   { href: "/admin/permissoes", label: "Permissões", icon: Lock, permission: null, presidenteOnly: true },
 ]
 
-const ROUTE_PERMISSION_MAP: Record<string, string | "PRESIDENTE_ONLY"> = {
-  "/admin/eventos": "EVENTOS",
+function hasEventPermission(perms: string[]): boolean {
+  return perms.some((p) => p.startsWith("EVENTOS_") || p.startsWith("EVENTO_"))
+}
+
+const ROUTE_PERMISSION_MAP: Record<string, string | "PRESIDENTE_ONLY" | "EVENTO_ANY" | "USUARIOS_CRIAR"> = {
+  "/admin/eventos": "EVENTO_ANY",
   "/admin/atletas": "ATLETAS",
   "/admin/equipes": "EQUIPES",
   "/admin/tabelas-peso": "TABELAS_PESO",
-  "/admin/usuarios": "PRESIDENTE_ONLY",
+  "/admin/usuarios": "USUARIOS_CRIAR",
   "/admin/permissoes": "PRESIDENTE_ONLY",
 }
 
@@ -80,7 +84,19 @@ export default function AdminLayout({
     )
     if (!base) return
     const required = ROUTE_PERMISSION_MAP[base]
-    if (required === "PRESIDENTE_ONLY" || !userPermissions.includes(required)) {
+
+    let allowed = false
+    if (required === "PRESIDENTE_ONLY") {
+      allowed = false
+    } else if (required === "EVENTO_ANY") {
+      allowed = hasEventPermission(userPermissions)
+    } else if (required === "USUARIOS_CRIAR") {
+      allowed = userPermissions.includes("USUARIOS_CRIAR_COORDENADOR_TATAME")
+    } else {
+      allowed = userPermissions.includes(required)
+    }
+
+    if (!allowed) {
       router.replace("/admin")
     }
   }, [pathname, userPermissions, session, router])
@@ -130,8 +146,16 @@ export default function AdminLayout({
             const role = session?.user?.role
             if (role === "PRESIDENTE") return true
             if (item.presidenteOnly) return false
+
+            if (item.href === "/admin/eventos") {
+              return hasEventPermission(userPermissions ?? [])
+            }
+            if (item.href === "/admin/usuarios") {
+              return (userPermissions ?? []).includes("USUARIOS_CRIAR_COORDENADOR_TATAME")
+            }
+
             if (!item.permission) return true
-            return userPermissions?.includes(item.permission) ?? false
+            return (userPermissions ?? []).includes(item.permission)
           }).map((item) => {
             const Icon = item.icon
             const active = isActive(item.href, item.exact)

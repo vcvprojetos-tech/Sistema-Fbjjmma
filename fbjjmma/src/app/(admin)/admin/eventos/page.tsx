@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Plus, Search, Pencil, Trash2, RotateCcw, Image as ImageIcon, Eye } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -44,6 +45,26 @@ interface Event {
 }
 
 export default function EventosPage() {
+  const { data: session } = useSession()
+  const [userPermissions, setUserPermissions] = useState<string[] | null>(null)
+
+  useEffect(() => {
+    if (session?.user?.role === "COORDENADOR_GERAL") {
+      fetch("/api/admin/me")
+        .then((r) => r.json())
+        .then((data) => setUserPermissions(data.permissions ?? []))
+        .catch(() => setUserPermissions([]))
+    } else {
+      setUserPermissions([])
+    }
+  }, [session])
+
+  function can(permission: string): boolean {
+    if (session?.user?.role === "PRESIDENTE") return true
+    if (userPermissions === null) return false
+    return userPermissions.includes(permission)
+  }
+
   const [tab, setTab] = useState<"ativos" | "lixeira">("ativos")
   const [search, setSearch] = useState("")
   const [events, setEvents] = useState<Event[]>([])
@@ -97,12 +118,14 @@ export default function EventosPage() {
           <p className="admin-page-title">Eventos</p>
           <p className="admin-page-subtitle">Gerencie os eventos da federação</p>
         </div>
-        <Link href="/admin/eventos/novo">
-          <button className="admin-btn admin-btn-primary">
-            <Plus className="h-3.5 w-3.5" />
-            Novo Evento
-          </button>
-        </Link>
+        {can("EVENTOS_CRIAR") && (
+          <Link href="/admin/eventos/novo">
+            <button className="admin-btn admin-btn-primary">
+              <Plus className="h-3.5 w-3.5" />
+              Novo Evento
+            </button>
+          </Link>
+        )}
       </div>
 
       {/* Tabs */}
@@ -223,14 +246,18 @@ export default function EventosPage() {
                                   <Eye size={14} color="#6366f1" />
                                 </button>
                               </Link>
-                              <Link href={`/admin/eventos/${event.id}/editar`}>
-                                <button style={iconBtnStyle} title="Editar">
-                                  <Pencil size={14} color="#3b82f6" />
+                              {can("EVENTOS_EDITAR") && (
+                                <Link href={`/admin/eventos/${event.id}/editar`}>
+                                  <button style={iconBtnStyle} title="Editar">
+                                    <Pencil size={14} color="#3b82f6" />
+                                  </button>
+                                </Link>
+                              )}
+                              {can("EVENTOS_EXCLUIR") && (
+                                <button style={iconBtnStyle} onClick={() => handleDelete(event.id)} title="Excluir">
+                                  <Trash2 size={14} color="#dc2626" />
                                 </button>
-                              </Link>
-                              <button style={iconBtnStyle} onClick={() => handleDelete(event.id)} title="Excluir">
-                                <Trash2 size={14} color="#dc2626" />
-                              </button>
+                              )}
                             </>
                           ) : (
                             <button style={iconBtnStyle} title="Restaurar">

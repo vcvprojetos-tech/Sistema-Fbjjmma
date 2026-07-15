@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { Plus, Pencil, Trash2, UserCheck, UserX, RotateCcw, Flame } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +41,8 @@ function maskCPF(cpf: string): string {
 }
 
 export default function UsuariosPage() {
+  const { data: session } = useSession()
+  const isCoordGeral = session?.user?.role === "COORDENADOR_GERAL"
   const [tab, setTab] = useState<"ativos" | "excluidos">("ativos")
   const [users, setUsers] = useState<User[]>([])
   const [deletedUsers, setDeletedUsers] = useState<User[]>([])
@@ -97,7 +100,10 @@ export default function UsuariosPage() {
     loadUsers()
   }
 
-  const currentList = tab === "ativos" ? users : deletedUsers
+  const rawList = tab === "ativos" ? users : deletedUsers
+  const currentList = isCoordGeral
+    ? rawList.filter((u) => u.role === "COORDENADOR_TATAME" || u.id === session?.user?.id)
+    : rawList
 
   return (
     <div className="p-6 space-y-6">
@@ -116,39 +122,41 @@ export default function UsuariosPage() {
         </Link>
       </div>
 
-      {/* Abas */}
-      <div className="flex gap-1 border-b" style={{ borderColor: "var(--border)" }}>
-        <button
-          onClick={() => setTab("ativos")}
-          className="px-4 py-2 text-sm font-medium transition-colors"
-          style={{
-            color: tab === "ativos" ? "#dc2626" : "var(--muted)",
-            borderBottom: tab === "ativos" ? "2px solid #dc2626" : "2px solid transparent",
-          }}
-        >
-          Usuários
-          {users.length > 0 && (
-            <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--card-alt)", color: "var(--muted)" }}>
-              {users.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setTab("excluidos")}
-          className="px-4 py-2 text-sm font-medium transition-colors"
-          style={{
-            color: tab === "excluidos" ? "#dc2626" : "var(--muted)",
-            borderBottom: tab === "excluidos" ? "2px solid #dc2626" : "2px solid transparent",
-          }}
-        >
-          Lixeira
-          {deletedUsers.length > 0 && (
-            <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#dc262620", color: "#dc2626" }}>
-              {deletedUsers.length}
-            </span>
-          )}
-        </button>
-      </div>
+      {/* Abas — Lixeira oculta para Coord Geral */}
+      {!isCoordGeral && (
+        <div className="flex gap-1 border-b" style={{ borderColor: "var(--border)" }}>
+          <button
+            onClick={() => setTab("ativos")}
+            className="px-4 py-2 text-sm font-medium transition-colors"
+            style={{
+              color: tab === "ativos" ? "#dc2626" : "var(--muted)",
+              borderBottom: tab === "ativos" ? "2px solid #dc2626" : "2px solid transparent",
+            }}
+          >
+            Usuários
+            {users.length > 0 && (
+              <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--card-alt)", color: "var(--muted)" }}>
+                {users.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setTab("excluidos")}
+            className="px-4 py-2 text-sm font-medium transition-colors"
+            style={{
+              color: tab === "excluidos" ? "#dc2626" : "var(--muted)",
+              borderBottom: tab === "excluidos" ? "2px solid #dc2626" : "2px solid transparent",
+            }}
+          >
+            Lixeira
+            {deletedUsers.length > 0 && (
+              <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#dc262620", color: "#dc2626" }}>
+                {deletedUsers.length}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       <div
         className="rounded-lg border overflow-hidden"
@@ -225,7 +233,16 @@ export default function UsuariosPage() {
                       )}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
-                          {tab === "ativos" ? (
+                          {isCoordGeral ? (
+                            /* Coord Geral só pode editar a própria conta */
+                            user.id === session?.user?.id ? (
+                              <Link href={`/admin/usuarios/${user.id}/editar`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Alterar minha senha">
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              </Link>
+                            ) : null
+                          ) : tab === "ativos" ? (
                             <>
                               <Button
                                 variant="ghost"

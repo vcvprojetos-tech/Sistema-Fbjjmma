@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import { useSession } from "next-auth/react"
 import { useTheme } from "next-themes"
 import { useParams } from "next/navigation"
 import { ArrowLeft, Search, Plus, Download, Pencil, Trash2, RotateCcw, ChevronLeft } from "lucide-react"
@@ -328,6 +329,8 @@ export default function EventoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme !== "light"
+  const { data: session } = useSession()
+  const [userPermissions, setUserPermissions] = useState<string[] | null>(null)
   const [tab, setTab] = useState<Tab>("evento")
   const [event, setEvent] = useState<Event | null>(null)
   const [eventLoading, setEventLoading] = useState(true)
@@ -376,6 +379,23 @@ export default function EventoDetailPage() {
     allPositions: Array<{ id: string; position: number; name: string }>
   } | null>(null)
   const [swapSaving, setSwapSaving] = useState(false)
+
+  useEffect(() => {
+    if (session?.user?.role === "COORDENADOR_GERAL") {
+      fetch("/api/admin/me")
+        .then((r) => r.json())
+        .then((data) => setUserPermissions(data.permissions ?? []))
+        .catch(() => setUserPermissions([]))
+    } else {
+      setUserPermissions([])
+    }
+  }, [session])
+
+  function can(permission: string): boolean {
+    if (session?.user?.role === "PRESIDENTE") return true
+    if (userPermissions === null) return false
+    return userPermissions.includes(permission)
+  }
 
   // PIX do campeão (edição pelo admin)
   const [pixAdminModal, setPixAdminModal] = useState<{
@@ -1409,39 +1429,47 @@ export default function EventoDetailPage() {
               }}>
                 Limpar Filtros
               </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
+              {can("EVENTO_ATLETAS_EXPORTAR") && (
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              )}
             </div>
-            <Button onClick={() => setInscreverOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Inscrever
-            </Button>
-            <Button variant="outline" onClick={() => { setImportOpen(true); setImportResult(null) }}>
-              <Download className="h-4 w-4 mr-2" />
-              Importar Excel
-            </Button>
-            <Button
-              variant="outline"
-              style={{ borderColor: "#dc2626", color: "#dc2626" }}
-              onClick={async () => {
-                if (!confirm("Tem certeza que deseja excluir TODOS os atletas deste evento? As chaves geradas também serão removidas. Esta ação não pode ser desfeita.")) return
-                try {
-                  const res = await fetch(`/api/admin/eventos/${id}/atletas`, { method: "DELETE" })
-                  const data = await res.json()
-                  if (!res.ok) alert(data.error || "Erro ao excluir atletas.")
-                  else {
-                    setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
-                    setFilterResetKey(k => k + 1)
+            {can("EVENTO_ATLETAS_INSCREVER") && (
+              <Button onClick={() => setInscreverOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Inscrever
+              </Button>
+            )}
+            {can("EVENTO_ATLETAS_IMPORTAR") && (
+              <Button variant="outline" onClick={() => { setImportOpen(true); setImportResult(null) }}>
+                <Download className="h-4 w-4 mr-2" />
+                Importar Excel
+              </Button>
+            )}
+            {can("EVENTO_ATLETAS_EXCLUIR_TODOS") && (
+              <Button
+                variant="outline"
+                style={{ borderColor: "#dc2626", color: "#dc2626" }}
+                onClick={async () => {
+                  if (!confirm("Tem certeza que deseja excluir TODOS os atletas deste evento? As chaves geradas também serão removidas. Esta ação não pode ser desfeita.")) return
+                  try {
+                    const res = await fetch(`/api/admin/eventos/${id}/atletas`, { method: "DELETE" })
+                    const data = await res.json()
+                    if (!res.ok) alert(data.error || "Erro ao excluir atletas.")
+                    else {
+                      setAtletasApplied({ nome: "", sexo: "", categoria: "", faixa: "", pesoId: "", equipeId: "", qtdAtletas: "" })
+                      setFilterResetKey(k => k + 1)
+                    }
+                  } catch {
+                    alert("Erro ao excluir atletas.")
                   }
-                } catch {
-                  alert("Erro ao excluir atletas.")
-                }
-              }}
-            >
-              Excluir Todos
-            </Button>
+                }}
+              >
+                Excluir Todos
+              </Button>
+            )}
             {inscreverOpen && (
               <InscricaoAdminModal
                 eventId={id}
@@ -1747,11 +1775,13 @@ export default function EventoDetailPage() {
             <Button variant="outline" onClick={() => setFilterResetKey(k => k + 1)}>
               Limpar Filtros
             </Button>
-            <Button onClick={gerarChaves} disabled={chavesGenerating}>
-              <Plus className="h-4 w-4 mr-2" />
-              {chavesGenerating ? "Gerando..." : "Gerar Chaves"}
-            </Button>
-            {brackets.length > 0 && (
+            {can("EVENTO_CHAVES_GERAR") && (
+              <Button onClick={gerarChaves} disabled={chavesGenerating}>
+                <Plus className="h-4 w-4 mr-2" />
+                {chavesGenerating ? "Gerando..." : "Gerar Chaves"}
+              </Button>
+            )}
+            {can("EVENTO_CHAVES_LIMPAR") && brackets.length > 0 && (
               <Button
                 variant="ghost"
                 className="text-[#f87171] hover:text-[#f87171]"
@@ -1761,17 +1791,19 @@ export default function EventoDetailPage() {
                 Limpar Chaves
               </Button>
             )}
-            <Button
-              variant="outline"
-              onClick={() => {
-                const params = buildAtletasParams()
-                const qs = params.toString()
-                window.open(`/admin/eventos/${id}/exportar-chaves${qs ? `?${qs}` : ""}`, "_blank")
-              }}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
+            {can("EVENTO_CHAVES_EXPORTAR") && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const params = buildAtletasParams()
+                  const qs = params.toString()
+                  window.open(`/admin/eventos/${id}/exportar-chaves${qs ? `?${qs}` : ""}`, "_blank")
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            )}
           </div>
 
           {chavesLoading ? (
@@ -1834,17 +1866,19 @@ export default function EventoDetailPage() {
                             const sc = statusColors[b.status] || statusColors.PENDENTE
                             return <span key={b.id} className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{b.isGrandFinal ? "GF" : `#${b.bracketNumber}`} {b.status}</span>
                           })}
-                          <select
-                            className="text-xs rounded border px-2 py-1 shrink-0"
-                            style={{ backgroundColor: "var(--card-alt)", borderColor: "#f59e0b60", color: "var(--foreground)" }}
-                            value={groupTatameId}
-                            onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
-                          >
-                            <option value="">Sem tatame</option>
-                            {tatamesSorted.map((t) => (
-                              <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                          </select>
+                          {can("EVENTO_CHAVES_ATRIBUIR") && (
+                            <select
+                              className="text-xs rounded border px-2 py-1 shrink-0"
+                              style={{ backgroundColor: "var(--card-alt)", borderColor: "#f59e0b60", color: "var(--foreground)" }}
+                              value={groupTatameId}
+                              onChange={(e) => allInGroup.forEach(b => atribuirTatame(b.id, e.target.value || null))}
+                            >
+                              <option value="">Sem tatame</option>
+                              {tatamesSorted.map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       </div>
                     )
@@ -1865,17 +1899,19 @@ export default function EventoDetailPage() {
                             {bracket.status}
                           </span>
                           <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
-                          <select
-                            className="text-xs rounded border px-2 py-1 shrink-0"
-                            style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
-                            value={bracket.tatameId || ""}
-                            onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
-                          >
-                            <option value="">Sem tatame</option>
-                            {tatamesSorted.map((t) => (
-                              <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                          </select>
+                          {can("EVENTO_CHAVES_ATRIBUIR") && (
+                            <select
+                              className="text-xs rounded border px-2 py-1 shrink-0"
+                              style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
+                              value={bracket.tatameId || ""}
+                              onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
+                            >
+                              <option value="">Sem tatame</option>
+                              {tatamesSorted.map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                       </div>
                     )
@@ -2210,23 +2246,29 @@ export default function EventoDetailPage() {
             {selectionMode && selectedBrackets.size > 0 && (
               <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border" style={{ borderColor: "var(--border)", backgroundColor: "var(--card-alt)" }}>
                 <span className="text-xs font-semibold" style={{ color: "#3b82f6" }}>{selectedBrackets.size} selecionada(s)</span>
-                <select
-                  className="text-xs rounded border px-2 py-1"
-                  style={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)" }}
-                  defaultValue=""
-                  onChange={(e) => { if (e.target.value !== "") { bulkAtribuir(e.target.value === "__none__" ? null : e.target.value); e.target.value = "" } }}
-                  disabled={bulkLoading}
-                >
-                  <option value="" disabled>Atribuir tatame...</option>
-                  <option value="__none__">Sem tatame</option>
-                  {tatamesSorted.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-                <Button size="sm" onClick={bulkReiniciar} disabled={bulkLoading} style={{ backgroundColor: "#d97706", color: "#ffffff", border: "none" }}>
-                  <RotateCcw className="h-3 w-3 mr-1" /> Reiniciar
-                </Button>
-                <Button size="sm" onClick={bulkExcluir} disabled={bulkLoading} style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none" }}>
-                  <Trash2 className="h-3 w-3 mr-1" /> Excluir
-                </Button>
+                {can("EVENTO_TATAMES_ATRIBUIR_CHAVE") && (
+                  <select
+                    className="text-xs rounded border px-2 py-1"
+                    style={{ backgroundColor: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)" }}
+                    defaultValue=""
+                    onChange={(e) => { if (e.target.value !== "") { bulkAtribuir(e.target.value === "__none__" ? null : e.target.value); e.target.value = "" } }}
+                    disabled={bulkLoading}
+                  >
+                    <option value="" disabled>Atribuir tatame...</option>
+                    <option value="__none__">Sem tatame</option>
+                    {tatamesSorted.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                )}
+                {can("EVENTO_TATAMES_REINICIAR_CHAVE") && (
+                  <Button size="sm" onClick={bulkReiniciar} disabled={bulkLoading} style={{ backgroundColor: "#d97706", color: "#ffffff", border: "none" }}>
+                    <RotateCcw className="h-3 w-3 mr-1" /> Reiniciar
+                  </Button>
+                )}
+                {can("EVENTO_TATAMES_EXCLUIR_CHAVE") && (
+                  <Button size="sm" onClick={bulkExcluir} disabled={bulkLoading} style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none" }}>
+                    <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                  </Button>
+                )}
               </div>
             )}
             <div className="space-y-3">
@@ -2346,33 +2388,39 @@ export default function EventoDetailPage() {
                           {statusLabel}
                         </span>
                         <span className="text-xs text-[#6b7280] shrink-0">{bracket.positions.length} atleta(s)</span>
-                        <select
-                          className="text-xs rounded border px-2 py-1 shrink-0"
-                          style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
-                          value={bracket.tatameId || ""}
-                          onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
-                        >
-                          <option value="">Sem tatame</option>
-                          {tatamesSorted.map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => reiniciarChave(bracket.id)}
-                          className="shrink-0 p-1 rounded hover:text-[#fbbf24] transition-colors"
-                          style={{ color: "#6b7280" }}
-                          title="Reiniciar chave"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => excluirChave(bracket.id)}
-                          className="shrink-0 p-1 rounded hover:text-[#dc2626] transition-colors"
-                          style={{ color: "#6b7280" }}
-                          title="Excluir chave"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {can("EVENTO_TATAMES_ATRIBUIR_CHAVE") && (
+                          <select
+                            className="text-xs rounded border px-2 py-1 shrink-0"
+                            style={{ backgroundColor: "var(--card-alt)", borderColor: "var(--border-alt)", color: "var(--foreground)" }}
+                            value={bracket.tatameId || ""}
+                            onChange={(e) => atribuirTatame(bracket.id, e.target.value || null)}
+                          >
+                            <option value="">Sem tatame</option>
+                            {tatamesSorted.map((t) => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        )}
+                        {can("EVENTO_TATAMES_REINICIAR_CHAVE") && (
+                          <button
+                            onClick={() => reiniciarChave(bracket.id)}
+                            className="shrink-0 p-1 rounded hover:text-[#fbbf24] transition-colors"
+                            style={{ color: "#6b7280" }}
+                            title="Reiniciar chave"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {can("EVENTO_TATAMES_EXCLUIR_CHAVE") && (
+                          <button
+                            onClick={() => excluirChave(bracket.id)}
+                            className="shrink-0 p-1 rounded hover:text-[#dc2626] transition-colors"
+                            style={{ color: "#6b7280" }}
+                            title="Excluir chave"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     )
                   }
@@ -2763,7 +2811,7 @@ export default function EventoDetailPage() {
               >
                 Gerenciar atleta →
               </button>
-              {(cardAction.bracketStatus === "PENDENTE" || cardAction.bracketStatus === "DESIGNADA") && (
+              {can("EVENTO_TATAMES_TROCAR_POSICAO") && (cardAction.bracketStatus === "PENDENTE" || cardAction.bracketStatus === "DESIGNADA") && (
                 <button
                   className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors hover:brightness-110"
                   style={{ backgroundColor: "#1e293b", color: "#94a3b8" }}

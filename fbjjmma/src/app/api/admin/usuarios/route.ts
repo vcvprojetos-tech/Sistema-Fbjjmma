@@ -75,6 +75,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { name, cpf, email, password, phone, role } = body
 
+    if (session.user.role === "COORDENADOR_GERAL" && role !== "COORDENADOR_TATAME") {
+      return NextResponse.json({ error: "Sem permissão para criar este tipo de usuário." }, { status: 403 })
+    }
+
     const isCoordenadorTatame = role === "COORDENADOR_TATAME"
 
     if (!name || !cpf) {
