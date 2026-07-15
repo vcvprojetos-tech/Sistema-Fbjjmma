@@ -24,14 +24,21 @@ interface BracketForExport {
   id: string
   bracketNumber: number
   isAbsolute: boolean
-  belt: string
+  belt: string | null
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
-  weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number }
+  isCustom?: boolean
+  customNumber?: number | null
+  customSex?: string | null
+  customCategory?: string | null
+  customBelt?: string | null
+  customWeight?: string | null
+  weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number } | null
   positions: {
     id: string
     position: number
+    customName?: string | null
     registration: {
       id: string
       athlete: { user: { name: string } } | null
@@ -83,12 +90,15 @@ function ExportarContent() {
   }, [id, searchParams])
 
   const sorted = [...brackets].sort((a, b) => {
-    const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
-    const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
+    if (a.isCustom && !b.isCustom) return 1
+    if (!a.isCustom && b.isCustom) return -1
+    if (a.isCustom && b.isCustom) return (a.customNumber ?? 0) - (b.customNumber ?? 0)
+    const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory?.ageGroup ?? "")
+    const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory?.ageGroup ?? "")
     if (ageA !== ageB) return ageA - ageB
     if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
-    if (a.weightCategory.maxWeight !== b.weightCategory.maxWeight)
-      return a.weightCategory.maxWeight - b.weightCategory.maxWeight
+    if ((a.weightCategory?.maxWeight ?? 0) !== (b.weightCategory?.maxWeight ?? 0))
+      return (a.weightCategory?.maxWeight ?? 0) - (b.weightCategory?.maxWeight ?? 0)
     return a.bracketNumber - b.bracketNumber
   })
 

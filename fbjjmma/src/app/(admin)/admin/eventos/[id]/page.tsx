@@ -952,12 +952,13 @@ export default function EventoDetailPage() {
 
   const tatamesFilteredBrackets = useMemo(() => {
     return brackets.filter(bracket => {
-      if (tatamesApplied.sexo && tatamesApplied.sexo !== "all" && bracket.weightCategory.sex !== tatamesApplied.sexo) return false
-      if (tatamesApplied.categoria && tatamesApplied.categoria !== "all" && bracket.weightCategory.ageGroup !== tatamesApplied.categoria) return false
+      if (bracket.isCustom) return true // chaves personalizadas passam todos os filtros de categoria
+      if (tatamesApplied.sexo && tatamesApplied.sexo !== "all" && bracket.weightCategory?.sex !== tatamesApplied.sexo) return false
+      if (tatamesApplied.categoria && tatamesApplied.categoria !== "all" && bracket.weightCategory?.ageGroup !== tatamesApplied.categoria) return false
       if (tatamesApplied.faixa && tatamesApplied.faixa !== "all" && bracket.belt !== tatamesApplied.faixa) return false
       if (tatamesApplied.pesoId && tatamesApplied.pesoId !== "all") {
         if (tatamesApplied.pesoId === "__absoluto__") { if (!bracket.isAbsolute) return false }
-        else if (bracket.weightCategory.name.toLowerCase() !== tatamesApplied.pesoId.toLowerCase()) return false
+        else if (bracket.weightCategory?.name.toLowerCase() !== tatamesApplied.pesoId.toLowerCase()) return false
       }
       if (tatamesApplied.equipeId && tatamesApplied.equipeId !== "all") {
         const teamName = teams.find(t => t.id === tatamesApplied.equipeId)?.name
@@ -966,7 +967,7 @@ export default function EventoDetailPage() {
       if (tatamesApplied.nome) {
         const nome = tatamesApplied.nome.toLowerCase()
         if (!bracket.positions.some(p => {
-          const name = p.registration?.athlete?.user.name ?? p.registration?.guestName ?? ""
+          const name = p.customName ?? p.registration?.athlete?.user.name ?? p.registration?.guestName ?? ""
           return name.toLowerCase().includes(nome)
         })) return false
       }
@@ -975,11 +976,14 @@ export default function EventoDetailPage() {
       }
       return true
     }).sort((a, b) => {
-      const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory.ageGroup)
-      const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory.ageGroup)
+      if (a.isCustom && !b.isCustom) return 1
+      if (!a.isCustom && b.isCustom) return -1
+      if (a.isCustom && b.isCustom) return (a.customNumber ?? 0) - (b.customNumber ?? 0)
+      const ageA = AGE_GROUP_ORDER.indexOf(a.weightCategory?.ageGroup ?? "")
+      const ageB = AGE_GROUP_ORDER.indexOf(b.weightCategory?.ageGroup ?? "")
       if (ageA !== ageB) return ageA - ageB
       if (a.isAbsolute !== b.isAbsolute) return a.isAbsolute ? 1 : -1
-      return a.weightCategory.maxWeight - b.weightCategory.maxWeight
+      return (a.weightCategory?.maxWeight ?? 0) - (b.weightCategory?.maxWeight ?? 0)
     })
   }, [brackets, tatamesApplied, teams])
 
@@ -2520,12 +2524,16 @@ export default function EventoDetailPage() {
                     ) : (
                       <div className="rounded-b-lg border border-t-0 overflow-hidden" style={{ borderColor: "var(--border)" }}>
                         {deletedBrackets.map(bracket => {
-                          const label = [
-                            bracket.weightCategory.sex === "MASCULINO" ? "Masc" : "Fem",
-                            AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
-                            BELT_LABELS[bracket.belt] || bracket.belt,
-                            bracket.isAbsolute ? "Absoluto" : `Até ${bracket.weightCategory.maxWeight}kg`,
-                          ].join(" | ")
+                          const label = bracket.isCustom
+                            ? [bracket.customSex, bracket.customCategory, bracket.customWeight, bracket.customBelt,
+                                `Personalizada: ${bracket.customNumber ?? bracket.bracketNumber}`].filter(Boolean).join(" | ")
+                            : bracket.weightCategory ? [
+                                bracket.weightCategory.sex === "MASCULINO" ? "Masc" : "Fem",
+                                AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
+                                bracket.belt ? (BELT_LABELS[bracket.belt] || bracket.belt) : null,
+                                bracket.isAbsolute ? "Absoluto" : `Até ${bracket.weightCategory.maxWeight}kg`,
+                              ].filter(Boolean).join(" | ")
+                            : `Chave: ${bracket.bracketNumber}`
                           const athletes = bracket.positions.filter(p => p.registration).length
                           return (
                             <div key={bracket.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
@@ -2650,13 +2658,17 @@ export default function EventoDetailPage() {
               .filter(b => b.bracketGroupId === bracket.bracketGroupId)
               .sort((a, b) => { if (a.isGrandFinal !== b.isGrandFinal) return a.isGrandFinal ? 1 : -1; return a.bracketNumber - b.bracketNumber })
           : [bracket]
-        const modalTitle = [
-          bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
-          AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
-          BELT_LABELS[bracket.belt] || bracket.belt,
-          bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
-          bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
-        ].filter(Boolean).join(" | ")
+        const modalTitle = bracket.isCustom
+          ? [bracket.customSex, bracket.customCategory, bracket.customWeight, bracket.customBelt,
+              `Personalizada: ${bracket.customNumber ?? bracket.bracketNumber}`].filter(Boolean).join(" | ")
+          : bracket.weightCategory ? [
+              bracket.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino",
+              AGE_GROUP_LABELS[bracket.weightCategory.ageGroup]?.split(" (")[0] || bracket.weightCategory.ageGroup,
+              bracket.belt ? (BELT_LABELS[bracket.belt] || bracket.belt) : null,
+              bracket.isAbsolute ? "Absoluto" : bracket.weightCategory.name,
+              bracket.isAbsolute ? null : `Até ${bracket.weightCategory.maxWeight}kg`,
+            ].filter(Boolean).join(" | ")
+          : `Chave: ${bracket.bracketNumber}`
 
         // Para chaves absolutas: encontra o campeão para o botão de PIX
         const findChampionFromBracket = (b: Bracket): { registrationId: string; name: string; prizePix: string | null } | null => {
