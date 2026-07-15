@@ -13,11 +13,14 @@ type TatameSession = {
   ativo: boolean
 }
 
+type LoginEntry = { loginAt: string; ip: string | null }
+
 type AdminSession = {
   userId: string
   user: { id: string; name: string; role: string }
-  ip: string | null
-  loginAt: string | null
+  logins: LoginEntry[]
+  lastLoginAt: string | null
+  lastIp: string | null
   encerrada: boolean
 }
 
@@ -307,79 +310,113 @@ export default function SessoesPage() {
                   const isMe = s.userId === session?.user?.id
                   const statusColor = s.encerrada ? "#6b7280" : "#22c55e"
                   const statusLabel = s.encerrada ? "Encerrada" : "Possivelmente ativa"
+                  const sessionsCount = s.logins.length
 
                   return (
                     <div
                       key={s.userId}
-                      className="flex items-center justify-between rounded-lg border px-4 py-3"
+                      className="rounded-lg border"
                       style={{
                         borderColor: "var(--border)",
                         backgroundColor: "var(--card)",
                         opacity: s.encerrada ? 0.6 : 1,
                       }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
-                          style={{ backgroundColor: isMe ? "#2563eb" : "#dc2626", color: "#fff" }}
-                        >
-                          {s.user.name.charAt(0).toUpperCase()}
+                      {/* Cabeçalho do usuário */}
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                            style={{ backgroundColor: isMe ? "#2563eb" : "#dc2626", color: "#fff" }}
+                          >
+                            {s.user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm" style={{ color: "var(--foreground)" }}>
+                                {s.user.name}
+                              </span>
+                              {isMe && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                                  você
+                                </span>
+                              )}
+                              <span
+                                className="text-xs px-1.5 py-0.5 rounded"
+                                style={{ backgroundColor: "var(--card-alt)", color: "var(--muted)" }}
+                              >
+                                {ROLE_LABELS[s.user.role] ?? s.user.role}
+                              </span>
+                              {sessionsCount > 1 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-medium">
+                                  {sessionsCount} sessões
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span
+                                className="inline-block w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: statusColor }}
+                              />
+                              <span className="text-xs" style={{ color: statusColor }}>{statusLabel}</span>
+                              {s.lastLoginAt && new Date(s.lastLoginAt).getFullYear() >= 2020 ? (
+                                <span className="text-xs" style={{ color: "var(--muted)" }}>
+                                  · Último login: {dataHora(s.lastLoginAt)}
+                                </span>
+                              ) : (
+                                <span className="text-xs" style={{ color: "var(--muted)" }}>
+                                  · Último login: desconhecido
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm" style={{ color: "var(--foreground)" }}>
-                              {s.user.name}
+                        <div className="flex items-center gap-3">
+                          {(isMe || s.encerrada) && (
+                            <span className="text-xs" style={{ color: "var(--muted)" }}>
+                              {s.encerrada ? "já encerrada" : "sessão atual"}
                             </span>
-                            {isMe && (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
-                                você
-                              </span>
-                            )}
-                            <span
-                              className="text-xs px-1.5 py-0.5 rounded"
-                              style={{ backgroundColor: "var(--card-alt)", color: "var(--muted)" }}
+                          )}
+                          {!isMe && !s.encerrada && (
+                            <button
+                              onClick={() => encerrar("usuario", s.userId)}
+                              disabled={encerrando === s.userId}
+                              title="Encerra TODAS as sessões deste usuário"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors hover:border-red-400 hover:text-red-500"
+                              style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
                             >
-                              {ROLE_LABELS[s.user.role] ?? s.user.role}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span
-                              className="inline-block w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: statusColor }}
-                            />
-                            <span className="text-xs" style={{ color: statusColor }}>{statusLabel}</span>
-                            {s.loginAt && new Date(s.loginAt).getFullYear() >= 2020 ? (
-                              <span className="text-xs" style={{ color: "var(--muted)" }}>
-                                · Último login: {dataHora(s.loginAt)}
-                              </span>
-                            ) : (
-                              <span className="text-xs" style={{ color: "var(--muted)" }}>
-                                · Último login: desconhecido
-                              </span>
-                            )}
-                            {s.ip && (
-                              <span className="text-xs" style={{ color: "var(--muted)" }}>
-                                · IP: {s.ip}
-                              </span>
-                            )}
-                          </div>
+                              <LogOut size={11} />
+                              {encerrando === s.userId ? "Encerrando..." : sessionsCount > 1 ? `Encerrar todas (${sessionsCount})` : "Encerrar"}
+                            </button>
+                          )}
                         </div>
                       </div>
-                      {!isMe && !s.encerrada && (
-                        <button
-                          onClick={() => encerrar("usuario", s.userId)}
-                          disabled={encerrando === s.userId}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors hover:border-red-400 hover:text-red-500"
-                          style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+
+                      {/* Lista de logins individuais (só mostra se há mais de 1) */}
+                      {sessionsCount > 1 && (
+                        <div
+                          className="border-t px-4 py-2 space-y-1"
+                          style={{ borderColor: "var(--border)" }}
                         >
-                          <LogOut size={11} />
-                          {encerrando === s.userId ? "Encerrando..." : "Encerrar"}
-                        </button>
-                      )}
-                      {(isMe || s.encerrada) && (
-                        <span className="text-xs" style={{ color: "var(--muted)" }}>
-                          {s.encerrada ? "já encerrada" : "sessão atual"}
-                        </span>
+                          {s.logins.map((login, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs" style={{ color: "var(--muted)" }}>
+                              <span
+                                className="inline-block w-1 h-1 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: "var(--muted)" }}
+                              />
+                              <span>Sessão {i + 1}:</span>
+                              <span>
+                                {login.loginAt && new Date(login.loginAt).getFullYear() >= 2020
+                                  ? dataHora(login.loginAt)
+                                  : "data desconhecida"}
+                              </span>
+                              {login.ip && <span>· IP: {login.ip}</span>}
+                            </div>
+                          ))}
+                          <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+                            * "Encerrar todas" invalida todas as sessões simultaneamente.
+                          </p>
+                        </div>
                       )}
                     </div>
                   )

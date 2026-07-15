@@ -39,26 +39,33 @@ export async function GET(_req: NextRequest) {
     orderBy: { name: "asc" },
   })
 
-  // Último login de cada um nos audit logs (pode não existir se logou antes do sistema de logs)
+  // Todos os logins recentes (30 dias) para cada usuário admin — sem deduplicação
   const adminUserIds = adminUsers.map((u) => u.id)
-  const lastLoginLogs = adminUserIds.length > 0
+  const allLoginLogs = adminUserIds.length > 0
     ? await prisma.auditLog.findMany({
-        where: { action: "LOGIN", module: "SISTEMA", userId: { in: adminUserIds } },
+        where: {
+          action: "LOGIN",
+          module: "SISTEMA",
+          userId: { in: adminUserIds },
+          createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        },
         select: { userId: true, createdAt: true, ip: true },
         orderBy: { createdAt: "desc" },
       })
     : []
 
-  // Map userId → login mais recente
-  const lastLoginMap = new Map<string, { createdAt: Date; ip: string | null }>()
-  for (const log of lastLoginLogs) {
-    if (log.userId && !lastLoginMap.has(log.userId)) {
-      lastLoginMap.set(log.userId, { createdAt: log.createdAt, ip: log.ip })
+  // Agrupa logins por userId (mais recente primeiro)
+  const loginsByUser = new Map<string, Array<{ createdAt: Date; ip: string | null }>>()
+  for (const log of allLoginLogs) {
+    if (log.userId) {
+      if (!loginsByUser.has(log.userId)) loginsByUser.set(log.userId, [])
+      loginsByUser.get(log.userId)!.push({ createdAt: log.createdAt, ip: log.ip })
     }
   }
 
   const adminSessions = adminUsers.map((u) => {
-    const lastLogin = lastLoginMap.get(u.id) ?? null
+    const logins = loginsByUser.get(u.id) ?? []
+    const lastLogin = logins[0] ?? null
     const encerrada = u.forceLogoutAt
       ? lastLogin
         ? u.forceLogoutAt.getTime() > lastLogin.createdAt.getTime()
@@ -67,8 +74,9 @@ export async function GET(_req: NextRequest) {
     return {
       userId: u.id,
       user: { id: u.id, name: u.name, role: u.role },
-      ip: lastLogin?.ip ?? null,
-      loginAt: lastLogin?.createdAt ?? null,
+      logins: logins.map((l) => ({ loginAt: l.createdAt, ip: l.ip })),
+      lastLoginAt: lastLogin?.createdAt ?? null,
+      lastIp: lastLogin?.ip ?? null,
       encerrada,
     }
   })
