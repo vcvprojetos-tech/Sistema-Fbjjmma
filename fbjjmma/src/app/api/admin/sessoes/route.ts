@@ -29,12 +29,12 @@ export async function GET(_req: NextRequest) {
     : []
   const tatameMap = Object.fromEntries(tatames.map((t) => [t.id, t]))
 
-  // Logins recentes das últimas 8 horas (sessões administrativas)
+  // Logins recentes dos últimos 30 dias (sessões administrativas)
   const recentLogins = await prisma.auditLog.findMany({
     where: {
       action: "LOGIN",
       module: "SISTEMA",
-      createdAt: { gte: new Date(Date.now() - 8 * 60 * 60 * 1000) },
+      createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
     },
     include: {
       user: { select: { id: true, name: true, role: true, forceLogoutAt: true } },

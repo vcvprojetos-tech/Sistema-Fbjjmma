@@ -290,7 +290,7 @@ export default function SessoesPage() {
                 {adminSessions.length}
               </span>
               <span className="text-xs" style={{ color: "var(--muted)" }}>
-                — logins nas últimas 8h
+                — logins nos últimos 30 dias
               </span>
             </div>
 
