@@ -348,7 +348,7 @@ export default function SessoesPage() {
                               style={{ backgroundColor: statusColor }}
                             />
                             <span className="text-xs" style={{ color: statusColor }}>{statusLabel}</span>
-                            {s.loginAt ? (
+                            {s.loginAt && new Date(s.loginAt).getFullYear() >= 2020 ? (
                               <span className="text-xs" style={{ color: "var(--muted)" }}>
                                 · Último login: {dataHora(s.loginAt)}
                               </span>

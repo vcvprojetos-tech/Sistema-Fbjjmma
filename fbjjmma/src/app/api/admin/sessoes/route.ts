@@ -29,11 +29,11 @@ export async function GET(_req: NextRequest) {
     : []
   const tatameMap = Object.fromEntries(tatames.map((t) => [t.id, t]))
 
-  // Todos os usuários admin/coordenador ativos
+  // Usuários que acessam o painel administrativo (excluindo Coord. Tatame — eles ficam na seção de tatame)
   const adminUsers = await prisma.user.findMany({
     where: {
       isActive: true,
-      role: { in: ["PRESIDENTE", "COORDENADOR_GERAL", "COORDENADOR_TATAME", "CUSTOM"] },
+      role: { in: ["PRESIDENTE", "COORDENADOR_GERAL", "CUSTOM"] },
     },
     select: { id: true, name: true, role: true, forceLogoutAt: true },
     orderBy: { name: "asc" },
