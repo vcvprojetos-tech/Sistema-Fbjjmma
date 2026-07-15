@@ -52,6 +52,7 @@ interface BracketPositionData {
   id: string
   position: number
   isEliminated: boolean
+  customName?: string | null
   registration: {
     id: string
     athlete: { user: { id: string; name: string } } | null
@@ -89,15 +90,21 @@ interface MatchData {
 interface BracketData {
   id: string
   bracketNumber: number
-  belt: string
+  belt: string | null
   isAbsolute: boolean
   status: string
   bracketGroupId?: string | null
   isGrandFinal?: boolean
   inPanel?: boolean
+  isCustom?: boolean
+  customNumber?: number | null
+  customSex?: string | null
+  customCategory?: string | null
+  customBelt?: string | null
+  customWeight?: string | null
   startedAt: string | null
   updatedAt: string
-  weightCategory: { id?: string; name: string; ageGroup: string; sex: string; maxWeight: number }
+  weightCategory: { id?: string; name: string; ageGroup: string; sex: string; maxWeight: number } | null
   positions: BracketPositionData[]
   matches: MatchData[]
 }
@@ -135,7 +142,9 @@ function consultaCatLabel(r: ConsultaResult): string {
 }
 
 function getAthleteName(pos: BracketPositionData | null): string {
-  if (!pos?.registration) return "BYE"
+  if (!pos) return "BYE"
+  if (pos.customName) return pos.customName
+  if (!pos.registration) return "BYE"
   return pos.registration.athlete?.user.name ?? pos.registration.guestName ?? "—"
 }
 
@@ -145,11 +154,15 @@ function getAthleteTeam(pos: BracketPositionData | null): string | null {
 }
 
 function catLabel(b: BracketData): string {
+  if (b.isCustom) {
+    return [b.customSex, b.customCategory, b.customWeight, b.customBelt,
+      `Personalizada: ${b.customNumber ?? b.bracketNumber}`].filter(Boolean).join(" · ")
+  }
   const base = [
-    b.weightCategory.sex === "MASCULINO" ? "M" : "F",
-    AGE_GROUP_LABELS[b.weightCategory.ageGroup] || b.weightCategory.ageGroup,
-    b.isAbsolute ? null : b.weightCategory.name,
-    BELT_LABELS[b.belt] || b.belt,
+    b.weightCategory?.sex === "MASCULINO" ? "M" : "F",
+    b.weightCategory ? (AGE_GROUP_LABELS[b.weightCategory.ageGroup] || b.weightCategory.ageGroup) : null,
+    b.isAbsolute ? null : b.weightCategory?.name,
+    b.belt ? (BELT_LABELS[b.belt] || b.belt) : null,
     b.isAbsolute ? "Absoluto" : null,
   ].filter(Boolean).join(" · ")
   if (b.isGrandFinal) return `🏆 Grande Final — ${base}`
@@ -1093,7 +1106,7 @@ export default function TatamePage() {
                       </div>
                     </div>
                     <p className="text-white font-bold text-xs leading-tight whitespace-nowrap overflow-hidden">{catLabel(bracket)}</p>
-                    {!bracket.isAbsolute && (
+                    {!bracket.isAbsolute && bracket.weightCategory && (
                       <p className="text-[#4b5563] text-xs mt-0.5">
                         até {bracket.weightCategory.maxWeight === 999 ? "∞" : `${bracket.weightCategory.maxWeight}kg`}
                       </p>
@@ -1735,16 +1748,23 @@ export default function TatamePage() {
                             bracketNumber: b.bracketNumber,
                             isAbsolute: b.isAbsolute,
                             belt: b.belt,
-                            weightCategory: {
+                            isCustom: b.isCustom,
+                            customNumber: b.customNumber,
+                            customSex: b.customSex,
+                            customCategory: b.customCategory,
+                            customBelt: b.customBelt,
+                            customWeight: b.customWeight,
+                            weightCategory: b.weightCategory ? {
                               id: b.weightCategory.id ?? b.id,
                               name: b.weightCategory.name,
                               ageGroup: b.weightCategory.ageGroup,
                               sex: b.weightCategory.sex,
                               maxWeight: b.weightCategory.maxWeight,
-                            },
+                            } : null,
                             positions: b.positions.map(p => ({
                               id: p.id,
                               position: p.position,
+                              customName: p.customName,
                               registration: p.registration
                                 ? {
                                     id: p.registration.id,

@@ -30,6 +30,7 @@ interface Reg {
 interface BPos {
   id: string
   position: number
+  customName?: string | null
   registration: Reg | null
 }
 interface BMatch {
@@ -45,10 +46,16 @@ interface BMatch {
 interface BracketItem {
   id: string
   bracketNumber: number
-  belt: string
+  belt: string | null
   isAbsolute: boolean
+  isCustom?: boolean
+  customNumber?: number | null
+  customSex?: string | null
+  customCategory?: string | null
+  customBelt?: string | null
+  customWeight?: string | null
   status: string
-  weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number }
+  weightCategory: { id: string; name: string; ageGroup: string; sex: string; maxWeight: number } | null
   positions: BPos[]
   matches: BMatch[]
 }
@@ -67,11 +74,17 @@ function buildPrintHTML(data: BackupData): string {
     : ""
 
   const bracketBlocks = data.brackets.map(b => {
-    const age = AGE_GROUP_LABELS[b.weightCategory.ageGroup] || b.weightCategory.ageGroup
-    const belt = BELT_LABELS[b.belt] || b.belt
-    const sex = b.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino"
-    const peso = b.isAbsolute ? "Absoluto" : b.weightCategory.name
-    const title = `${sex} | ${age} | ${peso} | ${belt}`
+    const title = b.isCustom
+      ? [b.customSex, b.customCategory, b.customWeight, b.customBelt,
+          `Personalizada: ${b.customNumber ?? b.bracketNumber}`].filter(Boolean).join(" | ")
+      : b.weightCategory ? (() => {
+          const age = AGE_GROUP_LABELS[b.weightCategory.ageGroup] || b.weightCategory.ageGroup
+          const belt = b.belt ? (BELT_LABELS[b.belt] || b.belt) : null
+          const sex = b.weightCategory.sex === "MASCULINO" ? "Masculino" : "Feminino"
+          const peso = b.isAbsolute ? "Absoluto" : b.weightCategory.name
+          return [sex, age, peso, belt].filter(Boolean).join(" | ")
+        })()
+      : `Chave: ${b.bracketNumber}`
     const statusLabel = b.status === "PREMIADA" ? "Premiada" : "Finalizada"
     const statusColor = b.status === "PREMIADA" ? "#7c3aed" : "#16a34a"
     const statusBg = b.status === "PREMIADA" ? "#ede9fe" : "#dcfce7"
@@ -92,21 +105,23 @@ function buildPrintHTML(data: BackupData): string {
       // Chave com 1 atleta: campeão é o único atleta
       champPos = soloMatch.winnerId ? posMap.get(soloMatch.winnerId) : undefined
     } else {
-      const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
+      const finalMatch = realMatches.find(m => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+        ?? realMatches.find(m => m.round === maxRound && m.winnerId)
+        ?? realMatches.find(m => m.round === maxRound && m.matchNumber === 1)
         ?? realMatches.find(m => m.round === maxRound)
       champPos = finalMatch?.winnerId ? posMap.get(finalMatch.winnerId) : undefined
       const viceId = finalMatch ? (finalMatch.winnerId === finalMatch.position1Id ? finalMatch.position2Id : finalMatch.position1Id) : null
       vicePos = viceId ? posMap.get(viceId) : undefined
       thirdPos = b.positions.find(p =>
-        p.id !== champPos?.id && p.id !== vicePos?.id && p.registration !== null &&
+        p.id !== champPos?.id && p.id !== vicePos?.id && (p.registration !== null || p.customName != null) &&
         b.matches.some(m => (m.position1Id === p.id || m.position2Id === p.id) && m.endedAt) &&
         !b.matches.some(m => m.round === maxRound && (m.position1Id === p.id || m.position2Id === p.id))
       )
     }
 
     const medal = (label: string, bg: string, color: string, pos: BPos | undefined) => {
-      if (!pos?.registration) return ""
-      const name = athleteName(pos.registration)
+      if (!pos?.registration && !pos?.customName) return ""
+      const name = pos.customName ?? athleteName(pos.registration)
       const team = teamName(pos.registration)
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <span style="background:${bg};color:${color};font-weight:800;font-size:11px;padding:2px 10px;border-radius:999px;white-space:nowrap">${label}</span>
@@ -135,8 +150,10 @@ function buildPrintHTML(data: BackupData): string {
     const roundsHTML = rounds.map(r => {
       const label = r === maxRound ? "Final" : r === maxRound - 1 && maxRound > 1 ? "Semifinal" : `Rodada ${r}`
       const rows = byRound.get(r)!.map(m => {
-        const p1 = athleteName(posMap.get(m.position1Id ?? "")?.registration)
-        const p2 = m.position2Id ? athleteName(posMap.get(m.position2Id)?.registration) : null
+        const pos1 = posMap.get(m.position1Id ?? "")
+        const pos2 = m.position2Id ? posMap.get(m.position2Id) : null
+        const p1 = pos1?.customName ?? athleteName(pos1?.registration)
+        const p2 = pos2 !== undefined ? (pos2?.customName ?? athleteName(pos2?.registration)) : null
         const p1Win = m.winnerId === m.position1Id
         const p2Win = m.winnerId === m.position2Id
         const wo = m.isWO ? ` <span style="color:#dc2626;font-size:10px">(W.O.)</span>` : ""

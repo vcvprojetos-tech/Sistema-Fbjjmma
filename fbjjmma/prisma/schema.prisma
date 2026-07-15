@@ -372,24 +372,31 @@ enum BracketStatus {
 }
 
 model Bracket {
-  id               String         @id @default(cuid())
+  id               String          @id @default(cuid())
   eventId          String
-  event            Event          @relation(fields: [eventId], references: [id])
+  event            Event           @relation(fields: [eventId], references: [id])
   tatameId         String?
-  tatame           Tatame?        @relation(fields: [tatameId], references: [id])
-  weightCategoryId String
-  weightCategory   WeightCategory @relation(fields: [weightCategoryId], references: [id])
-  belt             Belt
-  isAbsolute       Boolean        @default(false)
+  tatame           Tatame?         @relation(fields: [tatameId], references: [id])
+  weightCategoryId String?
+  weightCategory   WeightCategory? @relation(fields: [weightCategoryId], references: [id])
+  belt             Belt?
+  isAbsolute       Boolean         @default(false)
   bracketNumber    Int
-  status           BracketStatus  @default(PENDENTE)
+  status           BracketStatus   @default(PENDENTE)
   // Quando uma categoria tem > 16 atletas, é dividida em 2 sub-chaves com mesmo bracketGroupId.
   // Após ambas finalizarem, uma "grande final" (isGrandFinal=true) é criada automaticamente.
   bracketGroupId   String?
-  isGrandFinal     Boolean        @default(false)
+  isGrandFinal     Boolean         @default(false)
   startedAt        DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  // Chave personalizada (paratletas e outros sem inscrição no sistema)
+  isCustom         Boolean         @default(false)
+  customNumber     Int?
+  customSex        String?
+  customCategory   String?
+  customBelt       String?
+  customWeight     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   positions BracketPosition[]
   matches   Match[]
@@ -404,6 +411,7 @@ model BracketPosition {
   position       Int
   registrationId String?
   registration   Registration? @relation(fields: [registrationId], references: [id])
+  customName     String?
   isEliminated   Boolean       @default(false)
 
   matchesAsP1 Match[] @relation("MatchPosition1")

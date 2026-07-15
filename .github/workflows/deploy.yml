@@ -44,6 +44,15 @@ jobs:
             echo "ALTER TABLE users ADD COLUMN IF NOT EXISTS \"deletedAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
             echo "ALTER TABLE users ADD COLUMN IF NOT EXISTS \"permissions\" TEXT[] NOT NULL DEFAULT '{}';" >> /tmp/fbjjmma_migrate.sql
             echo "ALTER TABLE users ADD COLUMN IF NOT EXISTS \"forceLogoutAt\" TIMESTAMP(3);" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ALTER COLUMN \"weightCategoryId\" DROP NOT NULL;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ALTER COLUMN \"belt\" DROP NOT NULL;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"isCustom\" BOOLEAN NOT NULL DEFAULT false;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"customNumber\" INT;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"customSex\" TEXT;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"customCategory\" TEXT;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"customBelt\" TEXT;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE brackets ADD COLUMN IF NOT EXISTS \"customWeight\" TEXT;" >> /tmp/fbjjmma_migrate.sql
+            echo "ALTER TABLE \"bracket_positions\" ADD COLUMN IF NOT EXISTS \"customName\" TEXT;" >> /tmp/fbjjmma_migrate.sql
             echo "CREATE TABLE IF NOT EXISTS \"user_sessions\" (\"id\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"sessionToken\" TEXT NOT NULL, \"ip\" TEXT, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, \"invalidatedAt\" TIMESTAMP(3), CONSTRAINT \"user_sessions_pkey\" PRIMARY KEY (\"id\"), CONSTRAINT \"user_sessions_sessionToken_key\" UNIQUE (\"sessionToken\"));" >> /tmp/fbjjmma_migrate.sql
             echo "CREATE TABLE IF NOT EXISTS \"audit_logs\" (\"id\" TEXT NOT NULL, \"userId\" TEXT, \"module\" TEXT NOT NULL, \"action\" TEXT NOT NULL, \"details\" JSONB, \"ip\" TEXT, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"audit_logs_pkey\" PRIMARY KEY (\"id\"));" >> /tmp/fbjjmma_migrate.sql
             su postgres -c "psql -d '$DB_NAME' -f /tmp/fbjjmma_migrate.sql" || echo "Migration SQL falhou, continuando..."
