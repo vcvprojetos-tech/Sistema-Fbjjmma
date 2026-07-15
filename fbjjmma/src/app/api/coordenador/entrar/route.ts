@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
@@ -133,6 +134,14 @@ export async function POST(req: NextRequest) {
       data: { tatameId: tatame.id, userId: user.id, lastHeartbeat: new Date() } as any,
     }),
   ])
+
+  await logAction({
+    userId: user.id,
+    module: "COORDENADOR",
+    action: "ACESSO_TATAME",
+    details: { tatame: tatameName, evento: event.name },
+    ip: getClientIP(req),
+  })
 
   return NextResponse.json({
     tatameId: tatame.id,

@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronRight,
   Lock,
+  ScrollText,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/admin/tabelas-peso", label: "Tabelas de Peso", icon: Weight, permission: "TABELAS_PESO", presidenteOnly: false },
   { href: "/admin/usuarios", label: "Usuários", icon: UserCog, permission: null, presidenteOnly: false },
   { href: "/admin/permissoes", label: "Permissões", icon: Lock, permission: null, presidenteOnly: true },
+  { href: "/admin/logs", label: "Logs", icon: ScrollText, permission: null, presidenteOnly: true },
 ]
 
 function hasEventPermission(perms: string[]): boolean {
@@ -40,6 +42,7 @@ const ROUTE_PERMISSION_MAP: Record<string, string | "PRESIDENTE_ONLY" | "EVENTO_
   "/admin/tabelas-peso": "TABELAS_PESO",
   "/admin/usuarios": "USUARIOS_CRIAR",
   "/admin/permissoes": "PRESIDENTE_ONLY",
+  "/admin/logs": "PRESIDENTE_ONLY",
 }
 
 const ROLE_LABELS: Record<string, string> = {

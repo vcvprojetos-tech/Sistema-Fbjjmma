@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { prisma, ensureEventIsActive } from "@/lib/db"
 import path from "path"
 import { writeFile, mkdir } from "fs/promises"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function GET(
   req: NextRequest,
@@ -12,6 +13,8 @@ export async function GET(
   if (!session) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
   }
+
+  await ensureEventIsActive()
 
   const { id } = await params
 
@@ -129,6 +132,14 @@ export async function PUT(
       include: { type: true, weightTable: true },
     })
 
+    await logAction({
+      userId: session.user.id,
+      module: "EVENTOS",
+      action: "EDITAR",
+      details: { nome: event.name },
+      ip: getClientIP(req),
+    })
+
     return NextResponse.json(event)
   } catch (error) {
     console.error("[EVENTOS PUT ERROR]", error)
@@ -151,9 +162,17 @@ export async function DELETE(
   const { id } = await params
 
   try {
-    await prisma.event.update({
+    const event = await prisma.event.update({
       where: { id },
       data: { deletedAt: new Date() },
+    })
+
+    await logAction({
+      userId: session.user.id,
+      module: "EVENTOS",
+      action: "EXCLUIR",
+      details: { nome: event.name },
+      ip: getClientIP(req),
     })
 
     return NextResponse.json({ message: "Evento movido para a lixeira." })

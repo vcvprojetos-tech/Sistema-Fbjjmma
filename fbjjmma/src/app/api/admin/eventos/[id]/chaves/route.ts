@@ -3,6 +3,7 @@ import { Belt, Sex, AgeGroup } from "@prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma, ensureBracketDeletedAt } from "@/lib/db"
 import { Pool } from "pg"
+import { logAction, getClientIP } from "@/lib/audit"
 
 function getPgPool() {
   return new Pool({ connectionString: process.env.DATABASE_URL! })
@@ -276,6 +277,14 @@ export async function POST(
       await createBracketGroup(regs, weightCategoryId, belt as Belt, true)
     }
 
+    await logAction({
+      userId: session.user.id,
+      module: "CHAVES",
+      action: "GERAR",
+      details: { eventId: id, eventNome: event.name, quantidade: createdBrackets.length },
+      ip: getClientIP(_req),
+    })
+
     return NextResponse.json({ message: `${createdBrackets.length} chave(s) gerada(s).`, count: createdBrackets.length })
   } catch (error: unknown) {
     console.error("[CHAVES POST ERROR]", error)
@@ -303,6 +312,13 @@ export async function DELETE(
     await prisma.match.deleteMany({ where: { bracket: { eventId: id } } })
     await prisma.bracketPosition.deleteMany({ where: { bracket: { eventId: id } } })
     await prisma.bracket.deleteMany({ where: { eventId: id } })
+    await logAction({
+      userId: session.user.id,
+      module: "CHAVES",
+      action: "LIMPAR",
+      details: { eventId: id },
+      ip: getClientIP(req),
+    })
     return NextResponse.json({ message: "Chaves removidas." })
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error)

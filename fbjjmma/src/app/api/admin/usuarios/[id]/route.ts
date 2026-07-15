@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Pool } from "pg"
+import { logAction, getClientIP } from "@/lib/audit"
 
 function getPgPool() {
   return new Pool({ connectionString: process.env.DATABASE_URL! })
@@ -115,6 +116,14 @@ export async function PUT(
       },
     })
 
+    await logAction({
+      userId: session.user.id,
+      module: "USUARIOS",
+      action: "EDITAR",
+      details: { nome: updated.name, perfil: updated.role },
+      ip: getClientIP(req),
+    })
+
     return NextResponse.json(updated)
   } catch (error) {
     console.error("[USUARIOS PUT ERROR]", error)
@@ -142,6 +151,13 @@ export async function PATCH(
       const pool = getPgPool()
       await pool.query(`UPDATE users SET "deletedAt" = NULL WHERE id = $1`, [id])
       await pool.end()
+      await logAction({
+        userId: session.user.id,
+        module: "USUARIOS",
+        action: "RESTAURAR",
+        details: { id },
+        ip: getClientIP(req),
+      })
       return NextResponse.json({ message: "Usuário restaurado." })
     } catch (error) {
       console.error("[USUARIOS RESTORE ERROR]", error)
@@ -176,12 +192,26 @@ export async function DELETE(
       await prisma.auditLog.deleteMany({ where: { userId: id } })
       await prisma.eventCoordinator.deleteMany({ where: { userId: id } })
       await prisma.user.delete({ where: { id } })
+      await logAction({
+        userId: session.user.id,
+        module: "USUARIOS",
+        action: "EXCLUIR_PERMANENTE",
+        details: { nome: user.name, perfil: user.role },
+        ip: getClientIP(req),
+      })
       return NextResponse.json({ message: "Usuário excluído permanentemente." })
     }
 
     const pool = getPgPool()
     await pool.query(`UPDATE users SET "deletedAt" = NOW() WHERE id = $1`, [id])
     await pool.end()
+    await logAction({
+      userId: session.user.id,
+      module: "USUARIOS",
+      action: "EXCLUIR",
+      details: { nome: user.name, perfil: user.role },
+      ip: getClientIP(req),
+    })
     return NextResponse.json({ message: "Usuário movido para a lixeira." })
   } catch (error) {
     console.error("[USUARIOS DELETE ERROR]", error)

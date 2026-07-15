@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Pool } from "pg"
+import { logAction, getClientIP } from "@/lib/audit"
 
 function getPgPool() {
   return new Pool({ connectionString: process.env.DATABASE_URL! })
@@ -134,6 +135,14 @@ export async function POST(req: NextRequest) {
         isActive: true,
         createdAt: true,
       },
+    })
+
+    await logAction({
+      userId: session.user.id,
+      module: "USUARIOS",
+      action: "CRIAR",
+      details: { nome: user.name, perfil: user.role },
+      ip: getClientIP(req),
     })
 
     return NextResponse.json(user, { status: 201 })
