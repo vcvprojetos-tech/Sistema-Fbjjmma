@@ -285,11 +285,17 @@ export async function POST(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
+
+  const body = await req.json().catch(() => ({}))
+  const senhaCorreta = process.env.LIMPAR_CHAVES_PASSWORD
+  if (!senhaCorreta || body.senha !== senhaCorreta) {
+    return NextResponse.json({ error: "Senha incorreta." }, { status: 403 })
+  }
 
   const { id } = await params
 

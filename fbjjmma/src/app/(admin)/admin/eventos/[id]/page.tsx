@@ -421,6 +421,11 @@ export default function EventoDetailPage() {
   const [importLoading, setImportLoading] = useState(false)
   const [importResult, setImportResult] = useState<{ total: number; importados: number; ignorados: { nome: string; motivo?: string }[]; erros: { nome: string; motivo?: string }[] } | null>(null)
 
+  const [limparSenhaOpen, setLimparSenhaOpen] = useState(false)
+  const [limparSenha, setLimparSenha] = useState("")
+  const [limparSenhaErro, setLimparSenhaErro] = useState("")
+  const [limparSenhaLoading, setLimparSenhaLoading] = useState(false)
+
   useEffect(() => {
     async function loadEvent() {
       setEventLoading(true)
@@ -1750,12 +1755,7 @@ export default function EventoDetailPage() {
               <Button
                 variant="ghost"
                 className="text-[#f87171] hover:text-[#f87171]"
-                onClick={async () => {
-                  if (!confirm("Tem certeza que deseja remover todas as chaves?")) return
-                  await fetch(`/api/admin/eventos/${id}/chaves`, { method: "DELETE" })
-                  setDeletedBrackets([])
-                  await loadChaves()
-                }}
+                onClick={() => { setLimparSenhaOpen(true); setLimparSenha(""); setLimparSenhaErro("") }}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Limpar Chaves
@@ -3057,6 +3057,74 @@ export default function EventoDetailPage() {
                 style={{ flex: 1, objectFit: "contain", backgroundColor: "#111", maxHeight: "100%" }}
               />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação por senha — Limpar Chaves */}
+      {limparSenhaOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#1a1a2e] rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h2 className="text-lg font-bold text-[#111827] dark:text-white mb-1">Limpar Chaves</h2>
+            <p className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-4">
+              Esta ação remove <strong>todas as chaves e partidas</strong> do evento permanentemente. Digite a senha para confirmar.
+            </p>
+            <Label className="text-sm font-medium text-[#374151] dark:text-[#d1d5db]">Senha</Label>
+            <Input
+              type="password"
+              className="mt-1 mb-1"
+              placeholder="Digite a senha..."
+              value={limparSenha}
+              onChange={e => { setLimparSenha(e.target.value); setLimparSenhaErro("") }}
+              onKeyDown={async e => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  document.getElementById("btn-confirmar-limpar")?.click()
+                }
+              }}
+              autoFocus
+            />
+            {limparSenhaErro && (
+              <p className="text-sm text-red-500 mb-3">{limparSenhaErro}</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setLimparSenhaOpen(false)}
+                disabled={limparSenhaLoading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                id="btn-confirmar-limpar"
+                variant="ghost"
+                className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-50"
+                disabled={limparSenhaLoading || !limparSenha}
+                onClick={async () => {
+                  setLimparSenhaLoading(true)
+                  const res = await fetch(`/api/admin/eventos/${id}/chaves`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ senha: limparSenha }),
+                  })
+                  setLimparSenhaLoading(false)
+                  if (res.status === 403) {
+                    setLimparSenhaErro("Senha incorreta.")
+                    return
+                  }
+                  if (!res.ok) {
+                    setLimparSenhaErro("Erro ao limpar chaves. Tente novamente.")
+                    return
+                  }
+                  setLimparSenhaOpen(false)
+                  setDeletedBrackets([])
+                  await loadChaves()
+                }}
+              >
+                {limparSenhaLoading ? "Removendo..." : "Confirmar"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
