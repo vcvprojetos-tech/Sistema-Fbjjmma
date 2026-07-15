@@ -412,6 +412,10 @@ export default function LogsPage() {
                       importados: "Importados", erros: "Erros", chave: "Chave",
                       bracketId: "Chave ID", matchId: "Partida ID", tipo: "Tipo",
                       medal: "Medalha", eventNome: "Evento", de: "De", para: "Para",
+                      categoria: "Categoria de Peso", faixa: "Faixa",
+                      sexo: "Sexo", categoria_idade: "Categoria Etária",
+                      absoluto: "Absoluto", status: "Status",
+                      saiu_de: "Saiu da Chave", entrou_em: "Entrou na Chave",
                     }
                     return (
                       <div key={k} className="flex gap-3 items-start">

@@ -115,9 +115,10 @@ export async function PUT(
     const registration = await prisma.registration.findUnique({
       where: { id: atletaId },
       include: {
+        weightCategory: { select: { name: true } },
         bracketPositions: {
           include: {
-            bracket: { select: { id: true, isAbsolute: true, status: true, weightCategoryId: true, belt: true } },
+            bracket: { select: { id: true, bracketNumber: true, isAbsolute: true, status: true, weightCategoryId: true, belt: true, weightCategory: { select: { name: true } } } },
           },
         },
       },
@@ -307,14 +308,70 @@ export async function PUT(
       }
     }
 
+    // Monta detalhes ricos para o log
+    const logDetails: Record<string, unknown> = {
+      atleta: updated.athlete?.user?.name ?? updated.guestName ?? "Convidado",
+    }
+
+    // Quais campos mudaram
+    if (newWeightCategoryId !== registration.weightCategoryId) {
+      logDetails.categoria = `${registration.weightCategory?.name ?? "?"} → ${updated.weightCategory?.name ?? "?"}`
+    }
+    if (newBelt !== registration.belt) {
+      logDetails.faixa = `${registration.belt} → ${newBelt}`
+    }
+    if (sex && sex !== registration.sex) {
+      logDetails.sexo = `${registration.sex} → ${sex}`
+    }
+    if (ageGroup && ageGroup !== registration.ageGroup) {
+      logDetails.categoria_idade = `${registration.ageGroup} → ${ageGroup}`
+    }
+    if (isAbsolute !== undefined && newIsAbsolute !== registration.isAbsolute) {
+      logDetails.absoluto = `${registration.isAbsolute ? "Sim" : "Não"} → ${newIsAbsolute ? "Sim" : "Não"}`
+    }
+    if (status && status !== registration.status) {
+      logDetails.status = `${registration.status} → ${status}`
+    }
+
+    // Mudanças de chave (se houve repositionamento)
+    if (bracketFieldsChanged && registration.bracketPositions.length > 0) {
+      const oldBracketIds = registration.bracketPositions.map(p => p.bracket.id)
+
+      // Verifica quais chaves antigas ainda existem (as que sumiram foram excluídas por ficarem vazias)
+      const stillExisting = await prisma.bracket.findMany({
+        where: { id: { in: oldBracketIds } },
+        select: { id: true },
+      })
+      const stillExistingSet = new Set(stillExisting.map(b => b.id))
+
+      for (const pos of registration.bracketPositions) {
+        const b = pos.bracket
+        const catNome = b.weightCategory?.name ?? ""
+        const label = `Chave #${b.bracketNumber}${catNome ? ` (${catNome})` : ""}`
+        const wasDeleted = !stillExistingSet.has(b.id)
+        logDetails.saiu_de = wasDeleted ? `${label} — excluída (ficou vazia)` : label
+      }
+
+      // Quais chaves o atleta entrou agora
+      const currentPositions = await prisma.bracketPosition.findMany({
+        where: { registrationId: atletaId },
+        include: {
+          bracket: { select: { id: true, bracketNumber: true, weightCategory: { select: { name: true } } } },
+        },
+      })
+      const newBrackets = currentPositions.filter(p => !new Set(oldBracketIds).has(p.bracket.id))
+      if (newBrackets.length > 0) {
+        logDetails.entrou_em = newBrackets
+          .map(p => `Chave #${p.bracket.bracketNumber}${p.bracket.weightCategory ? ` (${p.bracket.weightCategory.name})` : ""}`)
+          .join(", ")
+      }
+    }
+
     await logAction({
       userId: session.user.id,
       module: "ATLETAS",
       action: "EDITAR_INSCRICAO",
-      details: {
-        atleta: updated.athlete?.user?.name ?? updated.guestName ?? "Convidado",
-        eventId: id,
-      },
+      details: logDetails,
       ip: getClientIP(req),
     })
 
