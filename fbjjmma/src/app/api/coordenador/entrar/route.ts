@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const cleanCpf = String(cpf).replace(/\D/g, "")
 
   const user = await prisma.user.findFirst({
-    where: { cpf: cleanCpf, role: "COORDENADOR_TATAME", isActive: true },
+    where: { cpf: cleanCpf, role: { in: ["COORDENADOR_TATAME", "COORDENADOR_GERAL", "PRESIDENTE"] }, isActive: true },
   })
 
   if (!user) {
