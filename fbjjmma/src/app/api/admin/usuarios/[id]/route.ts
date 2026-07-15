@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Pool } from "pg"
+
+function getPgPool() {
+  return new Pool({ connectionString: process.env.DATABASE_URL! })
+}
 
 export async function GET(
   req: NextRequest,
@@ -110,6 +115,33 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth()
+  if (!session) {
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 })
+  }
+
+  const { id } = await params
+  const body = await req.json().catch(() => ({}))
+
+  if (body.action === "restore") {
+    try {
+      const pool = getPgPool()
+      await pool.query(`UPDATE users SET "deletedAt" = NULL WHERE id = $1`, [id])
+      await pool.end()
+      return NextResponse.json({ message: "Usuário restaurado." })
+    } catch (error) {
+      console.error("[USUARIOS RESTORE ERROR]", error)
+      return NextResponse.json({ error: "Erro ao restaurar usuário." }, { status: 500 })
+    }
+  }
+
+  return NextResponse.json({ error: "Ação inválida." }, { status: 400 })
+}
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -120,6 +152,8 @@ export async function DELETE(
   }
 
   const { id } = await params
+  const { searchParams } = new URL(req.url)
+  const permanent = searchParams.get("permanent") === "1"
 
   try {
     const user = await prisma.user.findUnique({ where: { id } })
@@ -127,16 +161,22 @@ export async function DELETE(
       return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 })
     }
 
-    await prisma.user.update({
-      where: { id },
-      data: { isActive: false },
-    })
+    if (permanent) {
+      await prisma.tatameOperation.deleteMany({ where: { userId: id } })
+      await prisma.auditLog.deleteMany({ where: { userId: id } })
+      await prisma.eventCoordinator.deleteMany({ where: { userId: id } })
+      await prisma.user.delete({ where: { id } })
+      return NextResponse.json({ message: "Usuário excluído permanentemente." })
+    }
 
-    return NextResponse.json({ message: "Usuário desativado." })
+    const pool = getPgPool()
+    await pool.query(`UPDATE users SET "deletedAt" = NOW() WHERE id = $1`, [id])
+    await pool.end()
+    return NextResponse.json({ message: "Usuário movido para a lixeira." })
   } catch (error) {
     console.error("[USUARIOS DELETE ERROR]", error)
     return NextResponse.json(
-      { error: "Erro ao desativar usuário." },
+      { error: "Erro ao excluir usuário." },
       { status: 500 }
     )
   }

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Pool } from "pg"
+
+function getPgPool() {
+  return new Pool({ connectionString: process.env.DATABASE_URL! })
+}
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -12,6 +17,7 @@ export async function GET(req: NextRequest) {
   const includeAthletes = searchParams.get("includeAthletes") === "1"
   const nome = searchParams.get("nome") || ""
   const role = searchParams.get("role") || ""
+  const trash = searchParams.get("trash") === "1"
 
   const where: Record<string, unknown> = {}
 
@@ -25,6 +31,20 @@ export async function GET(req: NextRequest) {
 
   if (nome) {
     where.name = { contains: nome, mode: "insensitive" }
+  }
+
+  try {
+    const pool = getPgPool()
+    const result = await pool.query<{ id: string }>(
+      `SELECT id FROM users WHERE "deletedAt" IS ${trash ? "NOT NULL" : "NULL"}`
+    )
+    await pool.end()
+    const ids = result.rows.map(r => r.id)
+    if (ids.length === 0) return NextResponse.json([])
+    where.id = { in: ids }
+  } catch {
+    if (trash) return NextResponse.json([])
+    // Coluna ainda não existe — retorna todos sem filtro de lixeira
   }
 
   const users = await prisma.user.findMany({
