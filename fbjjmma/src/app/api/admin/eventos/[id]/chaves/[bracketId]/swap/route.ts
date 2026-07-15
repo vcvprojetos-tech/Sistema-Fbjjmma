@@ -19,10 +19,13 @@ export async function POST(
       return NextResponse.json({ ok: true })
     }
 
-    const bracket = await prisma.bracket.findUnique({
-      where: { id: bracketId },
-      select: { id: true, eventId: true, status: true },
-    })
+    const [bracket, eventInfo] = await Promise.all([
+      prisma.bracket.findUnique({
+        where: { id: bracketId },
+        select: { id: true, eventId: true, status: true, bracketNumber: true },
+      }),
+      prisma.event.findUnique({ where: { id }, select: { name: true } }),
+    ])
 
     if (!bracket || bracket.eventId !== id) {
       return NextResponse.json({ error: "Chave não encontrada." }, { status: 404 })
@@ -36,12 +39,35 @@ export async function POST(
     }
 
     const [posA, posB] = await Promise.all([
-      prisma.bracketPosition.findFirst({ where: { id: fromPosId, bracketId } }),
-      prisma.bracketPosition.findFirst({ where: { id: toPosId, bracketId } }),
+      prisma.bracketPosition.findFirst({
+        where: { id: fromPosId, bracketId },
+        include: {
+          registration: {
+            select: {
+              guestName: true,
+              athlete: { include: { user: { select: { name: true } } } },
+            },
+          },
+        },
+      }),
+      prisma.bracketPosition.findFirst({
+        where: { id: toPosId, bracketId },
+        include: {
+          registration: {
+            select: {
+              guestName: true,
+              athlete: { include: { user: { select: { name: true } } } },
+            },
+          },
+        },
+      }),
     ])
 
     if (!posA) return NextResponse.json({ error: "Posição de origem não encontrada." }, { status: 404 })
     if (!posB) return NextResponse.json({ error: "Posição de destino não encontrada." }, { status: 404 })
+
+    const nomeA = posA.registration?.athlete?.user?.name ?? posA.registration?.guestName ?? "Desconhecido"
+    const nomeB = posB.registration?.athlete?.user?.name ?? posB.registration?.guestName ?? "Desconhecido"
 
     // Troca usando valor temporário negativo para contornar a constraint unique(bracketId, position)
     await prisma.$transaction([
@@ -54,7 +80,12 @@ export async function POST(
       userId: session.user.id,
       module: "CHAVES",
       action: "TROCAR_POSICAO",
-      details: { bracketId, eventId: id },
+      details: {
+        evento: eventInfo?.name ?? id,
+        chave: `Chave #${bracket.bracketNumber}`,
+        atletaA: `${nomeA} (pos. ${posA.position} → ${posB.position})`,
+        atletaB: `${nomeB} (pos. ${posB.position} → ${posA.position})`,
+      },
       ip: getClientIP(req),
     })
 

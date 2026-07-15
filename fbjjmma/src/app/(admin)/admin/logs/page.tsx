@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { ScrollText, ChevronLeft, ChevronRight, RefreshCw, ShieldCheck, Users } from "lucide-react"
+import { ScrollText, ChevronLeft, ChevronRight, RefreshCw, ShieldCheck, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface LogEntry {
@@ -107,6 +107,7 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true)
   const [filterModule, setFilterModule] = useState("")
   const [filterDays, setFilterDays] = useState<number>(-1)
+  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null)
 
   useEffect(() => {
     if (status === "loading") return
@@ -285,7 +286,8 @@ export default function LogsPage() {
                 return (
                   <tr
                     key={log.id}
-                    className="hover:bg-[var(--card-alt)] transition-colors"
+                    onClick={() => setSelectedLog(log)}
+                    className="hover:bg-[var(--card-alt)] transition-colors cursor-pointer"
                     style={{ borderBottom: "1px solid var(--card-alt)" }}
                   >
                     <td className="px-4 py-3 whitespace-nowrap font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>
@@ -345,6 +347,102 @@ export default function LogsPage() {
             <Button variant="outline" size="sm" onClick={() => changePage(page + 1)} disabled={page >= pages || loading}>
               Próxima <ChevronRight className="h-3.5 w-3.5 ml-1" />
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de detalhes */}
+      {selectedLog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          onClick={() => setSelectedLog(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border shadow-2xl"
+            style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Cabeçalho do modal */}
+            <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: "var(--border)" }}>
+              <div className="space-y-1">
+                <p className="text-xs font-mono" style={{ color: "var(--muted)" }}>
+                  {formatDate(selectedLog.createdAt)}
+                </p>
+                <p className="text-base font-semibold" style={{ color: "var(--foreground)" }}>
+                  {ACTION_LABELS[selectedLog.action] ?? selectedLog.action}
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const mod = ALL_MODULE_CONFIG[selectedLog.module]
+                    return mod ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{ backgroundColor: mod.bg, color: mod.text }}>
+                        {mod.label}
+                      </span>
+                    ) : (
+                      <span className="text-xs" style={{ color: "var(--muted)" }}>{selectedLog.module}</span>
+                    )
+                  })()}
+                  {selectedLog.user && (
+                    <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                      por <strong>{selectedLog.user.name}</strong> ({ROLE_LABELS[selectedLog.user.role] ?? selectedLog.user.role})
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="p-1.5 rounded-lg transition-colors hover:bg-[var(--card-alt)]"
+                style={{ color: "var(--muted)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Corpo do modal — detalhes */}
+            <div className="p-5 space-y-3">
+              {selectedLog.details && Object.keys(selectedLog.details).length > 0 ? (
+                <div className="space-y-2">
+                  {Object.entries(selectedLog.details).map(([k, v]) => {
+                    const keyLabels: Record<string, string> = {
+                      nome: "Nome", perfil: "Perfil", id: "ID", evento: "Evento",
+                      eventId: "Evento ID", quantidade: "Quantidade", tatame: "Tatame",
+                      atleta: "Atleta", atletaA: "Atleta A", atletaB: "Atleta B",
+                      importados: "Importados", erros: "Erros", chave: "Chave",
+                      bracketId: "Chave ID", matchId: "Partida ID", tipo: "Tipo",
+                      medal: "Medalha", eventNome: "Evento", de: "De", para: "Para",
+                    }
+                    return (
+                      <div key={k} className="flex gap-3 items-start">
+                        <span
+                          className="text-xs font-medium min-w-[100px] pt-0.5"
+                          style={{ color: "var(--muted)" }}
+                        >
+                          {keyLabels[k] ?? k}
+                        </span>
+                        <span
+                          className="text-sm break-all"
+                          style={{ color: "var(--foreground)" }}
+                        >
+                          {typeof v === "object" ? JSON.stringify(v) : String(v ?? "—")}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm" style={{ color: "var(--muted)" }}>Sem detalhes adicionais.</p>
+              )}
+
+              {selectedLog.ip && (
+                <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+                  <span className="text-xs font-mono" style={{ color: "var(--muted)" }}>
+                    IP: {selectedLog.ip}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
