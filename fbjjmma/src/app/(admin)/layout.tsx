@@ -12,6 +12,7 @@ import {
   UserCog,
   LogOut,
   ChevronRight,
+  Lock,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
@@ -19,13 +20,23 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 import { ThemeLogo } from "@/components/ThemeLogo"
 
 const navItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/eventos", label: "Eventos", icon: CalendarDays },
-  { href: "/admin/atletas", label: "Atletas", icon: Users },
-  { href: "/admin/equipes", label: "Equipes", icon: Shield },
-  { href: "/admin/tabelas-peso", label: "Tabelas de Peso", icon: Weight },
-  { href: "/admin/usuarios", label: "Usuários", icon: UserCog },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, permission: null, presidenteOnly: false },
+  { href: "/admin/eventos", label: "Eventos", icon: CalendarDays, permission: "EVENTOS", presidenteOnly: false },
+  { href: "/admin/atletas", label: "Atletas", icon: Users, permission: "ATLETAS", presidenteOnly: false },
+  { href: "/admin/equipes", label: "Equipes", icon: Shield, permission: "EQUIPES", presidenteOnly: false },
+  { href: "/admin/tabelas-peso", label: "Tabelas de Peso", icon: Weight, permission: "TABELAS_PESO", presidenteOnly: false },
+  { href: "/admin/usuarios", label: "Usuários", icon: UserCog, permission: null, presidenteOnly: true },
+  { href: "/admin/permissoes", label: "Permissões", icon: Lock, permission: null, presidenteOnly: true },
 ]
+
+const ROUTE_PERMISSION_MAP: Record<string, string | "PRESIDENTE_ONLY"> = {
+  "/admin/eventos": "EVENTOS",
+  "/admin/atletas": "ATLETAS",
+  "/admin/equipes": "EQUIPES",
+  "/admin/tabelas-peso": "TABELAS_PESO",
+  "/admin/usuarios": "PRESIDENTE_ONLY",
+  "/admin/permissoes": "PRESIDENTE_ONLY",
+}
 
 const ROLE_LABELS: Record<string, string> = {
   PRESIDENTE: "Presidente",
@@ -44,14 +55,35 @@ export default function AdminLayout({
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [userPermissions, setUserPermissions] = useState<string[] | null>(null)
 
   useEffect(() => {
     if (status === "loading") return
     const role = session?.user?.role
     if (!role || (role !== "PRESIDENTE" && role !== "COORDENADOR_GERAL")) {
       router.replace("/login")
+      return
+    }
+    if (role === "COORDENADOR_GERAL") {
+      fetch("/api/admin/me")
+        .then((r) => r.json())
+        .then((data) => setUserPermissions(data.permissions ?? []))
+        .catch(() => setUserPermissions([]))
     }
   }, [session, status, router])
+
+  useEffect(() => {
+    const role = session?.user?.role
+    if (role !== "COORDENADOR_GERAL" || userPermissions === null) return
+    const base = Object.keys(ROUTE_PERMISSION_MAP).find((prefix) =>
+      pathname.startsWith(prefix)
+    )
+    if (!base) return
+    const required = ROUTE_PERMISSION_MAP[base]
+    if (required === "PRESIDENTE_ONLY" || !userPermissions.includes(required)) {
+      router.replace("/admin")
+    }
+  }, [pathname, userPermissions, session, router])
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href
@@ -94,7 +126,13 @@ export default function AdminLayout({
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems.filter((item) => {
+            const role = session?.user?.role
+            if (role === "PRESIDENTE") return true
+            if (item.presidenteOnly) return false
+            if (!item.permission) return true
+            return userPermissions?.includes(item.permission) ?? false
+          }).map((item) => {
             const Icon = item.icon
             const active = isActive(item.href, item.exact)
             return (
