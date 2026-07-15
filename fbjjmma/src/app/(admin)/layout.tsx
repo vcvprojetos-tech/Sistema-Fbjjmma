@@ -271,7 +271,10 @@ export default function AdminLayout({
             )}
             <ThemeToggle />
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" }).catch(() => {})
+                signOut({ callbackUrl: "/login" })
+              }}
               className="transition-colors hover:text-[#dc2626]"
               style={{ color: "var(--muted)" }}
             >
