@@ -36,8 +36,22 @@ model User {
   auditLogs         AuditLog[]
   eventCoordinators EventCoordinator[]
   tatameOperations  TatameOperation[]
+  userSessions      UserSession[]
 
   @@map("users")
+}
+
+model UserSession {
+  id            String    @id @default(cuid())
+  userId        String
+  sessionToken  String    @unique
+  ip            String?
+  createdAt     DateTime  @default(now())
+  invalidatedAt DateTime?
+
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@map("user_sessions")
 }
 
 model CustomRole {

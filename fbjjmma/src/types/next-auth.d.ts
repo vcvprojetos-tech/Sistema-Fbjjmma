@@ -8,6 +8,7 @@ declare module "next-auth" {
       email: string
       cpf: string
       role: string
+      sessionId?: string
     }
   }
 
@@ -17,6 +18,8 @@ declare module "next-auth" {
     email: string
     cpf: string
     role: string
+    sessionToken?: string
+    sessionId?: string
   }
 }
 
@@ -25,5 +28,7 @@ declare module "next-auth/jwt" {
     id: string
     cpf: string
     role: string
+    sessionToken?: string
+    sessionId?: string
   }
 }

@@ -12,7 +12,7 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
         identifier: { label: "CPF ou E-mail", type: "text" },
         password: { label: "Senha", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.identifier || !credentials?.password) {
           return null
         }
@@ -41,12 +41,29 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
         const isPasswordValid = await bcrypt.compare(password, resolvedUser.password)
         if (!isPasswordValid) return null
 
+        const req = request as Request
+        const ip = req?.headers?.get?.("x-forwarded-for") ?? req?.headers?.get?.("x-real-ip") ?? null
+
         logAction({
           userId: resolvedUser.id,
           module: "SISTEMA",
           action: "LOGIN",
           details: { nome: resolvedUser.name, perfil: resolvedUser.role },
+          ip: ip ?? undefined,
         }).catch(() => {})
+
+        // Gera token único para esta sessão
+        const sessionToken = crypto.randomUUID()
+        let sessionId: string | undefined
+
+        try {
+          const sessionRecord = await (prisma as any).userSession.create({
+            data: { sessionToken, userId: resolvedUser.id, ip },
+          })
+          sessionId = sessionRecord.id
+        } catch {
+          // Falha não crítica — sessão continua mas sem controle individual
+        }
 
         // Limpa qualquer force-logout anterior ao fazer novo login
         prisma.user.update({ where: { id: resolvedUser.id }, data: { forceLogoutAt: null } }).catch(() => {})
@@ -57,6 +74,8 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
           email: resolvedUser.email,
           cpf: resolvedUser.cpf,
           role: resolvedUser.role,
+          sessionToken,
+          sessionId,
         }
       },
     }),
@@ -71,17 +90,31 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
         token.name = user.name
         token.cpf = (user as { cpf?: string }).cpf
         token.role = (user as { role?: string }).role
+        token.sessionToken = (user as { sessionToken?: string }).sessionToken
+        token.sessionId = (user as { sessionId?: string }).sessionId
       } else if (
         token.id &&
-        ["PRESIDENTE", "COORDENADOR_GERAL", "COORDENADOR_TATAME"].includes(token.role as string)
+        ["PRESIDENTE", "COORDENADOR_GERAL", "COORDENADOR_TATAME", "CUSTOM"].includes(token.role as string)
       ) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { isActive: true, forceLogoutAt: true },
-        })
-        if (!dbUser || !dbUser.isActive) return null
-        if (dbUser.forceLogoutAt && (token.iat as number) * 1000 < dbUser.forceLogoutAt.getTime()) {
-          return null
+        if (token.sessionToken) {
+          // Verifica se esta sessão específica ainda é válida
+          const userSession = await (prisma as any).userSession.findUnique({
+            where: { sessionToken: token.sessionToken },
+            select: { invalidatedAt: true, user: { select: { isActive: true } } },
+          })
+          if (!userSession || userSession.invalidatedAt || !userSession.user?.isActive) {
+            return null
+          }
+        } else {
+          // Fallback: sessões antigas sem sessionToken usam forceLogoutAt
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { isActive: true, forceLogoutAt: true },
+          })
+          if (!dbUser || !dbUser.isActive) return null
+          if (dbUser.forceLogoutAt && (token.iat as number) * 1000 < dbUser.forceLogoutAt.getTime()) {
+            return null
+          }
         }
       }
       return token
@@ -92,6 +125,7 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
         session.user.name = token.name as string
         session.user.cpf = token.cpf as string
         session.user.role = token.role as string
+        session.user.sessionId = token.sessionId as string | undefined
       }
       return session
     },
