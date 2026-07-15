@@ -151,11 +151,12 @@ export async function PATCH(
       const pool = getPgPool()
       await pool.query(`UPDATE users SET "deletedAt" = NULL WHERE id = $1`, [id])
       await pool.end()
+      const restoredUser = await prisma.user.findUnique({ where: { id }, select: { name: true, role: true } })
       await logAction({
         userId: session.user.id,
         module: "USUARIOS",
         action: "RESTAURAR",
-        details: { id },
+        details: { nome: restoredUser?.name ?? id, perfil: restoredUser?.role ?? "" },
         ip: getClientIP(req),
       })
       return NextResponse.json({ message: "Usuário restaurado." })

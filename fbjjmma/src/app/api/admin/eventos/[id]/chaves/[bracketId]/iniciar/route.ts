@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { propagateBracket } from "@/lib/bracket-utils"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; bracketId: string }> }
 ) {
   const session = await auth()
@@ -32,6 +33,15 @@ export async function POST(
     // Delete any existing matches
     await prisma.match.deleteMany({ where: { bracketId } })
 
+    const eventInfo = await prisma.event.findUnique({ where: { id }, select: { name: true } })
+    const logIniciar = () => logAction({
+      userId: session.user.id,
+      module: "CHAVES",
+      action: "INICIAR",
+      details: { evento: eventInfo?.name ?? id, chave: `Chave #${bracket.bracketNumber}` },
+      ip: getClientIP(req),
+    })
+
     // Special case: only 1 athlete — cria partida solo para pesagem
     if (positions.length === 1) {
       await prisma.match.create({
@@ -44,6 +54,7 @@ export async function POST(
         },
       })
       await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await logIniciar()
       return NextResponse.json({ message: "Chave iniciada." })
     }
 
@@ -62,6 +73,7 @@ export async function POST(
         },
       })
       await prisma.bracket.update({ where: { id: bracketId }, data: { status: "EM_ANDAMENTO" } })
+      await logIniciar()
       return NextResponse.json({ message: "Chave iniciada." })
     }
 
@@ -109,6 +121,7 @@ export async function POST(
 
     // Propaga W.O.s: cria partidas das rodadas seguintes que já têm ambos atletas definidos
     await propagateBracket(bracketId)
+    await logIniciar()
 
     return NextResponse.json({ message: "Chave iniciada." })
   } catch (error) {

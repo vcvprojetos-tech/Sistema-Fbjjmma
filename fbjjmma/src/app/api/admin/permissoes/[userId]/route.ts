@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { Pool } from "pg"
+import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function PUT(
   req: NextRequest,
@@ -26,6 +28,16 @@ export async function PUT(
       `UPDATE users SET permissions = $1::text[] WHERE id = $2`,
       [permissions, userId]
     )
+
+    const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+    await logAction({
+      userId: session.user.id,
+      module: "USUARIOS",
+      action: "EDITAR_PERMISSOES",
+      details: { usuario: targetUser?.name ?? userId, permissoes: permissions.join(", ") || "nenhuma" },
+      ip: getClientIP(req),
+    })
+
     return NextResponse.json({ message: "Permissões atualizadas." })
   } catch (error) {
     console.error("[PERMISSOES PUT ERROR]", error)

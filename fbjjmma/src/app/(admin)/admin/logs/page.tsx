@@ -20,11 +20,13 @@ interface LogEntry {
 type Tab = "admin" | "coord"
 
 const ADMIN_MODULES: Record<string, { label: string; bg: string; text: string }> = {
-  USUARIOS:  { label: "Usuários",   bg: "#1e3a5f30", text: "#60a5fa" },
-  EVENTOS:   { label: "Eventos",    bg: "#14532d30", text: "#4ade80" },
-  CHAVES:    { label: "Chaves",     bg: "#92400e30", text: "#fbbf24" },
-  ATLETAS:   { label: "Atletas",    bg: "#1e3a5f30", text: "#a78bfa" },
-  SISTEMA:   { label: "Sistema",    bg: "#1f2937",   text: "#9ca3af" },
+  USUARIOS:      { label: "Usuários",      bg: "#1e3a5f30", text: "#60a5fa" },
+  EVENTOS:       { label: "Eventos",       bg: "#14532d30", text: "#4ade80" },
+  CHAVES:        { label: "Chaves",        bg: "#92400e30", text: "#fbbf24" },
+  ATLETAS:       { label: "Atletas",       bg: "#1e3a5f30", text: "#a78bfa" },
+  EQUIPES:       { label: "Equipes",       bg: "#134e4a30", text: "#2dd4bf" },
+  TABELAS_PESO:  { label: "Tabelas Peso",  bg: "#4a044e30", text: "#e879f9" },
+  SISTEMA:       { label: "Sistema",       bg: "#1f2937",   text: "#9ca3af" },
 }
 
 const COORD_MODULES: Record<string, { label: string; bg: string; text: string }> = {
@@ -44,8 +46,15 @@ const ACTION_LABELS: Record<string, string> = {
   EXCLUIR:             "Excluiu",
   EXCLUIR_PERMANENTE:  "Excluiu permanentemente",
   RESTAURAR:           "Restaurou",
+  ENCERRAR:            "Encerrou evento",
+  ATIVAR_CHAVES:       "Ativou nas chaves",
+  DESATIVAR_CHAVES:    "Desativou das chaves",
+  EDITAR_TATAME:       "Editou tatame",
+  EXCLUIR_TATAME:      "Excluiu tatame",
+  EDITAR_PERMISSOES:   "Editou permissões",
   GERAR:               "Gerou chaves",
   LIMPAR:              "Limpou chaves",
+  INICIAR:             "Iniciou chave",
   REINICIAR:           "Reiniciou chave",
   EXCLUIR_CHAVE:       "Excluiu chave",
   TROCAR_POSICAO:      "Trocou posição na chave",
@@ -79,8 +88,11 @@ function formatDetails(details: Record<string, unknown> | null): string {
     nome: "Nome", perfil: "Perfil", id: "ID", evento: "Evento",
     eventId: "Evento ID", quantidade: "Qtd", tatame: "Tatame",
     atleta: "Atleta", importados: "Importados", erros: "Erros",
-    chave: "Chave nº", bracketId: "Chave ID", matchId: "Partida",
+    chave: "Chave", bracketId: "Chave ID", matchId: "Partida",
     tipo: "Tipo", medal: "Medalha",
+    data: "Data do Evento", cidade: "Cidade", estado: "Estado", local: "Local",
+    evento: "Evento", usuario: "Usuário", permissoes: "Permissões",
+    nome_antes: "Nome anterior", nome_depois: "Novo nome",
   }
   return Object.entries(details)
     .filter(([, v]) => v !== null && v !== undefined && v !== "")

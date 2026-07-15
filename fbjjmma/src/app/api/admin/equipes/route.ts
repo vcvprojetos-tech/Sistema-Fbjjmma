@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -39,6 +40,14 @@ export async function POST(req: NextRequest) {
 
     const team = await prisma.team.create({
       data: { name: name.trim() },
+    })
+
+    await logAction({
+      userId: session.user.id,
+      module: "EQUIPES",
+      action: "CRIAR",
+      details: { nome: team.name },
+      ip: getClientIP(req),
     })
 
     return NextResponse.json(team, { status: 201 })

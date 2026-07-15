@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function GET(
   req: NextRequest,
@@ -73,6 +74,14 @@ export async function PUT(
       }
     }
 
+    await logAction({
+      userId: session.user.id,
+      module: "TABELAS_PESO",
+      action: "EDITAR",
+      details: { nome: updated.name },
+      ip: getClientIP(req),
+    })
+
     return NextResponse.json(updated)
   } catch (error) {
     console.error("[TABELAS-PESO PUT ERROR]", error)
@@ -100,6 +109,14 @@ export async function DELETE(
     await prisma.weightTable.update({
       where: { id },
       data: { isActive: false },
+    })
+
+    await logAction({
+      userId: session.user.id,
+      module: "TABELAS_PESO",
+      action: "EXCLUIR",
+      details: { nome: table.name },
+      ip: getClientIP(req),
     })
 
     return NextResponse.json({ message: "Tabela desativada." })

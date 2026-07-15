@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { logAction, getClientIP } from "@/lib/audit"
 
 export async function GET(
   req: NextRequest,
@@ -65,6 +66,17 @@ export async function PUT(
       },
     })
 
+    await logAction({
+      userId: session.user.id,
+      module: "EQUIPES",
+      action: "EDITAR",
+      details: {
+        nome: updated.name,
+        ...(name && name.trim() !== team.name ? { nome_antes: team.name, nome_depois: updated.name } : {}),
+      },
+      ip: getClientIP(req),
+    })
+
     return NextResponse.json(updated)
   } catch (error) {
     console.error("[EQUIPES PUT ERROR]", error)
@@ -92,6 +104,14 @@ export async function DELETE(
     await prisma.team.update({
       where: { id },
       data: { isActive: false },
+    })
+
+    await logAction({
+      userId: session.user.id,
+      module: "EQUIPES",
+      action: "EXCLUIR",
+      details: { nome: team.name },
+      ip: getClientIP(req),
     })
 
     return NextResponse.json({ message: "Equipe desativada." })

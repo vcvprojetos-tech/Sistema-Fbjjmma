@@ -136,7 +136,12 @@ export async function PUT(
       userId: session.user.id,
       module: "EVENTOS",
       action: "EDITAR",
-      details: { nome: event.name },
+      details: {
+        nome: event.name,
+        data: new Date(event.date).toLocaleDateString("pt-BR"),
+        cidade: event.city,
+        local: event.location,
+      },
       ip: getClientIP(req),
     })
 
@@ -171,7 +176,11 @@ export async function DELETE(
       userId: session.user.id,
       module: "EVENTOS",
       action: "EXCLUIR",
-      details: { nome: event.name },
+      details: {
+        nome: event.name,
+        data: new Date(event.date).toLocaleDateString("pt-BR"),
+        cidade: event.city,
+      },
       ip: getClientIP(req),
     })
 

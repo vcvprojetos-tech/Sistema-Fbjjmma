@@ -140,7 +140,12 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       module: "EVENTOS",
       action: "CRIAR",
-      details: { nome: event.name },
+      details: {
+        nome: event.name,
+        data: new Date(event.date).toLocaleDateString("pt-BR"),
+        cidade: event.city,
+        estado: event.state,
+      },
       ip: getClientIP(req),
     })
 
