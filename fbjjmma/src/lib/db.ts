@@ -5,7 +5,6 @@ import { Pool } from "pg"
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient
   pgPool: Pool
-  bracketDeletedAtEnsured: boolean
 }
 
 function createPrismaClient() {
@@ -17,7 +16,6 @@ export const prisma = globalForPrisma.prisma || createPrismaClient()
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
 
-// Pool pg singleton para queries raw (ex: migrations inline)
 function getPgPool(): Pool {
   if (!globalForPrisma.pgPool) {
     globalForPrisma.pgPool = new Pool({ connectionString: process.env.DATABASE_URL! })
@@ -25,16 +23,10 @@ function getPgPool(): Pool {
   return globalForPrisma.pgPool
 }
 
-// Garante que a coluna deletedAt existe na tabela brackets (idempotente)
-export async function ensureBracketDeletedAt(): Promise<void> {
-  if (globalForPrisma.bracketDeletedAtEnsured) return
-  try {
-    const pool = getPgPool()
-    await pool.query('ALTER TABLE brackets ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)')
-    globalForPrisma.bracketDeletedAtEnsured = true
-  } catch {
-    // falha silenciosa — a coluna pode já existir ou o banco não estar acessível ainda
-  }
-}
+export { getPgPool }
+
+// Mantidos por compatibilidade com chamadas existentes — migrations agora são feitas no deploy
+export async function ensureBracketDeletedAt(): Promise<void> {}
+export async function ensureEventIsActive(): Promise<void> {}
 
 export default prisma
