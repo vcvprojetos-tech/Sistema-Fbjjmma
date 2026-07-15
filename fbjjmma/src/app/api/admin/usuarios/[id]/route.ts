@@ -52,7 +52,7 @@ export async function PUT(
 
   try {
     const body = await req.json()
-    const { name, email, phone, role, isActive, cpf } = body
+    const { name, email, phone, role, isActive, cpf, password } = body
 
     const user = await prisma.user.findUnique({ where: { id } })
     if (!user) {
@@ -83,6 +83,15 @@ export async function PUT(
       }
     }
 
+    let hashedPassword: string | undefined
+    if (password) {
+      if (password.length < 6) {
+        return NextResponse.json({ error: "A senha deve ter no mínimo 6 caracteres." }, { status: 400 })
+      }
+      const bcrypt = await import("bcryptjs")
+      hashedPassword = await bcrypt.hash(password, 10)
+    }
+
     const updated = await prisma.user.update({
       where: { id },
       data: {
@@ -92,6 +101,7 @@ export async function PUT(
         role: role || undefined,
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
         cpf: cpf || undefined,
+        ...(hashedPassword ? { password: hashedPassword } : {}),
       },
       select: {
         id: true,

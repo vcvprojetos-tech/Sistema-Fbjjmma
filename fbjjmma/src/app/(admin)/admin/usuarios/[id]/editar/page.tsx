@@ -30,6 +30,7 @@ export default function EditarUsuarioPage() {
     phone: "",
     role: "COORDENADOR_GERAL",
     isActive: true,
+    password: "",
   })
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function EditarUsuarioPage() {
             phone: data.phone || "",
             role: data.role || "COORDENADOR_GERAL",
             isActive: data.isActive ?? true,
+            password: "",
           })
         }
         setLoading(false)
@@ -81,6 +83,7 @@ export default function EditarUsuarioPage() {
           ...form,
           cpf: form.cpf.replace(/\D/g, "") || undefined,
           phone: form.phone.replace(/\D/g, "") || null,
+          password: form.password || undefined,
         }),
       })
       const data = await res.json()
@@ -174,6 +177,19 @@ export default function EditarUsuarioPage() {
             </SelectContent>
           </Select>
         </div>
+
+        {form.role !== "COORDENADOR_TATAME" && (
+          <div className="space-y-2">
+            <Label htmlFor="password">Nova Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              value={form.password}
+              onChange={(e) => set("password", e.target.value)}
+              placeholder="Deixe em branco para manter a senha atual"
+            />
+          </div>
+        )}
 
         <div className="flex items-center gap-3 pt-1">
           <Checkbox
