@@ -59,7 +59,7 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
 
         try {
           const sessionRecord = await (prisma as any).userSession.create({
-            data: { sessionToken, userId: resolvedUser.id, ip, userAgent },
+            data: { sessionToken, userId: resolvedUser.id, ip, userAgent, lastSeenAt: new Date() },
           })
           sessionId = sessionRecord.id
         } catch {
@@ -101,10 +101,33 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
           // Verifica se esta sessão específica ainda é válida
           const userSession = await (prisma as any).userSession.findUnique({
             where: { sessionToken: token.sessionToken },
-            select: { invalidatedAt: true, user: { select: { isActive: true } } },
+            select: { invalidatedAt: true, lastSeenAt: true, user: { select: { isActive: true } } },
           })
           if (!userSession || userSession.invalidatedAt || !userSession.user?.isActive) {
             return null
+          }
+
+          const now = new Date()
+
+          // Auto-logout por inatividade de 30 minutos
+          if (userSession.lastSeenAt) {
+            const inactiveMs = now.getTime() - new Date(userSession.lastSeenAt).getTime()
+            if (inactiveMs > 30 * 60 * 1000) {
+              await (prisma as any).userSession.update({
+                where: { sessionToken: token.sessionToken as string },
+                data: { invalidatedAt: now },
+              }).catch(() => {})
+              return null
+            }
+          }
+
+          // Atualiza lastSeenAt com throttle de 1 minuto para não sobrecarregar o banco
+          const lastSeen = userSession.lastSeenAt ? new Date(userSession.lastSeenAt) : null
+          if (!lastSeen || now.getTime() - lastSeen.getTime() > 60 * 1000) {
+            ;(prisma as any).userSession.update({
+              where: { sessionToken: token.sessionToken as string },
+              data: { lastSeenAt: now },
+            }).catch(() => {})
           }
         } else {
           // Fallback: sessões antigas sem sessionToken usam forceLogoutAt

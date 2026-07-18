@@ -51,6 +51,7 @@ export async function GET(_req: NextRequest) {
     user: s.user,
     ip: s.ip,
     userAgent: s.userAgent ?? null,
+    lastSeenAt: s.lastSeenAt ?? null,
     createdAt: s.createdAt,
     isCurrentSession: s.id === currentSessionId,
   }))

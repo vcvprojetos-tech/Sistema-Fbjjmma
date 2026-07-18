@@ -19,6 +19,7 @@ type AdminSession = {
   user: { id: string; name: string; role: string }
   ip: string | null
   userAgent: string | null
+  lastSeenAt: string | null
   createdAt: string
   isCurrentSession: boolean
 }
@@ -78,6 +79,12 @@ function tempoRelativo(dateStr: string) {
   if (h < 24) return `${h}h atrás`
   const d = Math.floor(h / 24)
   return `${d}d atrás`
+}
+
+// Online se visto nos últimos 5 minutos
+function isOnline(lastSeenAt: string | null): boolean {
+  if (!lastSeenAt) return false
+  return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000
 }
 
 function dataHora(dateStr: string) {
@@ -383,9 +390,21 @@ export default function SessoesPage() {
                             </span>
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                            {/* Status online / última atividade */}
+                            {s.lastSeenAt && isOnline(s.lastSeenAt) ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "#22c55e" }}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22c55e", display: "inline-block" }} />
+                                Online agora
+                              </span>
+                            ) : s.lastSeenAt ? (
+                              <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#6b7280", display: "inline-block" }} />
+                                Visto {tempoRelativo(s.lastSeenAt)}
+                              </span>
+                            ) : null}
                             <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
                               <Clock size={10} />
-                              {dataHora(s.createdAt)} · {tempoRelativo(s.createdAt)}
+                              Login {dataHora(s.createdAt)}
                             </span>
                             <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
                               <Monitor size={10} />
