@@ -1456,10 +1456,16 @@ export default function EventoDetailPage() {
               </Button>
             )}
             {can("EVENTO_ATLETAS_IMPORTAR") && (
-              <Button variant="outline" onClick={() => { setImportOpen(true); setImportResult(null) }}>
-                <Download className="h-4 w-4 mr-2" />
-                Importar Excel
-              </Button>
+              <div title={totalAtletas > 0 ? "Importação bloqueada: exclua todos os atletas antes de importar novamente" : undefined}>
+                <Button
+                  variant="outline"
+                  disabled={totalAtletas > 0}
+                  onClick={() => { setImportOpen(true); setImportResult(null) }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Importar Excel
+                </Button>
+              </div>
             )}
             {can("EVENTO_ATLETAS_EXCLUIR_TODOS") && (
               <Button
