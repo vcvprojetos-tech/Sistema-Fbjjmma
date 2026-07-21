@@ -10,6 +10,15 @@ export async function GET(_req: NextRequest) {
 
   const cutoff2min = new Date(Date.now() - 2 * 60 * 1000)
 
+  // Limpa sessões inativas há mais de 30 minutos (fecharam a aba sem fazer logout)
+  await (prisma as any).userSession.updateMany({
+    where: {
+      invalidatedAt: null,
+      lastSeenAt: { lt: new Date(Date.now() - 30 * 60 * 1000) },
+    },
+    data: { invalidatedAt: new Date() },
+  }).catch(() => {})
+
   // Sessões de coordenadores de tatame (TatameOperation ativas)
   const tatameSessions = await (prisma.tatameOperation as any).findMany({
     where: { endedAt: null },

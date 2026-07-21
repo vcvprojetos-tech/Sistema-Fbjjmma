@@ -58,6 +58,14 @@ export const { handlers, auth: _auth, signIn, signOut } = NextAuth({
         let sessionId: string | undefined
 
         try {
+          // Invalida sessões anteriores do mesmo usuário + mesmo userAgent (mesmo navegador/dispositivo)
+          if (userAgent) {
+            await (prisma as any).userSession.updateMany({
+              where: { userId: resolvedUser.id, userAgent, invalidatedAt: null },
+              data: { invalidatedAt: new Date() },
+            })
+          }
+
           const sessionRecord = await (prisma as any).userSession.create({
             data: { sessionToken, userId: resolvedUser.id, ip, userAgent, lastSeenAt: new Date() },
           })
