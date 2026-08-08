@@ -141,6 +141,48 @@ export async function POST(
       },
     })
 
+    // Se já existem chaves geradas, adicionar o atleta à chave correspondente (somente PENDENTE ou DESIGNADA)
+    try {
+      const isAbs = Boolean(isAbsolute)
+      let matchingBracket: { id: string } | null = null
+
+      if (isAbs) {
+        matchingBracket = await prisma.bracket.findFirst({
+          where: {
+            eventId: id,
+            isAbsolute: true,
+            belt: belt as never,
+            weightCategory: {
+              sex: sex as "MASCULINO" | "FEMININO",
+              ageGroup: ageGroup as never,
+            },
+            status: { in: ["PENDENTE", "DESIGNADA"] },
+          },
+          select: { id: true },
+        })
+      } else {
+        matchingBracket = await prisma.bracket.findFirst({
+          where: {
+            eventId: id,
+            isAbsolute: false,
+            belt: belt as never,
+            weightCategoryId,
+            status: { in: ["PENDENTE", "DESIGNADA"] },
+          },
+          select: { id: true },
+        })
+      }
+
+      if (matchingBracket) {
+        const nextPos = (await prisma.bracketPosition.count({ where: { bracketId: matchingBracket.id } })) + 1
+        await prisma.bracketPosition.create({
+          data: { bracketId: matchingBracket.id, registrationId: registration.id, position: nextPos },
+        })
+      }
+    } catch {
+      // Falha não crítica — inscrição criada mas sem posição na chave
+    }
+
     await logAction({
       userId: session.user.id,
       module: "ATLETAS",
