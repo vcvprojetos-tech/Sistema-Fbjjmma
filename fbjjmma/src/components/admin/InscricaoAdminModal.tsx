@@ -217,31 +217,48 @@ export default function InscricaoAdminModal({
 
     setSaving(true)
     try {
-      const res = await fetch(`/api/admin/eventos/${eventId}/atletas`, {
+      const basePayload = {
+        athleteId: selectedAthlete?.id ?? null,
+        guestName: selectedAthlete ? null : athleteQuery.trim(),
+        sex: form.sex,
+        ageGroup: form.ageGroup,
+        belt: form.belt,
+        weightCategoryId: form.weightCategoryId,
+        teamId: form.teamId || null,
+        professor: form.professor || null,
+        status: form.status,
+        paymentMethod: form.paymentMethod || null,
+        observation: form.observation || null,
+        medal: form.medal || null,
+      }
+
+      // Inscrição na categoria de peso (sempre)
+      const resPeso = await fetch(`/api/admin/eventos/${eventId}/atletas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          athleteId: selectedAthlete?.id ?? null,
-          guestName: selectedAthlete ? null : athleteQuery.trim(),
-          sex: form.sex,
-          ageGroup: form.ageGroup,
-          belt: form.belt,
-          weightCategoryId: form.weightCategoryId,
-          teamId: form.teamId || null,
-          professor: form.professor || null,
-          isAbsolute: form.isAbsolute,
-          status: form.status,
-          paymentMethod: form.paymentMethod || null,
-          observation: form.observation || null,
-          medal: form.medal || null,
-        }),
+        body: JSON.stringify({ ...basePayload, isAbsolute: false }),
       })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.detail || data.error || "Erro ao inscrever atleta.")
-      } else {
-        onSaved()
+      const dataPeso = await resPeso.json()
+      if (!resPeso.ok) {
+        setError(dataPeso.detail || dataPeso.error || "Erro ao inscrever atleta.")
+        return
       }
+
+      // Se "Absoluto" marcado, inscreve também no absoluto
+      if (form.isAbsolute) {
+        const resAbs = await fetch(`/api/admin/eventos/${eventId}/atletas`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...basePayload, isAbsolute: true }),
+        })
+        const dataAbs = await resAbs.json()
+        if (!resAbs.ok) {
+          setError(dataAbs.detail || dataAbs.error || "Inscrito na categoria de peso, mas erro ao inscrever no absoluto.")
+          return
+        }
+      }
+
+      onSaved()
     } catch {
       setError("Erro de conexão.")
     } finally {
