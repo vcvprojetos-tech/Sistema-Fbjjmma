@@ -141,7 +141,7 @@ export async function POST(
       },
     })
 
-    // Se já existem chaves geradas, adicionar o atleta à chave correspondente (somente PENDENTE ou DESIGNADA)
+    // Adicionar o atleta à chave correspondente — cria a chave se ainda não existir
     try {
       const isAbs = Boolean(isAbsolute)
       let matchingBracket: { id: string } | null = null
@@ -152,25 +152,39 @@ export async function POST(
             eventId: id,
             isAbsolute: true,
             belt: belt as never,
-            weightCategory: {
-              sex: sex as "MASCULINO" | "FEMININO",
-              ageGroup: ageGroup as never,
-            },
-            status: { in: ["PENDENTE", "DESIGNADA"] },
+            weightCategory: { sex: sex as "MASCULINO" | "FEMININO", ageGroup: ageGroup as never },
           },
           select: { id: true },
         })
       } else {
         matchingBracket = await prisma.bracket.findFirst({
-          where: {
-            eventId: id,
-            isAbsolute: false,
-            belt: belt as never,
-            weightCategoryId,
-            status: { in: ["PENDENTE", "DESIGNADA"] },
-          },
+          where: { eventId: id, isAbsolute: false, belt: belt as never, weightCategoryId },
           select: { id: true },
         })
+      }
+
+      // Chave não existe ainda — criar agora
+      if (!matchingBracket) {
+        const agg = await prisma.bracket.aggregate({ where: { eventId: id }, _max: { bracketNumber: true } })
+        const nextNumber = (agg._max.bracketNumber ?? 0) + 1
+
+        if (isAbs) {
+          // Para absoluto: qualquer categoria da faixa/sexo/grupo serve como referência
+          const wc = await prisma.weightCategory.findFirst({
+            where: { sex: sex as "MASCULINO" | "FEMININO", ageGroup: ageGroup as never },
+          })
+          if (wc) {
+            matchingBracket = await prisma.bracket.create({
+              data: { eventId: id, weightCategoryId: wc.id, belt: belt as never, isAbsolute: true, bracketNumber: nextNumber },
+              select: { id: true },
+            })
+          }
+        } else {
+          matchingBracket = await prisma.bracket.create({
+            data: { eventId: id, weightCategoryId, belt: belt as never, isAbsolute: false, bracketNumber: nextNumber },
+            select: { id: true },
+          })
+        }
       }
 
       if (matchingBracket) {
