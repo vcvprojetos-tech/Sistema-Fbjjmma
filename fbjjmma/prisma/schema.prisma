@@ -415,6 +415,7 @@ model BracketPosition {
   registration   Registration? @relation(fields: [registrationId], references: [id])
   customName     String?
   isEliminated   Boolean       @default(false)
+  awarded        Boolean       @default(false)
 
   matchesAsP1 Match[] @relation("MatchPosition1")
   matchesAsP2 Match[] @relation("MatchPosition2")

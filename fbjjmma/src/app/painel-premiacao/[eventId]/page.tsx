@@ -43,6 +43,7 @@ interface Reg {
 interface BPos {
   id: string
   position: number
+  awarded: boolean
   registration: Reg | null
 }
 interface BMatch {
@@ -101,6 +102,7 @@ function catLabel(b: BracketInfo): string {
 interface Placement {
   place: 1 | 2 | 3
   positionId: string
+  awarded: boolean
   registration: Reg | null
 }
 
@@ -114,7 +116,7 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
 
   if (b.bracketGroupId && !b.isGrandFinal) {
     if (positions.length === 1 && positions[0].registration)
-      return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
+      return [{ place: 1, positionId: positions[0].id, awarded: positions[0].awarded ?? false, registration: positions[0].registration }]
     if (!matches || matches.length === 0) return []
     const rm = getRealMatches(matches)
     if (rm.length === 0) return []
@@ -126,14 +128,14 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
     if (!fin?.winnerId) return []
     const fp = positions.find(p => p.id === fin.winnerId)
     if (fp?.registration)
-      return [{ place: 1, positionId: fp.id, registration: fp.registration }]
+      return [{ place: 1, positionId: fp.id, awarded: fp.awarded ?? false, registration: fp.registration }]
     return []
   }
 
   if (positions.length === 1 && positions[0].registration) {
     const soloMatch = matches.find(m => m.position1Id !== null && m.position2Id === null)
     if (soloMatch?.isWO) return []
-    return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
+    return [{ place: 1, positionId: positions[0].id, awarded: positions[0].awarded ?? false, registration: positions[0].registration }]
   }
 
   if (!matches || matches.length === 0) return []
@@ -152,7 +154,7 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
 
   const firstPos = positions.find(p => p.id === finalMatch.winnerId)
   if (firstPos?.registration)
-    placements.push({ place: 1, positionId: firstPos.id, registration: firstPos.registration })
+    placements.push({ place: 1, positionId: firstPos.id, awarded: firstPos.awarded ?? false, registration: firstPos.registration })
 
   const secondPosId = finalMatch.position1Id === finalMatch.winnerId ? finalMatch.position2Id : finalMatch.position1Id
   const secondPos = positions.find(p => p.id === secondPosId)
@@ -161,12 +163,12 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
     m.round === finalMatch.round && m.id !== finalMatch.id && m.isWO && !m.winnerId
   )
   if (secondPos?.registration && !hasDoubleWOAtFinalRound)
-    placements.push({ place: 2, positionId: secondPos.id, registration: secondPos.registration })
+    placements.push({ place: 2, positionId: secondPos.id, awarded: secondPos.awarded ?? false, registration: secondPos.registration })
 
   // Final fantasma: perdedor da única partida real = 3° lugar
   if (hasDoubleWOAtFinalRound) {
     if (secondPos?.registration && !finalMatch.isWO)
-      placements.push({ place: 3, positionId: secondPos.id, registration: secondPos.registration })
+      placements.push({ place: 3, positionId: secondPos.id, awarded: secondPos.awarded ?? false, registration: secondPos.registration })
     return placements
   }
 
@@ -187,7 +189,7 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
         const loserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
         const loserPos = sub.positions.find(p => p.id === loserId)
         if (loserPos?.registration)
-          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+          placements.push({ place: 3, positionId: loserPos.id, awarded: loserPos.awarded ?? false, registration: loserPos.registration })
         break
       }
     }
@@ -195,7 +197,7 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
     if (positions.length === 3) {
       const thirdPos = positions.find(p => p.id !== firstPos?.id && p.id !== secondPos?.id)
       if (thirdPos?.registration)
-        placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
+        placements.push({ place: 3, positionId: thirdPos.id, awarded: thirdPos.awarded ?? false, registration: thirdPos.registration })
     } else {
       const semiRound = maxRound - 1
       const champSemi = realMatches.find(m => m.round === semiRound && m.winnerId === finalMatch.winnerId)
@@ -204,7 +206,7 @@ function computePlacements(b: BracketInfo, allBrackets?: BracketInfo[]): Placeme
         const loserId = champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
         const loserPos = positions.find(p => p.id === loserId)
         if (loserPos?.registration)
-          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+          placements.push({ place: 3, positionId: loserPos.id, awarded: loserPos.awarded ?? false, registration: loserPos.registration })
       }
     }
   }
@@ -225,8 +227,8 @@ function getAwardGroups(brackets: BracketInfo[]): AwardGroup[] {
   for (const b of sorted) {
     const podium = computePlacements(b, brackets).sort((a, c) => a.place - c.place)
     const athletes: AwardEntry[] = []
-    for (const { registration: reg, place } of podium) {
-      if (!reg || reg.awarded) continue
+    for (const { registration: reg, place, awarded } of podium) {
+      if (!reg || awarded) continue
       athletes.push({ key: reg.id, name: athleteName(reg), team: reg.team?.name ?? "", place })
     }
     if (athletes.length > 0) groups.push({ bracketId: b.id, category: catLabel(b), athletes })

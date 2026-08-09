@@ -117,8 +117,11 @@ export async function GET(
       }
     }
 
-    const posMap = new Map(b.positions.map((p: { id: string; registration: { awarded: boolean } | null }) => [p.id, p]))
-    return pIds.every(id => (posMap.get(id) as { registration: { awarded: boolean } | null } | undefined)?.registration?.awarded === true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const posMap = new Map(b.positions.map((p: any) => [p.id, p]))
+    // Usa awarded da BracketPosition (por chave) em vez de registration.awarded (global)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return pIds.every(id => (posMap.get(id) as any)?.awarded === true)
   })
   if (travados.length > 0) {
     await prisma.bracket.updateMany({

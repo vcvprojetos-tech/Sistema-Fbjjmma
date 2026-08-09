@@ -153,7 +153,9 @@ function getFinalMatch(matches: { round: number; matchNumber: number; position1I
   const real = matches.filter(m => m.position1Id !== null && m.position2Id !== null)
   if (real.length === 0) return null
   const maxRound = Math.max(...real.map(m => m.round))
-  return real.find(m => m.round === maxRound && m.matchNumber === 1)
+  return real.find(m => m.round === maxRound && m.matchNumber === 1 && m.winnerId)
+    ?? real.find(m => m.round === maxRound && m.winnerId)
+    ?? real.find(m => m.round === maxRound && m.matchNumber === 1)
     ?? real.find(m => m.round === maxRound)
     ?? null
 }
@@ -263,19 +265,22 @@ export async function checkAndCreateGrandFinal(bracketId: string): Promise<void>
  * FINALIZADA so the premiação coordinator always sees a clean state.
  */
 export async function resetBracketAwards(bracketId: string): Promise<void> {
+  // Reseta o awarded por posição (usado no fluxo de premiação por chave)
+  await prisma.bracketPosition.updateMany({
+    where: { bracketId },
+    data: { awarded: false },
+  })
+
+  // Também reseta no nível da inscrição para exibição no painel admin
   const positions = await prisma.bracketPosition.findMany({
     where: { bracketId },
     select: { registrationId: true },
   })
-
-  const regIds = positions
-    .map((p) => p.registrationId)
-    .filter((id): id is string => !!id)
-
-  if (regIds.length === 0) return
-
-  await prisma.registration.updateMany({
-    where: { id: { in: regIds } },
-    data: { awarded: false, medal: null },
-  })
+  const regIds = positions.map((p) => p.registrationId).filter((id): id is string => !!id)
+  if (regIds.length > 0) {
+    await prisma.registration.updateMany({
+      where: { id: { in: regIds } },
+      data: { awarded: false, medal: null },
+    })
+  }
 }

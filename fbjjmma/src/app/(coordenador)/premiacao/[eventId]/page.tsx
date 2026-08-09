@@ -49,6 +49,7 @@ interface Position {
   id: string
   position: number
   isEliminated: boolean
+  awarded: boolean
   registration: RegInfo | null
 }
 
@@ -83,6 +84,7 @@ interface BracketData {
 interface Placement {
   place: 1 | 2 | 3
   positionId: string
+  awarded: boolean
   registration: RegInfo | null
 }
 
@@ -97,7 +99,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
   // Sub-chave de grupo (não é a Grande Final): retorna apenas o campeão
   if (bracket.bracketGroupId && !bracket.isGrandFinal) {
     if (positions.length === 1 && positions[0].registration)
-      return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
+      return [{ place: 1, positionId: positions[0].id, awarded: positions[0].awarded ?? false, registration: positions[0].registration }]
     if (!matches || matches.length === 0) return []
     const realMatches = getRealMatches(matches)
     if (realMatches.length === 0) return []
@@ -109,7 +111,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
     if (!finalMatch?.winnerId) return []
     const firstPos = positions.find((p) => p.id === finalMatch.winnerId)
     if (firstPos?.registration)
-      return [{ place: 1, positionId: firstPos.id, registration: firstPos.registration }]
+      return [{ place: 1, positionId: firstPos.id, awarded: firstPos.awarded ?? false, registration: firstPos.registration }]
     return []
   }
 
@@ -117,7 +119,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
     // Se o único atleta tomou W.O., não há colocação
     const soloMatch = matches.find(m => m.position1Id !== null && m.position2Id === null)
     if (soloMatch?.isWO) return []
-    return [{ place: 1, positionId: positions[0].id, registration: positions[0].registration }]
+    return [{ place: 1, positionId: positions[0].id, awarded: positions[0].awarded ?? false, registration: positions[0].registration }]
   }
 
   if (!matches || matches.length === 0) return []
@@ -136,7 +138,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
 
   const firstPos = positions.find((p) => p.id === finalMatch.winnerId)
   if (firstPos?.registration)
-    placements.push({ place: 1, positionId: firstPos.id, registration: firstPos.registration })
+    placements.push({ place: 1, positionId: firstPos.id, awarded: firstPos.awarded ?? false, registration: firstPos.registration })
 
   const secondPosId =
     finalMatch.position1Id === finalMatch.winnerId ? finalMatch.position2Id : finalMatch.position1Id
@@ -151,12 +153,12 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
     m.round === finalMatch.round && m.id !== finalMatch.id && m.isWO && !m.winnerId
   )
   if (secondPos?.registration && !finalMatch.isWO && !secondHadWO && !hasDoubleWOAtFinalRound)
-    placements.push({ place: 2, positionId: secondPos.id, registration: secondPos.registration })
+    placements.push({ place: 2, positionId: secondPos.id, awarded: secondPos.awarded ?? false, registration: secondPos.registration })
 
   // Final fantasma: perdedor da única partida real = 3° lugar
   if (hasDoubleWOAtFinalRound) {
     if (!finalMatch.isWO && secondPos?.registration)
-      placements.push({ place: 3, positionId: secondPos.id, registration: secondPos.registration })
+      placements.push({ place: 3, positionId: secondPos.id, awarded: secondPos.awarded ?? false, registration: secondPos.registration })
     return placements
   }
 
@@ -182,7 +184,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
         const loserId = subFinal.position1Id === subFinal.winnerId ? subFinal.position2Id : subFinal.position1Id
         const loserPos = sub.positions.find((p) => p.id === loserId)
         if (loserPos?.registration)
-          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+          placements.push({ place: 3, positionId: loserPos.id, awarded: loserPos.awarded ?? false, registration: loserPos.registration })
         break // apenas 1 terceiro lugar
       }
     }
@@ -195,7 +197,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
           (m.position1Id === thirdPos.id || m.position2Id === thirdPos.id)
         )
         if (!eliminatedByWO)
-          placements.push({ place: 3, positionId: thirdPos.id, registration: thirdPos.registration })
+          placements.push({ place: 3, positionId: thirdPos.id, awarded: thirdPos.awarded ?? false, registration: thirdPos.registration })
       }
     } else {
       const semiRound = maxRound - 1
@@ -208,7 +210,7 @@ function computePlacements(bracket: BracketData, allBrackets?: BracketData[]): P
           champSemi.position1Id === champSemi.winnerId ? champSemi.position2Id : champSemi.position1Id
         const loserPos = positions.find((p) => p.id === loserId)
         if (loserPos?.registration)
-          placements.push({ place: 3, positionId: loserPos.id, registration: loserPos.registration })
+          placements.push({ place: 3, positionId: loserPos.id, awarded: loserPos.awarded ?? false, registration: loserPos.registration })
       }
     }
   }
@@ -391,7 +393,7 @@ export default function PremiacaoPage() {
           ...b,
           positions: b.positions.map((p) => {
             if (p.registration?.id !== regId) return p
-            return { ...p, registration: { ...p.registration!, awarded: true, medal, ...(prizePix !== undefined ? { prizePix } : {}) } }
+            return { ...p, awarded: true, registration: { ...p.registration!, awarded: true, medal, ...(prizePix !== undefined ? { prizePix } : {}) } }
           }),
         }
       })
@@ -415,7 +417,7 @@ export default function PremiacaoPage() {
             ...b,
             positions: b.positions.map((p) => {
               if (p.registration?.id !== regId) return p
-              return { ...p, registration: { ...p.registration!, awarded: false, medal: null } }
+              return { ...p, awarded: false, registration: { ...p.registration!, awarded: false, medal: null } }
             }),
           }
         })
@@ -446,7 +448,7 @@ export default function PremiacaoPage() {
       const placements = computePlacements(b, brackets)
       if (placements.length === 0) return false
       // Já totalmente premiada (status travado): não mostrar em aguardando
-      if (placements.every(pl => pl.registration?.awarded)) return false
+      if (placements.every(pl => pl.awarded)) return false
       return true
     })
     .sort((a, b) => bracketFinalizedAt(a) - bracketFinalizedAt(b))
@@ -455,7 +457,7 @@ export default function PremiacaoPage() {
     // FINALIZADA com todos os colocados já premiados (status travado): tratar como premiada
     if (b.status === "FINALIZADA") {
       const placements = computePlacements(b, brackets)
-      if (placements.length > 0 && placements.every(pl => pl.registration?.awarded)) return true
+      if (placements.length > 0 && placements.every(pl => pl.awarded)) return true
     }
     return false
   }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -710,7 +712,7 @@ export default function PremiacaoPage() {
                           seenGroups.add(b.bracketGroupId)
                           const groupBrackets = pendentes.filter(x => x.bracketGroupId === b.bracketGroupId)
                           const allPlacements = groupBrackets.flatMap(x => computePlacements(x, brackets))
-                          const awardedCount = allPlacements.filter(pl => pl.registration?.awarded).length
+                          const awardedCount = allPlacements.filter(pl => pl.awarded).length
                           const isSelected = groupBrackets.some(x => x.id === selectedId)
                           const label = catLabel(b).replace(" (Sub-chave)", "").replace("🏆 Grande Final — ", "")
                           rendered.push(
@@ -734,7 +736,7 @@ export default function PremiacaoPage() {
                         } else {
                           const isSelected = b.id === selectedId
                           const placements = computePlacements(b, brackets)
-                          const awardedCount = placements.filter((pl) => pl.registration?.awarded).length
+                          const awardedCount = placements.filter((pl) => pl.awarded).length
                           rendered.push(
                             <button
                               key={b.id}
@@ -847,7 +849,7 @@ export default function PremiacaoPage() {
                           const cfg = (isLight ? PLACE_CONFIG_LIGHT : PLACE_CONFIG)[pl.place]
                           // Chave PREMIADA: sempre mostra como premiado independente do registration.awarded
                           // (registration.awarded é global — pode ter sido resetado por outra chave do mesmo atleta)
-                          const awarded = pl.sourceBracket.status === "PREMIADA" || (pl.registration?.awarded ?? false)
+                          const awarded = pl.sourceBracket.status === "PREMIADA" || pl.awarded
                           const isAwardingNow = awarding.has(pl.registration?.id ?? "")
                           const regName = pl.registration?.athlete?.user.name ?? pl.registration?.guestName ?? "—"
                           const teamName = pl.registration?.team?.name

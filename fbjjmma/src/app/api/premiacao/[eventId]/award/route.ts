@@ -36,6 +36,14 @@ export async function PUT(
       },
     })
 
+    // Marca a posição específica nesta chave como premiada (rastreio por chave)
+    if (bracketId) {
+      await prisma.bracketPosition.updateMany({
+        where: { bracketId, registrationId },
+        data: { awarded: true },
+      })
+    }
+
     // Server-side: determine if all placements are now awarded and mark bracket PREMIADA
     if (bracketId) {
       const bracket = await prisma.bracket.findUnique({
@@ -164,7 +172,9 @@ export async function PUT(
 
           const awardedMap = new Map<string, boolean>()
           for (const pos of allPositions) {
-            const isAwarded = pos.registration?.id === registrationId ? true : (pos.registration?.awarded ?? false)
+            // Usa awarded da BracketPosition (rastreio por chave, não global da inscrição)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const isAwarded = (pos as any).awarded ?? false
             awardedMap.set(pos.id, isAwarded)
           }
 
