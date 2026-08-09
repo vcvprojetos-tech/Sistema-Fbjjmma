@@ -141,13 +141,30 @@ export async function POST(
       },
     })
 
-    // Adicionar o atleta à chave correspondente — cria a chave se ainda não existir
+    // Adicionar o atleta às chaves correspondentes — cria a chave se ainda não existir
     try {
       const isAbs = Boolean(isAbsolute)
-      let matchingBracket: { id: string } | null = null
 
+      // Busca ou cria a chave de PESO (sempre)
+      let pesoBracket = await prisma.bracket.findFirst({
+        where: { eventId: id, isAbsolute: false, belt: belt as never, weightCategoryId },
+        select: { id: true },
+      })
+      if (!pesoBracket) {
+        const agg = await prisma.bracket.aggregate({ where: { eventId: id }, _max: { bracketNumber: true } })
+        pesoBracket = await prisma.bracket.create({
+          data: { eventId: id, weightCategoryId, belt: belt as never, isAbsolute: false, bracketNumber: (agg._max.bracketNumber ?? 0) + 1 },
+          select: { id: true },
+        })
+      }
+      const pesoPos = (await prisma.bracketPosition.count({ where: { bracketId: pesoBracket.id } })) + 1
+      await prisma.bracketPosition.create({
+        data: { bracketId: pesoBracket.id, registrationId: registration.id, position: pesoPos },
+      })
+
+      // Se marcado como absoluto, também adicionar à chave de absoluto
       if (isAbs) {
-        matchingBracket = await prisma.bracket.findFirst({
+        let absBracket = await prisma.bracket.findFirst({
           where: {
             eventId: id,
             isAbsolute: true,
@@ -156,45 +173,27 @@ export async function POST(
           },
           select: { id: true },
         })
-      } else {
-        matchingBracket = await prisma.bracket.findFirst({
-          where: { eventId: id, isAbsolute: false, belt: belt as never, weightCategoryId },
-          select: { id: true },
-        })
-      }
-
-      // Chave não existe ainda — criar agora
-      if (!matchingBracket) {
-        const agg = await prisma.bracket.aggregate({ where: { eventId: id }, _max: { bracketNumber: true } })
-        const nextNumber = (agg._max.bracketNumber ?? 0) + 1
-
-        if (isAbs) {
-          // Para absoluto: qualquer categoria da faixa/sexo/grupo serve como referência
+        if (!absBracket) {
           const wc = await prisma.weightCategory.findFirst({
             where: { sex: sex as "MASCULINO" | "FEMININO", ageGroup: ageGroup as never },
           })
           if (wc) {
-            matchingBracket = await prisma.bracket.create({
-              data: { eventId: id, weightCategoryId: wc.id, belt: belt as never, isAbsolute: true, bracketNumber: nextNumber },
+            const agg = await prisma.bracket.aggregate({ where: { eventId: id }, _max: { bracketNumber: true } })
+            absBracket = await prisma.bracket.create({
+              data: { eventId: id, weightCategoryId: wc.id, belt: belt as never, isAbsolute: true, bracketNumber: (agg._max.bracketNumber ?? 0) + 1 },
               select: { id: true },
             })
           }
-        } else {
-          matchingBracket = await prisma.bracket.create({
-            data: { eventId: id, weightCategoryId, belt: belt as never, isAbsolute: false, bracketNumber: nextNumber },
-            select: { id: true },
+        }
+        if (absBracket) {
+          const absPos = (await prisma.bracketPosition.count({ where: { bracketId: absBracket.id } })) + 1
+          await prisma.bracketPosition.create({
+            data: { bracketId: absBracket.id, registrationId: registration.id, position: absPos },
           })
         }
       }
-
-      if (matchingBracket) {
-        const nextPos = (await prisma.bracketPosition.count({ where: { bracketId: matchingBracket.id } })) + 1
-        await prisma.bracketPosition.create({
-          data: { bracketId: matchingBracket.id, registrationId: registration.id, position: nextPos },
-        })
-      }
     } catch {
-      // Falha não crítica — inscrição criada mas sem posição na chave
+      // Falha não crítica — inscrição criada mas sem posição nas chaves
     }
 
     await logAction({
